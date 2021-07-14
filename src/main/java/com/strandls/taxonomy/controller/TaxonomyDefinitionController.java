@@ -37,6 +37,7 @@ import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
+import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
@@ -264,6 +265,26 @@ public class TaxonomyDefinitionController {
 			@ApiParam("status") TaxonomyStatusUpdate taxonomyStatusUpdate) {
 		try {
 			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateStatus(request, taxonomyStatusUpdate);
+			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@PUT
+	@Path("position")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "Update the position of taxonomy", notes = "Update the position. Position should be raw or working", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to update the position of taxonomy definition", response = String.class) })
+	public Response updatePosition(@Context HttpServletRequest request,
+			@ApiParam("status") TaxonomyPositionUpdate taxonomyPositionUpdate) {
+		try {
+			TaxonomyDefinition taxonomyDefinition = taxonomyService.updatePosition(request, taxonomyPositionUpdate);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(

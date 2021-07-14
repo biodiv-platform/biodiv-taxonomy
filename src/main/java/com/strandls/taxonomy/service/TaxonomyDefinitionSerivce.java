@@ -15,6 +15,7 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
+import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
@@ -53,9 +54,11 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException;
 
-	public TaxonomyDefinition updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate) throws ApiException, TaxonCreationException;
+	public TaxonomyDefinition updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
+			throws ApiException, TaxonCreationException;
+
+	public TaxonomyDefinition updatePosition(HttpServletRequest request, TaxonomyPositionUpdate taxonomyPositionUpdate);
 
 	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankList,
 			String statusList, String positionList, Integer limit, Integer offset) throws IOException;
-
 }

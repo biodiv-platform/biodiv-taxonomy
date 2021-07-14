@@ -44,6 +44,7 @@ import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
+import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
@@ -880,6 +881,28 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
+	public TaxonomyDefinition updatePosition(HttpServletRequest request,
+			TaxonomyPositionUpdate taxonomyPositionUpdate) {
+
+		Long taxonId = taxonomyPositionUpdate.getTaxonId();
+		TaxonomyPosition position = taxonomyPositionUpdate.getPosition();
+
+		TaxonomyDefinition taxonomyDefinition = findById(taxonId);
+		if (TaxonomyPosition.CLEAN.equals(position)
+				|| TaxonomyPosition.CLEAN.name().equals(taxonomyDefinition.getPosition())) {
+			// Not changing anything here just keeping as it is.
+			return taxonomyDefinition;
+		}
+		
+		if(!position.name().equals(taxonomyDefinition.getPosition())) {
+			taxonomyDefinition.setPosition(position.name());
+			update(taxonomyDefinition);
+		}
+
+		return taxonomyDefinition;
+	}
+
+	@Override
 	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankListString,
 			String statusListString, String positionListString, Integer limit, Integer offset) throws IOException {
 
@@ -899,7 +922,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		List<String> positionList = TaxonomyPosition.getAllOrSpecified(positionListString);
 
 		// Get the result based on query
-		return taxonomyDao.getTaxonomyNameList(taxonId, classificationId,
-				rankList, statusList, positionList, limit, offset);
+		return taxonomyDao.getTaxonomyNameList(taxonId, classificationId, rankList, statusList, positionList, limit,
+				offset);
 	}
 }
