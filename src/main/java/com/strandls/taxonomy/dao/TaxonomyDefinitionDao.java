@@ -81,14 +81,13 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		return ids;
 	}
 
-	@SuppressWarnings("unchecked")
 	public List<TaxonomyDefinition> breadCrumbSearch(String path) {
 		Session session = sessionFactory.openSession();
 		List<TaxonomyDefinition> result = null;
 
-		String qry = "from " + daoType.getSimpleName() + " t where t.id in(" + path + ")";
+		String qry = "select t from TaxonomyDefinition t left join Rank r on t.rank = r.name where t.id in(" + path + ") order by r.rankValue";
 		try {
-			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			Query<TaxonomyDefinition> query = session.createQuery(qry, TaxonomyDefinition.class);
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());

@@ -1,6 +1,5 @@
 package com.strandls.taxonomy.service.impl;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -214,7 +213,6 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 				for (TaxonomyDefinition definition : definitions) {
 					Long userId = definition.getUploaderId();
-					Timestamp uploadTime = definition.getUploadTime();
 					List<TaxonomyRegistry> taxonomyRegistrys = taxonomyRegistryDao
 							.getSnappingCandidates(definition.getId());
 					if (taxonomyRegistrys.isEmpty()) { // Missing the entry in taxonomy registry

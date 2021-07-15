@@ -47,13 +47,16 @@ import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.BreadCrumb;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
+import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.CommonNameSerivce;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
+import com.strandls.taxonomy.service.TaxonomyRegistryService;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.taxonomy.util.AbstractService;
@@ -79,6 +82,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private TaxonomyRegistryDao taxonomyRegistryDao;
+	
+	@Inject
+	private TaxonomyRegistryService taxonomyRegistryService;
 
 	@Inject
 	private UtilityServiceApi utilityServiceApi;
@@ -113,6 +119,41 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
 		return taxonomyDao.findById(id);
+	}
+	
+	@Override
+	public TaxonomyDefinitionShow getTaxonomyDetails(Long id) {
+		TaxonomyDefinitionShow taxonomyDefinitionShow = new TaxonomyDefinitionShow();
+		
+		TaxonomyDefinition taxonomyDefinition = fetchById(id);
+		taxonomyDefinitionShow.setTaxonomyDefinition(taxonomyDefinition);
+		
+		List<BreadCrumb> hierarchy = taxonomyRegistryService.fetchByTaxonomyId(id);
+		taxonomyDefinitionShow.setHierarchy(hierarchy);
+		
+		if(TaxonomyStatus.ACCEPTED.name().equals(taxonomyDefinition.getStatus())) {
+			List<AcceptedSynonym> accecptedSynonyms = acceptedSynonymDao.findByAccepetdId(id);
+			
+			List<BreadCrumb> synonyms = new ArrayList<>();
+			for(AcceptedSynonym acceptedSynonym : accecptedSynonyms) {
+				TaxonomyDefinition synonym = taxonomyDao.findById(acceptedSynonym.getSynonymId());
+				synonyms.add(new BreadCrumb(synonym.getId(), synonym.getNormalizedForm(), synonym.getRank()));
+			}
+			
+			taxonomyDefinitionShow.setSynonymNames(synonyms);
+		} else {
+			List<AcceptedSynonym> accecptedSynonyms = acceptedSynonymDao.findBySynonymId(id);
+			
+			List<BreadCrumb> acceptedNames = new ArrayList<>();
+			for(AcceptedSynonym acceptedSynonym : accecptedSynonyms) {
+				TaxonomyDefinition acceptedName = taxonomyDao.findById(acceptedSynonym.getAcceptedId());
+				acceptedNames.add(new BreadCrumb(acceptedName.getId(), acceptedName.getNormalizedForm(), acceptedName.getRank()));
+			}
+			
+			taxonomyDefinitionShow.setAcceptedNames(acceptedNames);
+		}
+		
+		return taxonomyDefinitionShow;
 	}
 
 	@Override

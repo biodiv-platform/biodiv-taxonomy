@@ -40,6 +40,7 @@ import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
@@ -82,6 +83,24 @@ public class TaxonomyDefinitionController {
 			Long id = Long.parseLong(taxonomyConceptId);
 			TaxonomyDefinition taxonomy = taxonomyService.fetchById(id);
 			return Response.status(Status.OK).entity(taxonomy).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+	
+	@GET
+	@Path("/show/{taxonId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Find Taxonomy Details by ID", notes = "Returns Taxonomy details", response = TaxonomyDefinitionShow.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy not found", response = String.class) })
+
+	public Response getTaxonomyDetails(@PathParam("taxonId") String taxonId) {
+		try {
+			Long id = Long.parseLong(taxonId);
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.getTaxonomyDetails(id);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
