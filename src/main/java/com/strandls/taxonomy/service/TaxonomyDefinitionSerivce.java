@@ -55,12 +55,12 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 
-	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException;
+	public TaxonomyDefinitionShow updateName(Long taxonId, String taxonName) throws ApiException;
 
-	public TaxonomyDefinition updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
+	public TaxonomyDefinitionShow updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
 			throws ApiException, TaxonCreationException;
 
-	public TaxonomyDefinition updatePosition(HttpServletRequest request, TaxonomyPositionUpdate taxonomyPositionUpdate);
+	public TaxonomyDefinitionShow updatePosition(HttpServletRequest request, TaxonomyPositionUpdate taxonomyPositionUpdate);
 
 	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankList,
 			String statusList, String positionList, Integer limit, Integer offset) throws IOException;

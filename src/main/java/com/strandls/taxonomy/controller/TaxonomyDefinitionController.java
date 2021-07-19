@@ -257,14 +257,14 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the name. input name should be scientific name", response = TaxonomyDefinitionShow.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
 	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
 			@QueryParam("taxonName") String taxonName) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateName(taxonId, taxonName);
-			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateName(taxonId, taxonName);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -277,14 +277,14 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the status. Status should be either accepted or synonym", response = TaxonomyDefinition.class)
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the status. Status should be either accepted or synonym", response = TaxonomyDefinitionShow.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
 	public Response updateStatus(@Context HttpServletRequest request,
 			@ApiParam("status") TaxonomyStatusUpdate taxonomyStatusUpdate) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateStatus(request, taxonomyStatusUpdate);
-			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateStatus(request, taxonomyStatusUpdate);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -303,8 +303,8 @@ public class TaxonomyDefinitionController {
 	public Response updatePosition(@Context HttpServletRequest request,
 			@ApiParam("status") TaxonomyPositionUpdate taxonomyPositionUpdate) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.updatePosition(request, taxonomyPositionUpdate);
-			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updatePosition(request, taxonomyPositionUpdate);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
