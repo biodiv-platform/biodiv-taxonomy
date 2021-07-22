@@ -807,7 +807,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Long taxonId = taxonomyStatusUpdate.getTaxonId();
 		TaxonomyStatus taxonomyStatus = taxonomyStatusUpdate.getStatus();
 		Map<String, String> hierarchy = taxonomyStatusUpdate.getHierarchy();
-		Long newTaxonId = taxonomyStatusUpdate.getNewTaxonId();
+		List<Long> newTaxonIds = taxonomyStatusUpdate.getNewTaxonId();
 
 		TaxonomyDefinition taxonomyDefinition;
 
@@ -865,9 +865,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			break;
 		// status is changing from accepted to synonym
 		case SYNONYM:
-			if (newTaxonId == null)
+			if (newTaxonIds == null || newTaxonIds.isEmpty())
 				throw new IllegalArgumentException("New taxonomy is required to assign all the children");
 
+			// Taking the first candidate for moving all the children
+			Long newTaxonId = newTaxonIds.get(0);
 			TaxonomyDefinition acceptedTaxonomy = taxonomyDao.findById(newTaxonId);
 
 			if (acceptedTaxonomy == null)

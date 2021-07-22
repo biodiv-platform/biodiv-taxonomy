@@ -1,5 +1,6 @@
 package com.strandls.taxonomy.pojo.request;
 
+import java.util.List;
 import java.util.Map;
 
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
@@ -22,14 +23,14 @@ public class TaxonomyStatusUpdate {
 
 	private Long taxonId;
 	private TaxonomyStatus status;
-	private Long newTaxonId;
+	private List<Long> newTaxonId;
 	private Map<String, String> hierarchy;
 
 	public TaxonomyStatusUpdate() {
 		super();
 	}
 
-	public TaxonomyStatusUpdate(Long taxonId, TaxonomyStatus status, Long newTaxonId, Map<String, String> hierarchy) {
+	public TaxonomyStatusUpdate(Long taxonId, TaxonomyStatus status, List<Long> newTaxonId, Map<String, String> hierarchy) {
 		super();
 		this.taxonId = taxonId;
 		this.status = status;
@@ -53,11 +54,11 @@ public class TaxonomyStatusUpdate {
 		this.status = status;
 	}
 
-	public Long getNewTaxonId() {
+	public List<Long> getNewTaxonId() {
 		return newTaxonId;
 	}
 
-	public void setNewTaxonId(Long newTaxonId) {
+	public void setNewTaxonId(List<Long> newTaxonId) {
 		this.newTaxonId = newTaxonId;
 	}
 
