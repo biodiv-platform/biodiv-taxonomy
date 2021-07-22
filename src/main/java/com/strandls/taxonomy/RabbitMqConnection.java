@@ -19,7 +19,7 @@ import com.strandls.taxonomy.util.PropertyFileUtil;
  */
 public class RabbitMqConnection {
 
-	public final static String EXCHANGE_BIODIV;
+	public static final String EXCHANGE_BIODIV;
 	public static final String MAIL_QUEUE;
 	public static final String MAIL_ROUTING_KEY;
 

@@ -1,6 +1,7 @@
 package com.strandls.taxonomy.pojo.request;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class FileMetadata {
 
 	public FileMetadata() {
 		super();
-		this.rankToIndex = new HashMap<String, Integer>();
+		this.rankToIndex = new HashMap<>();
 	}
 
 	public FileMetadata(String fileType, Map<String, String> nameToRank, String scientificColumnName,
@@ -68,7 +69,7 @@ public class FileMetadata {
 		this.positionColumnName = positionColumnName;
 		this.sourceColumnName = sourceColumnName;
 		this.sourceIdColumnName = sourceIdColumnName;
-		this.rankToIndex = new HashMap<String, Integer>();
+		this.rankToIndex = new HashMap<>();
 	}
 
 	public void updateIndices(String[] headers) {
@@ -129,7 +130,7 @@ public class FileMetadata {
 		if (sourceIdColumnIndex != -1)
 			taxonomySave.setSourceId(data[sourceIdColumnIndex]);
 
-		Map<String, String> rankToName = new HashMap<String, String>();
+		Map<String, String> rankToName = new HashMap<>();
 		for (Map.Entry<String, Integer> entry : rankToIndex.entrySet()) {
 			String rank = entry.getKey();
 			Integer index = entry.getValue();
@@ -141,8 +142,8 @@ public class FileMetadata {
 
 		if (commonNameColumnIndex != -1 && data[commonNameColumnIndex] != null && !"".equals(data[commonNameColumnIndex])) {
 			String commonNameColumnValue = data[commonNameColumnIndex];
-			List<String> otherCommonNames = new ArrayList<String>(); 
-			Map<Long, String[]> commonNames = new HashMap<Long, String[]>();
+			List<String> otherCommonNames = new ArrayList<>(); 
+			Map<Long, String[]> commonNames = new HashMap<>();
 			String[] commonNameForLanguage = commonNameColumnValue.split(";");
 			for (String cName : commonNameForLanguage) {
 				String[] languageCName = cName.split(":");
@@ -154,9 +155,7 @@ public class FileMetadata {
 					Long languageId = language.getId();
 					commonNames.put(languageId, commonNameString.split(","));
 					} catch (ApiException | NoResultException e) {
-						for(String cn : commonNameString.split(",")) {
-							otherCommonNames.add(cn);
-						}
+						otherCommonNames.addAll(Arrays.asList(commonNameString.split(",")));
 					}
 				}
 			}

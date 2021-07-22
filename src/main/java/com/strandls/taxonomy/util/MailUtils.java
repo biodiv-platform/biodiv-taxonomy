@@ -41,10 +41,10 @@ public class MailUtils {
 
 			try {
 				if (requestor.getEmail() != null) {
-					Map<String, Object> data = new HashMap<String, Object>();
+					Map<String, Object> data = new HashMap<>();
 					data.put(FIELDS.TO.getAction(), new String[] { requestor.getEmail() });
 					data.put(FIELDS.SUBSCRIPTION.getAction(), true);
-					Map<String, Object> permissionRequest = new HashMap<String, Object>();
+					Map<String, Object> permissionRequest = new HashMap<>();
 
 					permissionRequest.put(PERMISSION_REQUEST.ENCRYPTED_KEY.getAction(), encryptedKey);
 					permissionRequest.put(PERMISSION_REQUEST.REQUESTEE_ID.getAction(), requestee.getId());
@@ -56,7 +56,7 @@ public class MailUtils {
 
 					data.put(FIELDS.DATA.getAction(), JsonUtil.unflattenJSON(permissionRequest));
 
-					Map<String, Object> mData = new HashMap<String, Object>();
+					Map<String, Object> mData = new HashMap<>();
 					mData.put(INFO_FIELDS.TYPE.getAction(), MAIL_TYPE.PERMISSION_REQUEST.getAction());
 					mData.put(INFO_FIELDS.RECIPIENTS.getAction(), Arrays.asList(data));
 
@@ -77,11 +77,11 @@ public class MailUtils {
 
 		if (requestee.getEmail() != null) {
 			try {
-				Map<String, Object> data = new HashMap<String, Object>();
+				Map<String, Object> data = new HashMap<>();
 				data.put(FIELDS.TO.getAction(), new String[] { requestee.getEmail() });
 				data.put(FIELDS.SUBSCRIPTION.getAction(), true);
 
-				Map<String, Object> permissionGrantData = new HashMap<String, Object>();
+				Map<String, Object> permissionGrantData = new HashMap<>();
 				permissionGrantData.put(PERMISSION_GRANT.REQUESTEE_NAME.getAction(), requestee.getName());
 				permissionGrantData.put(PERMISSION_GRANT.ROLE.getAction(), role);
 				permissionGrantData.put(PERMISSION_GRANT.TAXON_ID.getAction(), taxonId);
@@ -89,7 +89,7 @@ public class MailUtils {
 
 				data.put(FIELDS.DATA.getAction(), JsonUtil.unflattenJSON(permissionGrantData));
 
-				Map<String, Object> mData = new HashMap<String, Object>();
+				Map<String, Object> mData = new HashMap<>();
 				mData.put(INFO_FIELDS.TYPE.getAction(), MAIL_TYPE.PERMISSION_GRANTED.getAction());
 				mData.put(INFO_FIELDS.RECIPIENTS.getAction(), Arrays.asList(data));
 

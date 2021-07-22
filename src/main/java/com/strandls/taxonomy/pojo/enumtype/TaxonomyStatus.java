@@ -1,5 +1,8 @@
 package com.strandls.taxonomy.pojo.enumtype;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;
 import javax.xml.bind.annotation.XmlType;
@@ -25,5 +28,21 @@ public enum TaxonomyStatus {
 				return layerStatus;
 		}
 		throw new IllegalArgumentException(value);
+	}
+	
+	public static List<String> getAllOrSpecified(String statusListString) {
+		List<String> statusList = new ArrayList<>();
+		if (statusListString == null || "".equals(statusListString)) {
+			for (TaxonomyStatus status : TaxonomyStatus.values()) {
+				statusList.add(status.name());
+			}
+		} else {
+			for (String status : statusListString.split(",")) {
+				status = status.toUpperCase().trim();
+				status = TaxonomyStatus.fromValue(status).name();
+				statusList.add(status);
+			}
+		}
+		return statusList;
 	}
 }

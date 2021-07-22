@@ -29,8 +29,8 @@ import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 
 @SqlResultSetMapping(name = "TaxonomyNameList", classes = {
 		@ConstructorResult(targetClass = TaxonomyNamelistItem.class, columns = {
-				@ColumnResult(name = "id", type = Long.class), @ColumnResult(name = "name", type = String.class),
-				@ColumnResult(name = "rank", type = String.class), @ColumnResult(name = "status", type = String.class),
+				@ColumnResult(name = "id", type = Long.class), @ColumnResult(name = "rank", type = String.class),
+				@ColumnResult(name = "name", type = String.class), @ColumnResult(name = "status", type = String.class),
 				@ColumnResult(name = "position", type = String.class), @ColumnResult(name = "rankvalue", type = Double.class)
 				}) 
 		})
@@ -70,41 +70,6 @@ public class TaxonomyDefinition {
 
 	public TaxonomyDefinition() {
 		super();
-	}
-
-	public TaxonomyDefinition(Long id, String binomialForm, String canonicalForm, String italicisedForm,
-			Long externalLinksId, String name, String normalizedForm, String rank, Timestamp uploadTime,
-			Long uploaderId, String status, String position, String authorYear, String matchDatabaseName,
-			String matchId, String ibpSource, String viaDatasource, Boolean isFlagged, String relationship,
-			String classs, String flaggingReason, Boolean isDeleted, String dirtyListReason, String activityDescription,
-			String defaultHierarchy, String nameSourceId) {
-		super();
-		this.id = id;
-		this.binomialForm = binomialForm;
-		this.canonicalForm = canonicalForm;
-		this.italicisedForm = italicisedForm;
-		this.externalLinksId = externalLinksId;
-		this.name = name;
-		this.normalizedForm = normalizedForm;
-		this.rank = rank;
-		this.uploadTime = uploadTime;
-		this.uploaderId = uploaderId;
-		this.status = status;
-		this.position = position;
-		this.authorYear = authorYear;
-		this.matchDatabaseName = matchDatabaseName;
-		this.matchId = matchId;
-		this.ibpSource = ibpSource;
-		this.viaDatasource = viaDatasource;
-		this.isFlagged = isFlagged;
-		this.relationship = relationship;
-		this.classs = classs;
-		this.flaggingReason = flaggingReason;
-		this.isDeleted = isDeleted;
-		this.dirtyListReason = dirtyListReason;
-		this.activityDescription = activityDescription;
-		this.defaultHierarchy = defaultHierarchy;
-		this.nameSourceId = nameSourceId;
 	}
 
 	@Id

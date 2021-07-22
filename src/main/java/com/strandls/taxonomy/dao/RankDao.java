@@ -50,14 +50,18 @@ public class RankDao extends AbstractDAO<Rank, Long> {
 	}
 	
 	public List<Rank> getAllRank() {
+		return getAllRank(false);
+	}
+	
+	public List<Rank> getAllRank(boolean topToBottom) {
 		String queryStr = "" + "from " + daoType.getSimpleName() + " t "
-				+ "where isDeleted = false order by rankValue desc";
+				+ "where isDeleted = false order by rankValue" + (topToBottom? "":" desc");
 		try (Session session = sessionFactory.openSession()) {
 			Query<Rank> query = session.createQuery(queryStr, Rank.class);
 			try {
 				return query.getResultList();
 			} catch (NoResultException e) {
-				return new ArrayList<Rank>();
+				return new ArrayList<>();
 			}
 		}
 	}

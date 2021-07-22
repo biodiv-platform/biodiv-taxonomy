@@ -25,6 +25,9 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(AcceptedSynonymDao.class);
 
+	private static final String ACCEPTED_ID = "acceptedId";
+	private static final String SYNONYM_ID= "synonymId";
+	
 	/**
 	 * @param sessionFactory
 	 */
@@ -66,7 +69,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		String qry = "from AcceptedSynonym where synonymId = :synonymId";
 		try {
 			Query<AcceptedSynonym> query = session.createQuery(qry);
-			query.setParameter("synonymId", synonymId);
+			query.setParameter(SYNONYM_ID, synonymId);
 			query.setMaxResults(1);
 			result = query.getResultList();
 		} catch (Exception e) {
@@ -84,8 +87,8 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		String qry = "from AcceptedSynonym where acceptedId = :acceptedId and synonymId = :synonymId";
 		try {
 			Query<AcceptedSynonym> query = session.createQuery(qry);
-			query.setParameter("acceptedId", acceptedId);
-			query.setParameter("synonymId", synonymId);
+			query.setParameter(ACCEPTED_ID, acceptedId);
+			query.setParameter(SYNONYM_ID, synonymId);
 			query.setMaxResults(1);
 			result = query.getSingleResult();
 		} catch (Exception e) {
@@ -103,7 +106,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		List<AcceptedSynonym> result = null;
 		try {
 			Query<AcceptedSynonym> query = session.createQuery(qry);
-			query.setParameter("acceptedId", acceptedId);
+			query.setParameter(ACCEPTED_ID, acceptedId);
 			result = query.getResultList();
 
 		} catch (Exception e) {
@@ -119,13 +122,14 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 	 * @param taxonId
 	 * @param newTaxonId
 	 */
+	@SuppressWarnings("unchecked")
 	public int synonymTransfer(Long taxonId, Long newTaxonId) {
 		Session session = sessionFactory.openSession();
 		Transaction tx = null;
 		try {
 			tx = session.beginTransaction();
 			Query<AcceptedSynonym> query = session.createNamedQuery("synonymTransfer");
-			query.setParameter("acceptedId", taxonId);
+			query.setParameter(ACCEPTED_ID, taxonId);
 			query.setParameter("newAcceptedId", newTaxonId);
 			int rowsUpdated = query.executeUpdate();
 			tx.commit();

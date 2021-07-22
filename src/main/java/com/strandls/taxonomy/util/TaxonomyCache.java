@@ -13,7 +13,7 @@ import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
 import com.strandls.utility.pojo.ParsedName;
 
-public class TaxonomyCache<K, V> {
+public class TaxonomyCache {
 
 	private List<Rank> ranks;
 
@@ -24,7 +24,7 @@ public class TaxonomyCache<K, V> {
 	@Inject
 	public TaxonomyCache(RankSerivce rankSerivce, UtilityServiceApi utilityServiceApi) {
 		ranks = rankSerivce.getAllRank(null);
-		rankToCache = new HashMap<String, TaxonomyParsedNameCache>();
+		rankToCache = new HashMap<>();
 		for (Rank rank : ranks) {
 			int size = (int) (rank.getRankValue() * 5);
 			size = size == 0 ? 1 : size;
@@ -63,16 +63,15 @@ class TaxonomyParsedNameCache extends Cache<String, ParsedName>{
 
 	private UtilityServiceApi utilityServiceApi;
 	
-	public TaxonomyParsedNameCache(UtilityServiceApi utilityServiceApi, int Size) {
-		super(Size);
+	public TaxonomyParsedNameCache(UtilityServiceApi utilityServiceApi, int size) {
+		super(size);
 		this.utilityServiceApi = utilityServiceApi;
 	}
 
 	@Override
 	public ParsedName getNewValue(String k) {
 		try {
-			ParsedName parsedName = utilityServiceApi.getNameParsed(k);
-			return parsedName;
+			return utilityServiceApi.getNameParsed(k);
 		} catch (ApiException e) {
 			e.printStackTrace();
 		}
@@ -85,9 +84,9 @@ abstract class Cache<K, V> {
 	private Map<K, DLLNode<K, V>> hashTable;
 	private DoublyLinkedList<K, V> doublyLinkedList;
 
-	public Cache(int Size) {
-		hashTable = new HashMap<K, DLLNode<K, V>>();
-		doublyLinkedList = new DoublyLinkedList<K, V>(Size);
+	protected Cache(int size) {
+		hashTable = new HashMap<>();
+		doublyLinkedList = new DoublyLinkedList<>(size);
 	}
 
 	public V getValue(K k) {
@@ -95,12 +94,17 @@ abstract class Cache<K, V> {
 		if (hashTable.containsKey(k)) {
 			TaxonomyCache.increamentCacheHit();
 			node = hashTable.get(k);
+			if(node.getValue() == null) {
+				doublyLinkedList.remove(node);
+				hashTable.remove(node);
+				return getValue(k);
+			}
 			doublyLinkedList.remove(node);
 			doublyLinkedList.addLast(node);
 		} else {
 			TaxonomyCache.increamentCacheMiss();
 			V v = getNewValue(k);
-			node = new DLLNode<K, V>(k, v);
+			node = new DLLNode<>(k, v);
 			if (doublyLinkedList.isFull()) {
 				DLLNode<K, V> firstNode = doublyLinkedList.removeFirst();
 				hashTable.remove(firstNode.getKey());

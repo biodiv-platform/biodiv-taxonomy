@@ -28,7 +28,7 @@ public class LogActivities {
 
 	private final Logger logger = LoggerFactory.getLogger(LogActivities.class);
 
-	public void LogActivity(String authHeader, String activityDescription, Long rootObjectId, Long subRootObjectId,
+	public void logActivity(String authHeader, String activityDescription, Long rootObjectId, Long subRootObjectId,
 			String rootObjectType, Long activityId, String activityType, MailData mailData) {
 
 		try {

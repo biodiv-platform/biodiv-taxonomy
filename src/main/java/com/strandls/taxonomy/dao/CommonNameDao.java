@@ -49,6 +49,19 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 		return entity;
 	}
 
+	public List<CommonName> fetchByTaxonId(Long taxonId) {
+		String queryStr = "from CommonName t where t.taxonConceptId = :taxonId order by id";
+		Session session = sessionFactory.openSession();
+		Query<CommonName> query = session.createQuery(queryStr, CommonName.class);
+		query.setParameter("taxonId", taxonId);
+
+		try {
+			return query.getResultList();
+		} finally {
+			session.close();
+		}
+	}
+
 	public List<CommonName> getCommonName(Long languageId, Long taxonConceptId, String commonNameString) {
 		try (Session session = sessionFactory.openSession()) {
 			String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where "
@@ -61,7 +74,7 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 			query.setParameter("name", commonNameString);
 			return query.getResultList();
 		} catch (NoResultException e) {
-			return new ArrayList<CommonName>();
+			return new ArrayList<>();
 		}
 	}
 

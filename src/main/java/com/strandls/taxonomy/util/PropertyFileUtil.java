@@ -4,6 +4,8 @@ import java.util.Properties;
 
 public class PropertyFileUtil {
 	
+	private PropertyFileUtil() {}
+	
 	public static Properties fetchProperty(String fileName) {
         Properties properties = new Properties();
         try {
@@ -25,7 +27,6 @@ public class PropertyFileUtil {
             result = properties.getProperty(propertyName);
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
         }
 		return result;
     }

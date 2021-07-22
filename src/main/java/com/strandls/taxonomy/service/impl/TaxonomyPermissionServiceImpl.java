@@ -75,7 +75,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		Boolean permission = false;
 		for (BreadCrumb crumb : breadcrumbs) {
 			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.SPECIESCONTRIBUTOR);
-			if (permission)
+			if (permission.booleanValue())
 				break;
 		}
 
@@ -91,7 +91,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			TreeRoles role = TreeRoles.valueOf(permissionData.getRole());
 
 			if (role == null)
-				return null;
+				return false;
 
 			SpeciesPermission hasPermission = speciesPermissionDao.findPermissionOntaxon(permissionData.getUserId(),
 					permissionData.getTaxonId());
@@ -125,10 +125,10 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		Long userId = Long.parseLong(profile.getId());
 		TreeRoles role = TreeRoles.valueOf(permissionData.getRole());
 		if (role == null)
-			return null;
+			return false;
 
 		Boolean alreadyHasPermission = speciesPermissionDao.checkPermission(userId, permissionData.getTaxonId(), role);
-		if (alreadyHasPermission)
+		if (alreadyHasPermission.booleanValue())
 			return false;
 
 		SpeciesPermissionRequest isExist = permissionReqDao.requestPermissionExist(userId, permissionData.getTaxonId(),
@@ -137,13 +137,13 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			SpeciesPermissionRequest permissionRequest = new SpeciesPermissionRequest(null, permissionData.getTaxonId(),
 					userId, role.getValue());
 			permissionRequest = permissionReqDao.save(permissionRequest);
-			SendMail(permissionRequest);
+			sendMail(permissionRequest);
 			return true;
 		} else {
 			if (!role.getValue().equalsIgnoreCase(isExist.getRole())) {
 				isExist.setRole(role.getValue());
 				isExist = permissionReqDao.update(isExist);
-				SendMail(isExist);
+				sendMail(isExist);
 				return true;
 			}
 
@@ -152,7 +152,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		return false;
 	}
 
-	private void SendMail(SpeciesPermissionRequest permissionReq) {
+	private void sendMail(SpeciesPermissionRequest permissionReq) {
 
 		String reqText;
 		try {

@@ -56,8 +56,8 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 		Set<String> speciesGroupTaxons = speciesMappingDao.getTaxonIds(id);
 		traitTaxonList.addAll(speciesGroupTaxons);
 		if (traitTaxonList.isEmpty())
-			return new ArrayList<String>();
-		List<Long> traitTaxonIds = new ArrayList<Long>();
+			return new ArrayList<>();
+		List<Long> traitTaxonIds = new ArrayList<>();
 		for (String taxonId : traitTaxonList)
 			traitTaxonIds.add(Long.parseLong(taxonId));
 		List<String> result = taxonomyRegistryDao.findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxons);

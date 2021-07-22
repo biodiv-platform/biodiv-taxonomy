@@ -34,7 +34,7 @@ public class RankServiceImpl extends AbstractService<Rank> implements RankSerivc
 	@Override
 	public List<String> getAllRankNames() {
 		List<Rank> ranks = rankDao.getAllRank();
-		List<String> rankNames = new ArrayList<String>();
+		List<String> rankNames = new ArrayList<>();
 		for(Rank rank : ranks) {
 			rankNames.add(rank.getName());
 		}
@@ -44,7 +44,7 @@ public class RankServiceImpl extends AbstractService<Rank> implements RankSerivc
 	@Override
 	public List<String> getAllRequiredRanks() {
 		List<Rank> ranks = rankDao.getAllRank();
-		List<String> rankNames = new ArrayList<String>();
+		List<String> rankNames = new ArrayList<>();
 		for(Rank rank : ranks) {
 			if(rank.getIsRequired().booleanValue())
 				rankNames.add(rank.getName());

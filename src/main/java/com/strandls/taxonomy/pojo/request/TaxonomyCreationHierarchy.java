@@ -14,7 +14,7 @@ public class TaxonomyCreationHierarchy {
 
 	public TaxonomyCreationHierarchy() {
 		super();
-		unmatchedNodeToCreate = new LinkedHashMap<String, ParsedName>();
+		unmatchedNodeToCreate = new LinkedHashMap<>();
 	}
 
 	public Long getMatchedTaxonId() {

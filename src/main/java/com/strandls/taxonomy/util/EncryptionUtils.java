@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public class EncryptionUtils {
 
 	private final Logger logger = LoggerFactory.getLogger(EncryptionUtils.class);
+	private static final String ALGORITHM = "Blowfish";
 
 	private String key;
 
@@ -48,14 +49,13 @@ public class EncryptionUtils {
 		String strData = "";
 
 		try {
-			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes("UTF-8"), "Blowfish");
-			Cipher cipher = Cipher.getInstance("Blowfish");
+			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+			Cipher cipher = Cipher.getInstance(ALGORITHM);
 			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
-			byte[] encrypted = cipher.doFinal(plainText.getBytes("UTF-8"));
+			byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
 			strData = DatatypeConverter.printBase64Binary(encrypted);
 			strData = URLEncoder.encode(strData, StandardCharsets.UTF_8.toString());
 
-			System.out.println("Encrypted key : " + strData);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
@@ -66,11 +66,11 @@ public class EncryptionUtils {
 		String strData = "";
 
 		try {
-			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes("UTF-8"), "Blowfish");
-			Cipher cipher = Cipher.getInstance("Blowfish");
+			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), ALGORITHM);
+			Cipher cipher = Cipher.getInstance(ALGORITHM);
 			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
 			byte[] decrypted = cipher.doFinal(DatatypeConverter.parseBase64Binary(encryptedText));
-			strData = new String(decrypted, "UTF-8");
+			strData = new String(decrypted, StandardCharsets.UTF_8);
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());

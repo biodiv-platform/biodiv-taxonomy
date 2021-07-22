@@ -26,12 +26,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Entity
 @Table(name = "taxonomy_registry")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TaxonomyRegistry implements Serializable {
+public class TaxonomyRegistry implements Serializable, Cloneable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -1891934272853024930L;
+	
 	private Long id;
 	private Long classificationId;
 	private String path;
@@ -106,5 +107,14 @@ public class TaxonomyRegistry implements Serializable {
 
 	public void setUploaderId(Long uploaderId) {
 		this.uploaderId = uploaderId;
+	}
+	
+	@Override
+	public TaxonomyRegistry clone() throws CloneNotSupportedException {
+		Object object = super.clone();
+		if(object instanceof TaxonomyRegistry) {
+			return (TaxonomyRegistry) super.clone();
+		}
+		return this;
 	}
 }

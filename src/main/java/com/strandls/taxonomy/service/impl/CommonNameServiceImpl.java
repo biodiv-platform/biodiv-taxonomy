@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.authentication_utility.util.AuthUtil;
+import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.CommonNamesData;
@@ -51,7 +52,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 	@Override
 	public List<CommonName> fetchByTaxonId(Long taxonId) {
-		return commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonId, "=", -1, -1);
+		return commonNameDao.fetchByTaxonId(taxonId);
 	}
 
 	@Override
@@ -61,7 +62,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 	@Override
 	public CommonName getPrefferedCommonName(Long taxonId) {
-		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonId, "=", -1, -1);
+		List<CommonName> commonNames = fetchByTaxonId(taxonId);
 		for (CommonName commonName : commonNames) {
 			if (commonName.isPreffered())
 				return commonName;
@@ -74,8 +75,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 		CommonName commonName = commonNameDao.findById(id);
 		Long taxonConceptId = commonName.getTaxonConceptId();
 
-		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonConceptId, "=",
-				-1, -1);
+		List<CommonName> commonNames = fetchByTaxonId(taxonConceptId);
 		for (CommonName c : commonNames) {
 			c.setPreffered(false);
 			update(c);
@@ -87,7 +87,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	public List<CommonName> addCommonNames(Long taxonConceptId, Map<Long, String[]> languageIdToCommonNames,
 			String source) {
 
-		List<CommonName> commonNamesList = new ArrayList<CommonName>();
+		List<CommonName> commonNamesList = new ArrayList<>();
 
 		for (Map.Entry<Long, String[]> entry : languageIdToCommonNames.entrySet()) {
 			Long languageId = entry.getKey();
@@ -131,7 +131,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			Long uploaderId = Long.parseLong(profile.getId());
 			if (commonNamesData.getName() == null || commonNamesData.getTaxonConceptId() == null)
-				return null;
+				return new ArrayList<>();
 			if (commonNamesData.getId() == null) {
 				CommonName commonNames = new CommonName(null, commonNamesData.getLanguageId(),
 						commonNamesData.getName(), commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null,
@@ -139,26 +139,26 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 				commonNames = commonNameDao.save(commonNames);
 				String desc = "Added common name : " + commonNames.getName();
-				logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
-						"species", commonNames.getId(), "Added common name", null);
+				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						ApiConstants.SPECIES, commonNames.getId(), "Added common name", null);
 
 			} else {
 				CommonName commonName = commonNameDao.findById(commonNamesData.getId());
 				if (!commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
-					return null;
+					return new ArrayList<>();
 				commonName.setName(commonNamesData.getName());
 				if (commonNamesData.getLanguageId() != null)
 					commonName.setLanguageId(commonNamesData.getLanguageId());
 
 				commonName = commonNameDao.update(commonName);
 				String desc = "Updated common name : " + commonName.getName();
-				logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
 						"species", commonName.getId(), "Updated common name", null);
 
 			}
 			Long taxonId = commonNamesData.getTaxonConceptId();
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(taxonId);
-			List<Long> taxonIds = new ArrayList<Long>();
+			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
 			taxonomyESOperation.pushToElastic(taxonIds);
 			return result;
@@ -166,7 +166,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return null;
+		return new ArrayList<>();
 
 	}
 
@@ -177,12 +177,12 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			commonName = commonNameDao.delete(commonName);
 
 			String desc = "Deleted common name : " + commonName.getName();
-			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
+			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					commonName.getId(), "Deleted common name", null);
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonName.getTaxonConceptId());
 			
 			// Push to elastic 
-			List<Long> taxonIds = new ArrayList<Long>();
+			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(commonName.getTaxonConceptId());
 			taxonomyESOperation.pushToElastic(taxonIds);
 			
@@ -190,7 +190,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	@Override
@@ -208,6 +208,6 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return null;
+		return new ArrayList<>();
 	}
 }

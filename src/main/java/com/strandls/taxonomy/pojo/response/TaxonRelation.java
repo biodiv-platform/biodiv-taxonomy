@@ -20,7 +20,7 @@ public class TaxonRelation {
 	private List<String> ids;
 
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-	private List<TaxonRelation> children = new ArrayList<TaxonRelation>();
+	private List<TaxonRelation> children = new ArrayList<>();
 
 	public TaxonRelation() {
 		super();

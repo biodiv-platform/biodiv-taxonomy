@@ -54,7 +54,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 
 		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();
-		List<SpeciesGroupMapping> result = new ArrayList<SpeciesGroupMapping>();
+		List<SpeciesGroupMapping> result = new ArrayList<>();
 		try {
 			Query<SpeciesGroupMapping> query = session.createQuery(qry);
 			query.setParameter("sGroup", sGroup);
@@ -70,7 +70,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 	public Set<String> getTaxonIds(Long speciesGroupId) {
 		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();
-		List<SpeciesGroupMapping> speciesGroupMappings = new ArrayList<SpeciesGroupMapping>();
+		List<SpeciesGroupMapping> speciesGroupMappings = new ArrayList<>();
 		try {
 			Query<SpeciesGroupMapping> query = session.createQuery(qry, SpeciesGroupMapping.class);
 			query.setParameter("sGroup", speciesGroupId);
@@ -80,7 +80,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 		} finally {
 			session.close();
 		}
-		Set<String> result = new HashSet<String>();
+		Set<String> result = new HashSet<>();
 		for(SpeciesGroupMapping s : speciesGroupMappings) {
 			result.add(s.getTaxonConceptId().toString());
 		}

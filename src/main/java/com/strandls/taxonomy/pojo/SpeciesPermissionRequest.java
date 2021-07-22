@@ -3,6 +3,8 @@
  */
 package com.strandls.taxonomy.pojo;
 
+import java.util.Objects;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -84,6 +86,11 @@ public class SpeciesPermissionRequest {
 
 	public void setRole(String role) {
 		this.role = role;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, role, taxonConceptId, userId);
 	}
 
 	@Override

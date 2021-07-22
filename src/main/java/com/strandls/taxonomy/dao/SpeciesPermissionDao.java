@@ -25,6 +25,7 @@ import com.strandls.taxonomy.util.AbstractDAO;
 public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(SpeciesPermissionDao.class);
+	private static final String USER_ID = "userId";
 
 	/**
 	 * @param sessionFactory
@@ -53,10 +54,10 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
 		String qry = "from SpeciesPermission where authorId = :userId";
 		Session session = sessionFactory.openSession();
-		List<SpeciesPermission> allowedTaxonList = new ArrayList<SpeciesPermission>();
+		List<SpeciesPermission> allowedTaxonList = new ArrayList<>();
 		try {
 			Query<SpeciesPermission> query = session.createQuery(qry);
-			query.setParameter("userId", userId);
+			query.setParameter(USER_ID, userId);
 			allowedTaxonList = query.getResultList();
 
 		} catch (Exception e) {
@@ -75,7 +76,7 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 		SpeciesPermission result = null;
 		try {
 			Query<SpeciesPermission> query = session.createQuery(qry);
-			query.setParameter("userId", userId);
+			query.setParameter(USER_ID, userId);
 			query.setParameter("taxonId", taxonId);
 			result = query.getSingleResult();
 		} catch (Exception e) {
@@ -93,7 +94,7 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 		Boolean result = false;
 		try {
 			Query<SpeciesPermission> query = session.createQuery(qry);
-			query.setParameter("userId", userId);
+			query.setParameter(USER_ID, userId);
 			query.setParameter("taxonId", taxonId);
 			query.setParameter("role", role.getValue());
 			SpeciesPermission dataRow = null;

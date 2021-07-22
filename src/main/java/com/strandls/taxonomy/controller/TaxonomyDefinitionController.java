@@ -37,8 +37,10 @@ import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
+import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
@@ -81,6 +83,24 @@ public class TaxonomyDefinitionController {
 			Long id = Long.parseLong(taxonomyConceptId);
 			TaxonomyDefinition taxonomy = taxonomyService.fetchById(id);
 			return Response.status(Status.OK).entity(taxonomy).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+	
+	@GET
+	@Path("/show/{taxonId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Find Taxonomy Details by ID", notes = "Returns Taxonomy details", response = TaxonomyDefinitionShow.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy not found", response = String.class) })
+
+	public Response getTaxonomyDetails(@PathParam("taxonId") String taxonId) {
+		try {
+			Long id = Long.parseLong(taxonId);
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.getTaxonomyDetails(id);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
@@ -237,14 +257,14 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the name. input name should be scientific name", response = TaxonomyDefinitionShow.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
 	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
 			@QueryParam("taxonName") String taxonName) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateName(taxonId, taxonName);
-			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateName(taxonId, taxonName);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -257,14 +277,34 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the status. Status should be either accepted or synonym", response = TaxonomyDefinition.class)
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the status. Status should be either accepted or synonym", response = TaxonomyDefinitionShow.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
 	public Response updateStatus(@Context HttpServletRequest request,
 			@ApiParam("status") TaxonomyStatusUpdate taxonomyStatusUpdate) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateStatus(request, taxonomyStatusUpdate);
-			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateStatus(request, taxonomyStatusUpdate);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@PUT
+	@Path("position")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "Update the position of taxonomy", notes = "Update the position. Position should be raw or working", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to update the position of taxonomy definition", response = String.class) })
+	public Response updatePosition(@Context HttpServletRequest request,
+			@ApiParam("status") TaxonomyPositionUpdate taxonomyPositionUpdate) {
+		try {
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updatePosition(request, taxonomyPositionUpdate);
+			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -330,7 +370,7 @@ public class TaxonomyDefinitionController {
 	public Response updateElastic(@Context HttpServletRequest request, @QueryParam("taxonIds") String taxonIdsString) {
 		try {
 			if (TaxonomyUtil.isAdmin(request)) {
-				List<Long> taxonIds = Arrays.asList(taxonIdsString.split(",")).stream().map(x -> Long.parseLong(x))
+				List<Long> taxonIds = Arrays.asList(taxonIdsString.split(",")).stream().map(Long::parseLong)
 						.collect(Collectors.toList());
 				List<MapQueryResponse> mapQueryResponses = taxonomyESOperation.pushToElastic(taxonIds);
 				return Response.status(Status.OK).entity(mapQueryResponses).build();
