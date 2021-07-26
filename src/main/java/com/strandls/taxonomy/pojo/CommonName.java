@@ -32,7 +32,7 @@ public class CommonName {
 	private Date uploadTime;
 	private Long uploaderId;
 	private String transliteration;
-	private boolean isPreffered;
+	private Boolean isPreffered;
 	private String viaDatasource;
 	private Boolean isDeleted;
 	private Language language;
@@ -54,7 +54,7 @@ public class CommonName {
 	 * @param isDeleted
 	 */
 	public CommonName(Long id, Long languageId, String name, Long taxonConceptId, Date uploadTime, Long uploaderId,
-			String transliteration, boolean isPreffered, String viaDatasource, Boolean isDeleted) {
+			String transliteration, Boolean isPreffered, String viaDatasource, Boolean isDeleted) {
 		super();
 		this.id = id;
 		this.languageId = languageId;
@@ -135,11 +135,11 @@ public class CommonName {
 	}
 
 	@Column(name = "is_preffered")
-	public boolean isPreffered() {
+	public Boolean getIsPreffered() {
 		return isPreffered;
 	}
 
-	public void setPreffered(boolean isPreffered) {
+	public void setIsPreffered(Boolean isPreffered) {
 		this.isPreffered = isPreffered;
 	}
 
