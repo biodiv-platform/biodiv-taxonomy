@@ -64,7 +64,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	public CommonName getPrefferedCommonName(Long taxonId) {
 		List<CommonName> commonNames = fetchByTaxonId(taxonId);
 		for (CommonName commonName : commonNames) {
-			if (commonName.isPreffered())
+			if (commonName.getIsPreffered())
 				return commonName;
 		}
 		return null;
@@ -77,10 +77,10 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 		List<CommonName> commonNames = fetchByTaxonId(taxonConceptId);
 		for (CommonName c : commonNames) {
-			c.setPreffered(false);
+			c.setIsPreffered(false);
 			update(c);
 		}
-		commonName.setPreffered(true);
+		commonName.setIsPreffered(true);
 		return update(commonName);
 	}
 
