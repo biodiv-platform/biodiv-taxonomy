@@ -34,7 +34,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 	@Inject
 	private LogActivities logActivity;
-	
+
 	@Inject
 	private TaxonomyESOperation taxonomyESOperation;
 
@@ -64,7 +64,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	public CommonName getPrefferedCommonName(Long taxonId) {
 		List<CommonName> commonNames = fetchByTaxonId(taxonId);
 		for (CommonName commonName : commonNames) {
-			if (commonName.getIsPreffered())
+			if (commonName.getIsPreffered() != null && commonName.getIsPreffered())
 				return commonName;
 		}
 		return null;
@@ -180,12 +180,12 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					commonName.getId(), "Deleted common name", null);
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonName.getTaxonConceptId());
-			
-			// Push to elastic 
+
+			// Push to elastic
 			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(commonName.getTaxonConceptId());
 			taxonomyESOperation.pushToElastic(taxonIds);
-			
+
 			return result;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
