@@ -87,7 +87,7 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@GET
 	@Path("/show/{taxonId}")
 	@Consumes(MediaType.TEXT_PLAIN)
@@ -290,7 +290,7 @@ public class TaxonomyDefinitionController {
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
-	
+
 	@PUT
 	@Path("position")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -303,7 +303,8 @@ public class TaxonomyDefinitionController {
 	public Response updatePosition(@Context HttpServletRequest request,
 			@ApiParam("status") TaxonomyPositionUpdate taxonomyPositionUpdate) {
 		try {
-			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updatePosition(request, taxonomyPositionUpdate);
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updatePosition(request,
+					taxonomyPositionUpdate);
 			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
@@ -312,7 +313,7 @@ public class TaxonomyDefinitionController {
 	}
 
 	@POST
-	@Path(ApiConstants.UPDATE + ApiConstants.SYNONYM + "/{speciesId}/{taxonId}")
+	@Path(ApiConstants.UPDATE + ApiConstants.SYNONYM + "/{taxonId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -321,10 +322,12 @@ public class TaxonomyDefinitionController {
 	@ApiOperation(value = "update and add synonyms", notes = "return synonyms based on taxonomyId", response = TaxonomyDefinition.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to add the names", response = String.class) })
 
-	public Response updateAddSynonym(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
+	public Response updateAddSynonym(@Context HttpServletRequest request, @QueryParam("speciesId") String speciesId,
 			@PathParam("taxonId") String taxonId, @ApiParam(name = "synonymData") SynonymData synonymData) {
 		try {
-			Long sId = Long.parseLong(speciesId);
+			Long sId = null;
+			if (speciesId != null)
+				sId = Long.parseLong(speciesId);
 			Long tId = Long.parseLong(taxonId);
 			List<TaxonomyDefinition> result = taxonomyService.updateAddSynonym(request, sId, tId, synonymData);
 			return Response.status(Status.OK).entity(result).build();
@@ -334,7 +337,7 @@ public class TaxonomyDefinitionController {
 	}
 
 	@DELETE
-	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM + "/{speciesId}/{taxonId}/{synonymId}")
+	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM + "/{taxonId}/{synonymId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -343,10 +346,12 @@ public class TaxonomyDefinitionController {
 	@ApiOperation(value = "delete synonyms", notes = "return list of avaible synonyms", response = TaxonomyDefinition.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
 
-	public Response removeSynonyms(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
+	public Response removeSynonyms(@Context HttpServletRequest request, @QueryParam("speciesId") String speciesId,
 			@PathParam("taxonId") String taxonId, @PathParam("synonymId") String synonymId) {
 		try {
-			Long sId = Long.parseLong(speciesId);
+			Long sId = null;
+			if (speciesId != null)
+				sId = Long.parseLong(speciesId);
 			Long tId = Long.parseLong(taxonId);
 			Long synonId = Long.parseLong(synonymId);
 			List<TaxonomyDefinition> result = taxonomyService.deleteSynonym(request, sId, tId, synonId);
