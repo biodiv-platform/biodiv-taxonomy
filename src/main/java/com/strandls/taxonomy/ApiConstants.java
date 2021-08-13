@@ -8,8 +8,9 @@ package com.strandls.taxonomy;
  *
  */
 public class ApiConstants {
-	
-	private ApiConstants() {}
+
+	private ApiConstants() {
+	}
 
 	public static final String V1 = "/v1";
 	public static final String TAXONOMY = "/taxonomy";
@@ -34,5 +35,7 @@ public class ApiConstants {
 	public static final String GRANT = "/grant";
 	public static final String ELASTIC = "/elastic";
 	public static final String REINDEX = "/reindex";
+	public static final String COMMENT = "/comment";
+	public static final String ADD = "/add";
 
 }

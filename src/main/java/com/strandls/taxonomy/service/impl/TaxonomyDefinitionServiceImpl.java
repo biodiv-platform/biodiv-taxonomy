@@ -30,7 +30,11 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
+import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.pojo.Activity;
+import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
+import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
@@ -110,6 +114,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private TaxonomyPermisisonService permissionService;
+
+	@Inject
+	private ActivitySerivceApi activityService;
+
+	@Inject
+	private Headers headers;
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionServiceImpl.class);
 
@@ -697,9 +707,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				activityType = "Updated synonym";
 			}
 
-			if (speciesId != null)
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+			if (speciesId != null) {
+				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
 						"species", synonymId, activityType, null);
+			} else {
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", synonymId, activityType);
+			}
 
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
@@ -717,15 +731,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				return null;
 			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 			acceptedSynonymDao.delete(acceptedSynonym);
-			TaxonomyDefinition taxnomyDefinition = taxonomyDao.findById(synonymId);
-			taxnomyDefinition.setIsDeleted(true);
-			taxonomyDao.update(taxnomyDefinition);
+			TaxonomyDefinition synonym = taxonomyDao.findById(synonymId);
+			synonym.setIsDeleted(true);
+			taxonomyDao.update(synonym);
 
-			String desc = "Deleted synonym : " + taxnomyDefinition.getName();
+			String desc = "Deleted synonym : " + synonym.getName();
 
-			if (speciesId != null)
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
-						"species", taxnomyDefinition.getId(), "Deleted synonym", null);
+			if (speciesId != null) {
+				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", synonym.getId(), "Deleted synonym", null);
+			} else {
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", synonym.getId(), "Deleted synonym");
+			}
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -963,5 +981,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		// Get the result based on query
 		return taxonomyDao.getTaxonomyNameList(taxonId, classificationId, rankList, statusList, positionList, limit,
 				offset);
+	}
+
+	@Override
+	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData) {
+		try {
+			activityService = headers.addActivityHeader(activityService, request.getHeader(HttpHeaders.AUTHORIZATION));
+			Activity result = activityService.addComment("taxonomy", loggingData);
+			return result;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
 	}
 }
