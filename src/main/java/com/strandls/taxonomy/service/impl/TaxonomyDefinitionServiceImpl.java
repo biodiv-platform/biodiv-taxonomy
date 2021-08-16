@@ -134,25 +134,28 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (TaxonomyStatus.ACCEPTED.name().equals(taxonomyDefinition.getStatus())) {
 			List<AcceptedSynonym> accecptedSynonyms = acceptedSynonymDao.findByAccepetdId(id);
 
-			List<BreadCrumb> synonyms = new ArrayList<>();
+			List<TaxonomyDefinition> synonyms = new ArrayList<>();
 			for (AcceptedSynonym acceptedSynonym : accecptedSynonyms) {
 				TaxonomyDefinition synonym = taxonomyDao.findById(acceptedSynonym.getSynonymId());
-				synonyms.add(new BreadCrumb(synonym.getId(), synonym.getNormalizedForm(), synonym.getRank()));
+				synonyms.add(synonym);
 			}
 
 			taxonomyDefinitionShow.setSynonymNames(synonyms);
 		} else {
 			List<AcceptedSynonym> accecptedSynonyms = acceptedSynonymDao.findBySynonymId(id);
 
-			List<BreadCrumb> acceptedNames = new ArrayList<>();
+			List<TaxonomyDefinition> acceptedNames = new ArrayList<>();
 			for (AcceptedSynonym acceptedSynonym : accecptedSynonyms) {
 				TaxonomyDefinition acceptedName = taxonomyDao.findById(acceptedSynonym.getAcceptedId());
-				acceptedNames.add(
-						new BreadCrumb(acceptedName.getId(), acceptedName.getNormalizedForm(), acceptedName.getRank()));
+				acceptedNames.add(acceptedName);
 			}
 
 			taxonomyDefinitionShow.setAcceptedNames(acceptedNames);
 		}
+		
+		List<CommonName> commonNames = commonNameSerivce.fetchCommonNameWithLangByTaxonId(id);
+		
+		taxonomyDefinitionShow.setCommonNames(commonNames);
 
 		return taxonomyDefinitionShow;
 	}
