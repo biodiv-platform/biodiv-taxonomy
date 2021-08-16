@@ -56,6 +56,7 @@ import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.CommonNameSerivce;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
+import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.service.TaxonomyRegistryService;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
@@ -106,6 +107,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private LogActivities logActivity;
+
+	@Inject
+	private TaxonomyPermisisonService permissionService;
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionServiceImpl.class);
 
@@ -620,6 +624,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			SynonymData synonymData) {
 
 		try {
+
+			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
+			if (!isContributor)
+				return null;
+
 			ParsedName parsedName = utilityServiceApi.getNameParsed(synonymData.getName());
 			String synonymRank = TaxonomyUtil.getRankForSynonym(parsedName, synonymData.getRank());
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
@@ -691,8 +700,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				activityType = "Updated synonym";
 			}
 
-			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
-					synonymId, activityType, null);
+			if (speciesId != null)
+				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", synonymId, activityType, null);
 
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
@@ -705,6 +715,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public List<TaxonomyDefinition> deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
 			Long synonymId) {
 		try {
+			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
+			if (!isContributor)
+				return null;
 			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 			acceptedSynonymDao.delete(acceptedSynonym);
 			TaxonomyDefinition taxnomyDefinition = taxonomyDao.findById(synonymId);
@@ -713,8 +726,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			String desc = "Deleted synonym : " + taxnomyDefinition.getName();
 
-			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
-					taxnomyDefinition.getId(), "Deleted synonym", null);
+			if (speciesId != null)
+				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", taxnomyDefinition.getId(), "Deleted synonym", null);
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());

@@ -15,11 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.authentication_utility.util.AuthUtil;
-import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.CommonNamesData;
 import com.strandls.taxonomy.service.CommonNameSerivce;
+import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.util.AbstractService;
 import com.strandls.utility.controller.LanguageServiceApi;
 import com.strandls.utility.pojo.Language;
@@ -37,6 +37,9 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 	@Inject
 	private TaxonomyESOperation taxonomyESOperation;
+
+	@Inject
+	private TaxonomyPermisisonService permissionService;
 
 	@Inject
 	public CommonNameServiceImpl(CommonNameDao dao) {
@@ -128,22 +131,27 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			CommonNamesData commonNamesData) {
 
 		try {
+			Boolean isContributor = permissionService.checkIsContributor(request, commonNamesData.getTaxonConceptId());
+			if (!isContributor)
+				return null;
+
+			String desc = "";
+			String activityType = "";
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+			CommonName commonName = null;
 			Long uploaderId = Long.parseLong(profile.getId());
 			if (commonNamesData.getName() == null || commonNamesData.getTaxonConceptId() == null)
 				return new ArrayList<>();
 			if (commonNamesData.getId() == null) {
-				CommonName commonNames = new CommonName(null, commonNamesData.getLanguageId(),
-						commonNamesData.getName(), commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null,
-						false, null, false);
+				commonName = new CommonName(null, commonNamesData.getLanguageId(), commonNamesData.getName(),
+						commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null, false, null, false);
 
-				commonNames = commonNameDao.save(commonNames);
-				String desc = "Added common name : " + commonNames.getName();
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
-						ApiConstants.SPECIES, commonNames.getId(), "Added common name", null);
+				commonName = commonNameDao.save(commonName);
+				desc = "Added common name : " + commonName.getName();
+				activityType = "Added common name";
 
 			} else {
-				CommonName commonName = commonNameDao.findById(commonNamesData.getId());
+				commonName = commonNameDao.findById(commonNamesData.getId());
 				if (!commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
 					return new ArrayList<>();
 				commonName.setName(commonNamesData.getName());
@@ -151,11 +159,15 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 					commonName.setLanguageId(commonNamesData.getLanguageId());
 
 				commonName = commonNameDao.update(commonName);
-				String desc = "Updated common name : " + commonName.getName();
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
-						"species", commonName.getId(), "Updated common name", null);
+				desc = "Updated common name : " + commonName.getName();
+				activityType = "Updated common name";
 
 			}
+			if (speciesId != null) {
+				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", commonName.getId(), activityType, null);
+			}
+
 			Long taxonId = commonNamesData.getTaxonConceptId();
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(taxonId);
 			List<Long> taxonIds = new ArrayList<>();
@@ -173,12 +185,18 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	@Override
 	public List<CommonName> removeCommonName(HttpServletRequest request, Long speciesId, Long commonNameId) {
 		try {
+
 			CommonName commonName = commonNameDao.findById(commonNameId);
+			Boolean isContributor = permissionService.checkIsContributor(request, commonName.getTaxonConceptId());
+			if (!isContributor)
+				return null;
+
 			commonName = commonNameDao.delete(commonName);
 
 			String desc = "Deleted common name : " + commonName.getName();
-			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
-					commonName.getId(), "Deleted common name", null);
+			if (speciesId != null)
+				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", commonName.getId(), "Deleted common name", null);
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonName.getTaxonConceptId());
 
 			// Push to elastic

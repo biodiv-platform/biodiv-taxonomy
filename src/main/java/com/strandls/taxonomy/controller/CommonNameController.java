@@ -131,7 +131,7 @@ public class CommonNameController {
 	}
 
 	@PUT
-	@Path(ApiConstants.UPDATE + ApiConstants.COMMONNAME + "/{speciesId}")
+	@Path(ApiConstants.UPDATE + ApiConstants.COMMONNAME)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -141,10 +141,12 @@ public class CommonNameController {
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to update the commonName", response = String.class) })
 
-	public Response updateAddCommonNames(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
+	public Response updateAddCommonNames(@Context HttpServletRequest request, @QueryParam("speciesId") String speciesId,
 			@ApiParam(name = "commonNameData") CommonNamesData commonNamesData) {
 		try {
-			Long sId = Long.parseLong(speciesId);
+			Long sId = null;
+			if (speciesId != null)
+				sId = Long.parseLong(speciesId);
 			List<CommonName> result = commonNameService.updateAddCommonName(request, sId, commonNamesData);
 			return Response.status(Status.OK).entity(result).build();
 
@@ -154,7 +156,7 @@ public class CommonNameController {
 	}
 
 	@DELETE
-	@Path(ApiConstants.REMOVE + ApiConstants.COMMONNAME + "/{speciesId}/{commonNameId}")
+	@Path(ApiConstants.REMOVE + ApiConstants.COMMONNAME + "/{commonNameId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -164,11 +166,13 @@ public class CommonNameController {
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to remove the commonName", response = String.class) })
 
-	public Response removeCommonName(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
+	public Response removeCommonName(@Context HttpServletRequest request, @QueryParam("speciesId") String speciesId,
 			@ApiParam(name = "commonNameId") @PathParam("commonNameId") String commonNameId) {
 		try {
 			Long cnId = Long.parseLong(commonNameId);
-			Long sId = Long.parseLong(speciesId);
+			Long sId = null;
+			if (speciesId != null)
+				sId = Long.parseLong(speciesId);
 			List<CommonName> result = commonNameService.removeCommonName(request, sId, cnId);
 			return Response.status(Status.OK).entity(result).build();
 

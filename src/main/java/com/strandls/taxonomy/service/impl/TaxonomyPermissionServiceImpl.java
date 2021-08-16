@@ -217,4 +217,24 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 
 		return false;
 	}
+
+	@Override
+	public Boolean checkIsContributor(HttpServletRequest request, Long taxonomyId) {
+		try {
+			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+			JSONArray userRole = (JSONArray) profile.getAttribute("roles");
+			Boolean isContributor = false;
+			if (userRole.contains("ROLE_ADMIN")) {
+				isContributor = true;
+			} else {
+
+				isContributor = getPermissionOnTree(request, taxonomyId);
+			}
+			return isContributor;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return false;
+
+	}
 }
