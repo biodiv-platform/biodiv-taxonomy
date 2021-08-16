@@ -2,26 +2,19 @@ package com.strandls.taxonomy.pojo.response;
 
 import java.util.List;
 
+import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 
 public class TaxonomyDefinitionShow {
 
 	private TaxonomyDefinition taxonomyDefinition;
 	private List<BreadCrumb> hierarchy;
-	private List<BreadCrumb> acceptedNames;
-	private List<BreadCrumb> synonymNames;
+	private List<TaxonomyDefinition> acceptedNames;
+	private List<TaxonomyDefinition> synonymNames;
+	private List<CommonName> commonNames;
 
 	public TaxonomyDefinitionShow() {
 		super();
-	}
-
-	public TaxonomyDefinitionShow(TaxonomyDefinition taxonomyDefinition, List<BreadCrumb> hierarchy,
-			List<BreadCrumb> acceptedNames, List<BreadCrumb> synonymNames) {
-		super();
-		this.taxonomyDefinition = taxonomyDefinition;
-		this.hierarchy = hierarchy;
-		this.acceptedNames = acceptedNames;
-		this.synonymNames = synonymNames;
 	}
 
 	public TaxonomyDefinition getTaxonomyDefinition() {
@@ -40,20 +33,28 @@ public class TaxonomyDefinitionShow {
 		this.hierarchy = hierarchy;
 	}
 
-	public List<BreadCrumb> getAcceptedNames() {
+	public List<TaxonomyDefinition> getAcceptedNames() {
 		return acceptedNames;
 	}
 
-	public void setAcceptedNames(List<BreadCrumb> acceptedNames) {
+	public void setAcceptedNames(List<TaxonomyDefinition> acceptedNames) {
 		this.acceptedNames = acceptedNames;
 	}
 
-	public List<BreadCrumb> getSynonymNames() {
+	public List<TaxonomyDefinition> getSynonymNames() {
 		return synonymNames;
 	}
 
-	public void setSynonymNames(List<BreadCrumb> synonymNames) {
+	public void setSynonymNames(List<TaxonomyDefinition> synonymNames) {
 		this.synonymNames = synonymNames;
+	}
+
+	public List<CommonName> getCommonNames() {
+		return commonNames;
+	}
+
+	public void setCommonNames(List<CommonName> commonNames) {
+		this.commonNames = commonNames;
 	}
 
 }
