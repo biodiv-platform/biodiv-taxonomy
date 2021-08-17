@@ -265,7 +265,7 @@ public class TaxonomyDefinitionController {
 	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
 			@QueryParam("taxonName") String taxonName) {
 		try {
-			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateName(taxonId, taxonName);
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateName(request, taxonId, taxonName);
 			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(

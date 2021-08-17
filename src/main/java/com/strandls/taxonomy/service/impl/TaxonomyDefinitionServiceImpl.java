@@ -201,6 +201,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (td.getRank().equalsIgnoreCase(taxonomySave.getRank())
 					&& td.getStatus().equalsIgnoreCase(taxonomySave.getStatus().name()))
 				taxonomyDefinition = td;
+
 		}
 
 		taxonomyESUpdate.pushToElastic(taxonIds);
@@ -311,6 +312,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rankName, status, position, source,
 					sourceId, userId);
 			taxonomyDefinitions.add(taxonomyDefinition);
+
+//			taxonomy Creation activity
+			String desc = "Taxon created : " + taxonomyDefinition.getName();
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon created");
 
 			// If the status is accepted add node to registry
 			if (status.equals(TaxonomyStatus.ACCEPTED)) {
@@ -799,7 +806,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public TaxonomyDefinitionShow updateName(Long taxonId, String taxonName) throws ApiException {
+	public TaxonomyDefinitionShow updateName(HttpServletRequest request,Long taxonId, String taxonName) throws ApiException {
 		TaxonomyDefinition taxonomyDefinition;
 		try {
 			taxonomyDefinition = findById(taxonId);
@@ -824,6 +831,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setAuthorYear(authorShip);
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
+
+		String desc = "Taxon name updated : " + taxonomyDefinition.getName();
+
+		logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+				taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+				"Taxon name updated");
 
 		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
 
@@ -857,6 +870,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			return getTaxonomyDetails(taxonId);
 		}
 
+		String desc = "";
 		switch (taxonomyStatus) {
 		// Status is changing from synonym to accepted.
 		case ACCEPTED:
@@ -891,6 +905,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the status
 			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());
 			taxonomyDefinition = update(taxonomyDefinition);
+
+//			adding desc for activity
+			desc = "Taxon status updated : " + TaxonomyStatus.SYNONYM.name() + "-->" + TaxonomyStatus.ACCEPTED.name();
 
 			// Update the elastic for all the accepted name it was associated and the node
 			List<Long> taxonIds = new ArrayList<>();
@@ -928,12 +945,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the status for given taxon node.
 			taxonomyDefinition = update(taxonomyDefinition);
 
+//			activity description
+			desc = "Taxon status updated : " + TaxonomyStatus.ACCEPTED.name() + "-->" + TaxonomyStatus.SYNONYM.name();
+
 			// Update elastic search for the taxon
 			taxonomyESUpdate.pushToElastic(taxonIds);
 
 			break;
 
 		default:
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon status updated");
 			break;
 		}
 
@@ -957,6 +980,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (!position.name().equals(taxonomyDefinition.getPosition())) {
 			taxonomyDefinition.setPosition(position.name());
 			update(taxonomyDefinition);
+
+			String desc = "Taxon position updated  : " + taxonomyDefinition.getPosition() + "-->" + position.name();
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon position updated");
 		}
 
 		return getTaxonomyDetails(taxonomyDefinition.getId());

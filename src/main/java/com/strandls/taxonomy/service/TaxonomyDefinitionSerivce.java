@@ -57,7 +57,7 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 
-	public TaxonomyDefinitionShow updateName(Long taxonId, String taxonName) throws ApiException;
+	public TaxonomyDefinitionShow updateName(HttpServletRequest request,Long taxonId, String taxonName) throws ApiException;
 
 	public TaxonomyDefinitionShow updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
 			throws ApiException, TaxonCreationException;
