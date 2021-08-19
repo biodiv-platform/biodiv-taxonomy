@@ -1,6 +1,7 @@
 package com.strandls.taxonomy.util;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.pac4j.core.profile.CommonProfile;
 
 import com.strandls.authentication_utility.util.AuthUtil;
+import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.utility.pojo.ParsedName;
@@ -63,7 +65,7 @@ public class TaxonomyUtil {
 
 		return highestRankName;
 	}
-	
+
 	public static boolean validateHierarchy(List<Rank> ranks, Set<String> rankNames) {
 
 		Double highestRank = TaxonomyUtil.getHighestInputRank(ranks, rankNames);
@@ -142,6 +144,17 @@ public class TaxonomyUtil {
 		italicisedForm = italicisedForm.trim();
 
 		return italicisedForm;
+	}
+
+	public static Map<TreeRoles, Long> getRoleIdMap() {
+		Map<TreeRoles, Long> roleMap = new EnumMap<TreeRoles, Long>(TreeRoles.class);
+		roleMap.put(TreeRoles.OBSERVATIONCURATOR,
+				Long.parseLong(PropertyFileUtil.fetchProperty("config.properties", "OBSERVATIONCURATOR")));
+		roleMap.put(TreeRoles.SPECIESCONTRIBUTOR,
+				Long.parseLong(PropertyFileUtil.fetchProperty("config.properties", "SPECIESCONTRIBUTOR")));
+		roleMap.put(TreeRoles.TAXONOMYCONTRIBUTOR,
+				Long.parseLong(PropertyFileUtil.fetchProperty("config.properties", "TAXONOMYCONTRIBUTOR")));
+		return roleMap;
 	}
 
 	public static boolean isAdmin(HttpServletRequest request) {

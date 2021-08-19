@@ -3,8 +3,10 @@
  */
 package com.strandls.taxonomy.service.impl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -29,6 +31,7 @@ import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.service.TaxonomyRegistryService;
 import com.strandls.taxonomy.util.EncryptionUtils;
 import com.strandls.taxonomy.util.MailUtils;
+import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.user.controller.UserServiceApi;
 import com.strandls.user.pojo.User;
 
@@ -67,13 +70,19 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 	@Inject
 	private UserServiceApi userService;
 
+	private Map<TreeRoles, Long> roleIdMap = TaxonomyUtil.getRoleIdMap();
+
 	@Override
 	public Boolean getPermissionOnTree(HttpServletRequest request, Long taxonId) {
 		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 		Long userId = Long.parseLong(profile.getId());
 		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonId);
 		Boolean permission = false;
+		List<TreeRoles> roles = new ArrayList<TreeRoles>();
+		roles.add(TreeRoles.SPECIESCONTRIBUTOR);
+		roles.add(TreeRoles.TAXONOMYCONTRIBUTOR);
 		for (BreadCrumb crumb : breadcrumbs) {
+
 			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.SPECIESCONTRIBUTOR);
 			if (permission.booleanValue())
 				break;
@@ -106,10 +115,10 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			if (hasPermission == null) {
 //			no previous permission, create a new permission
 				SpeciesPermission speciesPermission = new SpeciesPermission(null, 0L, permissionData.getUserId(),
-						new Date(), role.getValue(), permissionData.getTaxonId());
+						new Date(), roleIdMap.get(role), permissionData.getTaxonId());
 				speciesPermissionDao.save(speciesPermission);
 			} else {
-				hasPermission.setPermissionType(role.getValue());
+				hasPermission.setPermissionType(roleIdMap.get(role));
 				speciesPermissionDao.update(hasPermission);
 
 			}
@@ -187,14 +196,17 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 					SpeciesPermission alreadyExist = speciesPermissionDao.findPermissionOntaxon(
 							permissionReqOriginal.getUserId(), permissionReqOriginal.getTaxonConceptId());
 					if (alreadyExist == null) {
+						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole());
 						SpeciesPermission permission = new SpeciesPermission(null, 0L,
-								permissionReqOriginal.getUserId(), new Date(), permissionReqOriginal.getRole(),
+								permissionReqOriginal.getUserId(), new Date(), roleIdMap.get(role),
 								permissionReqOriginal.getTaxonConceptId());
 						speciesPermissionDao.save(permission);
 
 					} else {
-						if (!alreadyExist.getPermissionType().equalsIgnoreCase(permissionReqOriginal.getRole())) {
-							alreadyExist.setPermissionType(permissionReqOriginal.getRole());
+						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole());
+
+						if (!alreadyExist.getPermissionType().equals(roleIdMap.get(role))) {
+							alreadyExist.setPermissionType(roleIdMap.get(role));
 							speciesPermissionDao.update(alreadyExist);
 						}
 					}
