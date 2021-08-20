@@ -97,7 +97,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		JSONArray userRole = (JSONArray) profile.getAttribute("roles");
 		if (userRole.contains("ROLE_ADMIN")) {
 
-			TreeRoles role = TreeRoles.valueOf(permissionData.getRole());
+			TreeRoles role = TreeRoles.valueOf(permissionData.getRole().replace(" ", ""));
 
 			if (role == null)
 				return false;
@@ -132,7 +132,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 	public Boolean requestPermission(HttpServletRequest request, PermissionData permissionData) {
 		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 		Long userId = Long.parseLong(profile.getId());
-		TreeRoles role = TreeRoles.valueOf(permissionData.getRole());
+		TreeRoles role = TreeRoles.valueOf(permissionData.getRole().replace(" ", ""));
 		if (role == null)
 			return false;
 
@@ -196,14 +196,14 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 					SpeciesPermission alreadyExist = speciesPermissionDao.findPermissionOntaxon(
 							permissionReqOriginal.getUserId(), permissionReqOriginal.getTaxonConceptId());
 					if (alreadyExist == null) {
-						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole());
+						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole().replace(" ", ""));
 						SpeciesPermission permission = new SpeciesPermission(null, 0L,
 								permissionReqOriginal.getUserId(), new Date(), roleIdMap.get(role),
 								permissionReqOriginal.getTaxonConceptId());
 						speciesPermissionDao.save(permission);
 
 					} else {
-						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole());
+						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole().replace(" ", ""));
 
 						if (!alreadyExist.getPermissionType().equals(roleIdMap.get(role))) {
 							alreadyExist.setPermissionType(roleIdMap.get(role));
