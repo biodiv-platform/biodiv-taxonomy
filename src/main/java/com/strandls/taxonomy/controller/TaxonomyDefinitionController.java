@@ -29,6 +29,8 @@ import javax.ws.rs.core.Response.Status;
 
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
+import com.strandls.activity.pojo.Activity;
+import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.taxonomy.ApiConstants;
@@ -263,7 +265,7 @@ public class TaxonomyDefinitionController {
 	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
 			@QueryParam("taxonName") String taxonName) {
 		try {
-			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateName(taxonId, taxonName);
+			TaxonomyDefinitionShow taxonomyDefinitionShow = taxonomyService.updateName(request, taxonId, taxonName);
 			return Response.status(Status.OK).entity(taxonomyDefinitionShow).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
@@ -411,4 +413,25 @@ public class TaxonomyDefinitionController {
 					Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build());
 		}
 	}
+
+	@POST
+	@Path(ApiConstants.ADD + ApiConstants.COMMENT)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "log taxonomy Comment", notes = "Return the logged the comment", response = Activity.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to log comment", response = String.class) })
+
+	public Response addComment(@Context HttpServletRequest request,
+			@ApiParam(name = "loggingData") CommentLoggingData loggingData) {
+		try {
+			Activity result = taxonomyService.logComment(request, loggingData);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
 }

@@ -30,7 +30,11 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
+import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.pojo.Activity;
+import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
+import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
@@ -111,6 +115,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	@Inject
 	private TaxonomyPermisisonService permissionService;
 
+	@Inject
+	private ActivitySerivceApi activityService;
+
+	@Inject
+	private Headers headers;
+
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionServiceImpl.class);
 
 	static final Long UPLOADER_ID = 1L;
@@ -156,9 +166,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			taxonomyDefinitionShow.setAcceptedNames(acceptedNames);
 		}
-		
+
 		List<CommonName> commonNames = commonNameSerivce.fetchCommonNameWithLangByTaxonId(id);
-		
+
 		taxonomyDefinitionShow.setCommonNames(commonNames);
 
 		return taxonomyDefinitionShow;
@@ -191,6 +201,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (td.getRank().equalsIgnoreCase(taxonomySave.getRank())
 					&& td.getStatus().equalsIgnoreCase(taxonomySave.getStatus().name()))
 				taxonomyDefinition = td;
+
 		}
 
 		taxonomyESUpdate.pushToElastic(taxonIds);
@@ -301,6 +312,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rankName, status, position, source,
 					sourceId, userId);
 			taxonomyDefinitions.add(taxonomyDefinition);
+
+//			taxonomy Creation activity
+			String desc = "Taxon created : " + taxonomyDefinition.getName();
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon created");
 
 			// If the status is accepted add node to registry
 			if (status.equals(TaxonomyStatus.ACCEPTED)) {
@@ -700,9 +717,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				activityType = "Updated synonym";
 			}
 
-			if (speciesId != null)
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+			if (speciesId != null) {
+				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
 						"species", synonymId, activityType, null);
+			} else {
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", synonymId, activityType);
+			}
 
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
@@ -720,15 +741,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				return null;
 			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 			acceptedSynonymDao.delete(acceptedSynonym);
-			TaxonomyDefinition taxnomyDefinition = taxonomyDao.findById(synonymId);
-			taxnomyDefinition.setIsDeleted(true);
-			taxonomyDao.update(taxnomyDefinition);
+			TaxonomyDefinition synonym = taxonomyDao.findById(synonymId);
+			synonym.setIsDeleted(true);
+			taxonomyDao.update(synonym);
 
-			String desc = "Deleted synonym : " + taxnomyDefinition.getName();
+			String desc = "Deleted synonym : " + synonym.getName();
 
-			if (speciesId != null)
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
-						"species", taxnomyDefinition.getId(), "Deleted synonym", null);
+			if (speciesId != null) {
+				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", synonym.getId(), "Deleted synonym", null);
+			} else {
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", synonym.getId(), "Deleted synonym");
+			}
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -781,7 +806,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public TaxonomyDefinitionShow updateName(Long taxonId, String taxonName) throws ApiException {
+	public TaxonomyDefinitionShow updateName(HttpServletRequest request,Long taxonId, String taxonName) throws ApiException {
 		TaxonomyDefinition taxonomyDefinition;
 		try {
 			taxonomyDefinition = findById(taxonId);
@@ -806,6 +831,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setAuthorYear(authorShip);
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
+
+		String desc = "Taxon name updated : " + taxonomyDefinition.getName();
+
+		logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+				taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+				"Taxon name updated");
 
 		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
 
@@ -839,6 +870,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			return getTaxonomyDetails(taxonId);
 		}
 
+		String desc = "";
 		switch (taxonomyStatus) {
 		// Status is changing from synonym to accepted.
 		case ACCEPTED:
@@ -873,6 +905,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the status
 			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());
 			taxonomyDefinition = update(taxonomyDefinition);
+
+//			adding desc for activity
+			desc = "Taxon status updated : " + TaxonomyStatus.SYNONYM.name() + "-->" + TaxonomyStatus.ACCEPTED.name();
 
 			// Update the elastic for all the accepted name it was associated and the node
 			List<Long> taxonIds = new ArrayList<>();
@@ -910,12 +945,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the status for given taxon node.
 			taxonomyDefinition = update(taxonomyDefinition);
 
+//			activity description
+			desc = "Taxon status updated : " + TaxonomyStatus.ACCEPTED.name() + "-->" + TaxonomyStatus.SYNONYM.name();
+
 			// Update elastic search for the taxon
 			taxonomyESUpdate.pushToElastic(taxonIds);
 
 			break;
 
 		default:
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon status updated");
 			break;
 		}
 
@@ -939,6 +980,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (!position.name().equals(taxonomyDefinition.getPosition())) {
 			taxonomyDefinition.setPosition(position.name());
 			update(taxonomyDefinition);
+
+			String desc = "Taxon position updated  : " + taxonomyDefinition.getPosition() + "-->" + position.name();
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon position updated");
 		}
 
 		return getTaxonomyDetails(taxonomyDefinition.getId());
@@ -966,5 +1012,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		// Get the result based on query
 		return taxonomyDao.getTaxonomyNameList(taxonId, classificationId, rankList, statusList, positionList, limit,
 				offset);
+	}
+
+	@Override
+	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData) {
+		try {
+			activityService = headers.addActivityHeader(activityService, request.getHeader(HttpHeaders.AUTHORIZATION));
+			Activity result = activityService.addComment("taxonomy", loggingData);
+			return result;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
 	}
 }

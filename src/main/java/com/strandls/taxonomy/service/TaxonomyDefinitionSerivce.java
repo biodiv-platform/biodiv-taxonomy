@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
+import com.strandls.activity.pojo.Activity;
+import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
@@ -32,7 +34,7 @@ import com.strandls.utility.ApiException;
 public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition fetchById(Long id);
-	
+
 	public TaxonomyDefinitionShow getTaxonomyDetails(Long id);
 
 	public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
@@ -55,14 +57,17 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 
-	public TaxonomyDefinitionShow updateName(Long taxonId, String taxonName) throws ApiException;
+	public TaxonomyDefinitionShow updateName(HttpServletRequest request,Long taxonId, String taxonName) throws ApiException;
 
 	public TaxonomyDefinitionShow updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
 			throws ApiException, TaxonCreationException;
 
-	public TaxonomyDefinitionShow updatePosition(HttpServletRequest request, TaxonomyPositionUpdate taxonomyPositionUpdate);
+	public TaxonomyDefinitionShow updatePosition(HttpServletRequest request,
+			TaxonomyPositionUpdate taxonomyPositionUpdate);
 
 	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankList,
 			String statusList, String positionList, Integer limit, Integer offset) throws IOException;
+
+	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData);
 
 }

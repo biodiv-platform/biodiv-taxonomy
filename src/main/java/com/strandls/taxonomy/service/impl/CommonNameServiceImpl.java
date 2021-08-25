@@ -164,8 +164,12 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 			}
 			if (speciesId != null) {
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
 						"species", commonName.getId(), activityType, null);
+			} else {
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+						commonNamesData.getTaxonConceptId(), commonNamesData.getTaxonConceptId(), "taxonomy",
+						commonName.getId(), activityType);
 			}
 
 			Long taxonId = commonNamesData.getTaxonConceptId();
@@ -194,9 +198,15 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			commonName = commonNameDao.delete(commonName);
 
 			String desc = "Deleted common name : " + commonName.getName();
-			if (speciesId != null)
-				logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+			if (speciesId != null) {
+				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
 						"species", commonName.getId(), "Deleted common name", null);
+			} else {
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+						commonName.getTaxonConceptId(), commonName.getTaxonConceptId(), "taxonomy", commonName.getId(),
+						"Deleted common name");
+			}
+
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonName.getTaxonConceptId());
 
 			// Push to elastic
