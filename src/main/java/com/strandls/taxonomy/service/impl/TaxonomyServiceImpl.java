@@ -62,10 +62,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonym.getAcceptedId());
 		}
 
-		String paths[] = taxoRegistry.getPath().split("_");
 		List<BreadCrumb> breadCrumbs = new ArrayList<>();
-		List<Long> pathList = new ArrayList<Long>();
-		for (String path : paths)
+		List<Long> pathList = new ArrayList<>();
+		for (String path : taxoRegistry.getPath().split("_"))
 			pathList.add(Long.parseLong(path));
 		List<TaxonomyDefinition> breadCrumbLists = taxonomyDao.breadCrumbSearch(pathList);
 		for (TaxonomyDefinition td : breadCrumbLists) {
