@@ -168,7 +168,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 		try {
 			channel.getConnection().close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 
 		super.contextDestroyed(servletContextEvent);

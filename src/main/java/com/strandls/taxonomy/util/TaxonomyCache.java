@@ -6,6 +6,9 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
@@ -15,6 +18,8 @@ import com.strandls.utility.pojo.ParsedName;
 
 public class TaxonomyCache {
 
+	private final Logger logger = LoggerFactory.getLogger(TaxonomyCache.class);
+	
 	private List<Rank> ranks;
 
 	private Map<String, TaxonomyParsedNameCache> rankToCache;

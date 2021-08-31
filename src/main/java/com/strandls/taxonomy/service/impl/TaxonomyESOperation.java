@@ -64,7 +64,7 @@ public class TaxonomyESOperation {
 		try {
 			qryString = TaxonomyConfig.fetchFileAsString(SQL_FILE);
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 
 		int size = taxonIds.size();
@@ -125,9 +125,9 @@ public class TaxonomyESOperation {
 			return esServicesApi.bulkUpload(index, type, taxonomyJsonData);
 			
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			logger.error(e1.getMessage());
 		} catch (ApiException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		} finally {
 			session.close();
 		}

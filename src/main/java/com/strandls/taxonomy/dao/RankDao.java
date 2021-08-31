@@ -54,8 +54,7 @@ public class RankDao extends AbstractDAO<Rank, Long> {
 	}
 	
 	public List<Rank> getAllRank(boolean topToBottom) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t "
-				+ "where isDeleted = false order by rankValue" + (topToBottom? "":" desc");
+		String queryStr = "from Rank t where isDeleted = false order by rankValue" + (topToBottom? "":" desc");
 		try (Session session = sessionFactory.openSession()) {
 			Query<Rank> query = session.createQuery(queryStr, Rank.class);
 			try {
@@ -67,8 +66,7 @@ public class RankDao extends AbstractDAO<Rank, Long> {
 	}
 
 	public Rank findRankByName(String rankName) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t "
-				+ "where t.name = :value and isDeleted = false";
+		String queryStr = "from Rank t where t.name = :value and isDeleted = false";
 		try (Session session = sessionFactory.openSession()) {
 			Query<Rank> query = session.createQuery(queryStr, Rank.class);
 			query.setParameter("value", rankName);

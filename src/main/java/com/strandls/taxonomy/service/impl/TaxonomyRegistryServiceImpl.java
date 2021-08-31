@@ -61,9 +61,11 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 			if (acceptedSynonyms != null && !acceptedSynonyms.isEmpty())
 				taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonyms.get(0).getAcceptedId(), null);
 		}
+		if (taxoRegistry == null)
+			return new ArrayList<>();
 
 		String paths = taxoRegistry.getPath().replace(".", ",");
-		List<BreadCrumb> breadCrumbs = new ArrayList<BreadCrumb>();
+		List<BreadCrumb> breadCrumbs = new ArrayList<>();
 		List<TaxonomyDefinition> breadCrumbLists = taxonomyDefinitionDao.breadCrumbSearch(paths);
 		for (TaxonomyDefinition td : breadCrumbLists) {
 			BreadCrumb breadCrumb = new BreadCrumb(td.getId(), td.getNormalizedForm(), td.getRank());

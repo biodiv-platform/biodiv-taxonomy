@@ -64,7 +64,7 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 
 	public List<CommonName> getCommonName(Long languageId, Long taxonConceptId, String commonNameString) {
 		try (Session session = sessionFactory.openSession()) {
-			String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where "
+			String queryStr = "" + "from CommonName t where "
 					+ (languageId == null ? "languageId is NULL" : "languageId = :languageId")
 					+ " and taxonConceptId =:taxonConceptId and name =:name and isDeleted = false";
 			Query<CommonName> query = session.createQuery(queryStr, CommonName.class);

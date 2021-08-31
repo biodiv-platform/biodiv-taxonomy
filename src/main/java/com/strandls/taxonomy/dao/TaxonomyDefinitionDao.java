@@ -99,8 +99,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	}
 
 	public List<TaxonomyDefinition> findByCanonicalForm(String canonicalForm, String rankName) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t "
-				+ "where t.canonicalForm = :canonicalForm and t.rank = :rank and isDeleted = false";
+		String queryStr = "" + "from TaxonomyDefinition t where t.canonicalForm = :canonicalForm and t.rank = :rank and isDeleted = false";
 		try (Session session = sessionFactory.openSession()) {
 			Query<TaxonomyDefinition> query = session.createQuery(queryStr, TaxonomyDefinition.class);
 			query.setParameter("canonicalForm", canonicalForm);

@@ -13,7 +13,6 @@ public class PropertyFileUtil {
             properties.load(classLoader.getResourceAsStream(fileName));
         } catch (Exception e) {
         	properties = null;
-            e.printStackTrace();
         }
         return properties;
     }
