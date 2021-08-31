@@ -36,7 +36,12 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyRegistryDao.class);
 
-	private static Long CLASSIFICATION_ID;
+	private static final Long CLASSIFICATION_ID;
+	
+	private static final String CLASSIFICATION_ID_STRING = "classificationId";
+	
+	private static final String PARENT_CHECK = "parentCheck";
+	private static final String TAXON_ID = "taxonId";
 
 	static {
 		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
@@ -45,7 +50,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			properties.load(in);
 		} catch (IOException e) {
 		}
-		CLASSIFICATION_ID = Long.parseLong(properties.getProperty("classificationId"));
+		CLASSIFICATION_ID = Long.parseLong(properties.getProperty(CLASSIFICATION_ID_STRING));
 	}
 	
 	public static Long getDefaultClassificationId() {
@@ -88,7 +93,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		try {
 			Query<TaxonomyRegistry> query = session.createQuery(qry);
 			query.setParameter("taxonomyId", taxonomyId);
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			result = query.getSingleResult();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -139,7 +144,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		List<String> result = new ArrayList<>();
 		try {
 			NativeQuery query = session.createNativeQuery(queryString);
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			query.setParameterList("traitTaxonIds", traitTaxonIds);
 			query.setParameter("speciesGroupTaxons", speciesGroupTaxons);
 			result = query.getResultList();
@@ -181,7 +186,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
 					+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 " + " order by nlevel(tR.path), t.name";
 			query = session.createNativeQuery(queryString).setResultSetMapping("TaxonomyRelation");
-			query.setParameter("parentCheck", parentCheck);
+			query.setParameter(PARENT_CHECK, parentCheck);
 		}
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 		query.setParameter("classification_id", classificationId);
@@ -209,7 +214,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -228,9 +233,9 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ "classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
 					+ "on td.id = tr.taxon_definition_id order by tr.path";
 			Query query = session.createNativeQuery(sqlString);
-			query.setParameter("taxonId", taxonId);
+			query.setParameter(TAXON_ID, taxonId);
 			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			return getResultList(query, TaxonomyRegistryResponse.class);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -255,7 +260,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " where taxon_definition_id = :taxonId"
 					+ " and classification_id in (:classificationIds) order by classification_id desc";
 			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class);
-			query.setParameter("taxonId", taxonId);
+			query.setParameter(TAXON_ID, taxonId);
 			query.setParameter("classificationIds", classificationIds);
 			return query.getResultList();
 		} catch (Exception e) {
@@ -275,9 +280,9 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ "classification_id=:classificationId) and classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
 					+ "on td.id = tr.taxon_definition_id order by tr.path";
 			Query query = session.createNativeQuery(sqlString);
-			query.setParameter("taxonId", taxonId);
+			query.setParameter(TAXON_ID, taxonId);
 			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			return getResultList(query, TaxonomyRegistryResponse.class);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -306,7 +311,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	/**
@@ -355,7 +360,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " group by classification_id "
 					+ " order by case classification_id "
 						+ " when 821 then 1"
-						+ "	when 820 then 2"
+						+ " when 820 then 2"
 						+ "	when 819 then 3"
 						+ "	when 818 then 4"
 						+ "	when 817 then 5"
@@ -363,8 +368,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 						+ " else 7 end limit 1"
 					+ ")) order by classification_id desc";
 			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class);
-			query.setParameter("taxonId", taxonId);
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(TAXON_ID, taxonId);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -388,8 +393,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " where tr.path ~ lquery(:parentCheck) and tr.classification_id = :classificationId "
 					+ " order by r.rankvalue desc, nlevel(path) desc";
 			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class).setMaxResults(1);
-			query.setParameter("parentCheck", parentCheck);
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(PARENT_CHECK, parentCheck);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			return (TaxonomyRegistry) query.getSingleResult();
 		} catch (Exception e) {
 			return null;
@@ -411,8 +416,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ "on td.id = tr.taxon_definition_id "
 					+ "where td.id is not null";
 			Query<TaxonomyDefinition> query = session.createNativeQuery(sqlString, TaxonomyDefinition.class).setMaxResults(1);
-			query.setParameter("parentCheck", parentCheck);
-			query.setParameter("classificationId", classificationId);
+			query.setParameter(PARENT_CHECK, parentCheck);
+			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			List<TaxonomyDefinition> taxonList = query.getResultList();
 			if(taxonList.isEmpty())
 				return null;

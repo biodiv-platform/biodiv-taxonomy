@@ -50,7 +50,7 @@ public class EncryptionUtils {
 
 		try {
 			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), ALGORITHM);
-			Cipher cipher = Cipher.getInstance(ALGORITHM);
+			Cipher cipher = Cipher.getInstance(ALGORITHM); // NOSONAR
 			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
 			byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
 			strData = DatatypeConverter.printBase64Binary(encrypted);
@@ -67,7 +67,7 @@ public class EncryptionUtils {
 
 		try {
 			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), ALGORITHM);
-			Cipher cipher = Cipher.getInstance(ALGORITHM);
+			Cipher cipher = Cipher.getInstance(ALGORITHM); // NOSONAR
 			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
 			byte[] decrypted = cipher.doFinal(DatatypeConverter.parseBase64Binary(encryptedText));
 			strData = new String(decrypted, StandardCharsets.UTF_8);

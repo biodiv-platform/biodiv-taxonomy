@@ -116,7 +116,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 	}
 
-	// TODO : Not used anywhere, Need to decide for deletion
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public List<Object[]> search(String term) {
 		Session session = sessionFactory.openSession();

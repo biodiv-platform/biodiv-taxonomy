@@ -32,7 +32,7 @@ public class TaxonomyCache {
 		}
 	}
 
-	public ParsedName getName(String rank, String name) throws UnRecongnizedRankException, ApiException {
+	public ParsedName getName(String rank, String name) throws UnRecongnizedRankException {
 		if (!rankToCache.containsKey(rank))
 			throw new UnRecongnizedRankException("Unknown rank");
 

@@ -126,7 +126,7 @@ public class TaxonomyPermissionController {
 			@ApiParam(name = "encryptedKey") EncryptedKey encryptedKey) {
 		try {
 			Boolean result = permissionService.verifyPermissionGrant(request, encryptedKey);
-			if (result)
+			if (result.booleanValue())
 				return Response.status(Status.OK).entity(result).build();
 			return Response.status(Status.NOT_IMPLEMENTED).build();
 

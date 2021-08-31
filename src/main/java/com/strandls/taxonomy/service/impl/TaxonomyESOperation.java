@@ -44,10 +44,10 @@ public class TaxonomyESOperation {
 
 	private static final String SQL_FILE = "extendedTaxonDefinition.sql";
 	
-	private final int FIXED_THREAD_SIZE = 10;
-	private final int BATCH_SIZE = 1000;
+	private static final int FIXED_THREAD_SIZE = 10;
+	private static final int BATCH_SIZE = 1000;
 
-	private List<MapQueryResponse> esResult = new ArrayList<MapQueryResponse>();
+	private List<MapQueryResponse> esResult = new ArrayList<>();
 	
 	private static String qryString;
 
@@ -60,7 +60,6 @@ public class TaxonomyESOperation {
 	 * @return - MapQueryResponse
 	 */
 	public List<MapQueryResponse> pushToElastic(List<Long> taxonIds) {
-		Long startTime = System.currentTimeMillis();
 		ExecutorService executor = Executors.newFixedThreadPool(FIXED_THREAD_SIZE);
 		try {
 			qryString = TaxonomyConfig.fetchFileAsString(SQL_FILE);
@@ -91,9 +90,8 @@ public class TaxonomyESOperation {
 			executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 		} catch (InterruptedException e) {
 			logger.error("Could not execute all the thread");
+			Thread.currentThread().interrupt();
 		}
-		Long endTime = System.currentTimeMillis();
-		System.out.println("Time for Es update : " + (endTime-startTime));
 		return esResult;
 	}
 	
@@ -134,7 +132,7 @@ public class TaxonomyESOperation {
 			session.close();
 		}
 		
-		return new ArrayList<MapQueryResponse>();
+		return new ArrayList<>();
 	}
 
 	public List<MapQueryResponse> reIndexElastic() {

@@ -394,7 +394,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			try {
 				synonymParsedName = taxonomyCache.getName(rankName, synonymName);
 				synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
-			} catch (ApiException | UnRecongnizedRankException e) {
+			} catch (UnRecongnizedRankException e) {
 				continue;
 			}
 
@@ -509,7 +509,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	private TaxonomyDefinition getHierarchyMatchedNode(ParsedName parsedName, String rankName,
-			Map<String, ParsedName> rankToParsedName) throws ApiException {
+			Map<String, ParsedName> rankToParsedName) {
 
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao
 				.findByCanonicalForm(parsedName.getCanonicalName().getFull(), rankName);
@@ -643,8 +643,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		try {
 
 			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
-			if (!isContributor)
-				return null;
+			if (!isContributor.booleanValue())
+				return new ArrayList<>();
 
 			ParsedName parsedName = utilityServiceApi.getNameParsed(synonymData.getName());
 			String synonymRank = TaxonomyUtil.getRankForSynonym(parsedName, synonymData.getRank());
@@ -737,8 +737,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Long synonymId) {
 		try {
 			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
-			if (!isContributor)
-				return null;
+			if (!isContributor.booleanValue())
+				return new ArrayList<>();
 			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 			acceptedSynonymDao.delete(acceptedSynonym);
 			TaxonomyDefinition synonym = taxonomyDao.findById(synonymId);
@@ -1018,8 +1018,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData) {
 		try {
 			activityService = headers.addActivityHeader(activityService, request.getHeader(HttpHeaders.AUTHORIZATION));
-			Activity result = activityService.addComment("taxonomy", loggingData);
-			return result;
+			return activityService.addComment("taxonomy", loggingData);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}

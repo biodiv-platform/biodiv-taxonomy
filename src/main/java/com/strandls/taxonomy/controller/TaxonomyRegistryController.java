@@ -76,7 +76,7 @@ public class TaxonomyRegistryController {
 		try {
 
 			String[] taxList = taxonList.split(",");
-			List<Long> tList = new ArrayList<Long>();
+			List<Long> tList = new ArrayList<>();
 			for (String s : taxList) {
 				tList.add(Long.parseLong(s.trim()));
 			}
@@ -130,7 +130,7 @@ public class TaxonomyRegistryController {
 		try {
 			if(!TaxonomyUtil.isAdmin(request))
 				throw new WebApplicationException(
-						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do migration").build());
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do clean list migration").build());
 			
 			Map<String, Object> result = taxonomyRegistry.migrateCleanName();
 			return Response.status(Status.OK).entity(result).build();
@@ -154,7 +154,7 @@ public class TaxonomyRegistryController {
 		try {
 			if(!TaxonomyUtil.isAdmin(request))
 				throw new WebApplicationException(
-						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do migration").build());
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do working list migration").build());
 			
 			Map<String, Object> result = taxonomyRegistry.snapWorkingNames();
 			return Response.status(Status.OK).entity(result).build();
@@ -178,7 +178,7 @@ public class TaxonomyRegistryController {
 		try {
 			if(!TaxonomyUtil.isAdmin(request))
 				throw new WebApplicationException(
-						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do migration").build());
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do raw list migration").build());
 			
 			Map<String, Object> result = taxonomyRegistry.snapRawNames();
 			return Response.status(Status.OK).entity(result).build();

@@ -132,8 +132,8 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 		try {
 			Boolean isContributor = permissionService.checkIsContributor(request, commonNamesData.getTaxonConceptId());
-			if (!isContributor)
-				return null;
+			if (!isContributor.booleanValue())
+				return new ArrayList<>();
 
 			String desc = "";
 			String activityType = "";
@@ -192,8 +192,8 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 			CommonName commonName = commonNameDao.findById(commonNameId);
 			Boolean isContributor = permissionService.checkIsContributor(request, commonName.getTaxonConceptId());
-			if (!isContributor)
-				return null;
+			if (!isContributor.booleanValue())
+				return new ArrayList<>();
 
 			commonName = commonNameDao.delete(commonName);
 

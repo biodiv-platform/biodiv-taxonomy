@@ -28,22 +28,6 @@ public class TaxonomySave {
 		super();
 	}
 
-	public TaxonomySave(String scientificName, String rank, String synonyms, TaxonomyStatus status,
-			TaxonomyPosition position, String sourceId, String source, Map<Long, String[]> commonNames, Long acceptedId,
-			Map<String, String> rankToName) {
-		super();
-		this.scientificName = scientificName;
-		this.rank = rank;
-		this.synonyms = synonyms;
-		this.status = status;
-		this.position = position;
-		this.sourceId = sourceId;
-		this.source = source;
-		this.commonNames = commonNames;
-		this.acceptedId = acceptedId;
-		this.rankToName = rankToName;
-	}
-
 	public String getScientificName() {
 		return scientificName;
 	}

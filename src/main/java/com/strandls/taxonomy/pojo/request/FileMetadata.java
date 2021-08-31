@@ -56,22 +56,6 @@ public class FileMetadata {
 		this.rankToIndex = new HashMap<>();
 	}
 
-	public FileMetadata(String fileType, Map<String, String> nameToRank, String scientificColumnName,
-			String synonymColumnName, String rankColumnName, String statusColumnName, String positionColumnName,
-			String sourceColumnName, String sourceIdColumnName) {
-		super();
-		this.fileType = fileType;
-		this.nameToRank = nameToRank;
-		this.scientificColumnName = scientificColumnName;
-		this.synonymColumnName = synonymColumnName;
-		this.rankColumnName = rankColumnName;
-		this.statusColumnName = statusColumnName;
-		this.positionColumnName = positionColumnName;
-		this.sourceColumnName = sourceColumnName;
-		this.sourceIdColumnName = sourceIdColumnName;
-		this.rankToIndex = new HashMap<>();
-	}
-
 	public void updateIndices(String[] headers) {
 		if (commonNameTagType == null)
 			commonNameTagType = CommonNameTagType.threeLetterCode;

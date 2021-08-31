@@ -6,7 +6,7 @@ public class UnRecongnizedRankException extends Exception {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private String message;
+	private final String message;
 
 	public UnRecongnizedRankException(String string) {
 		this.message = string;
