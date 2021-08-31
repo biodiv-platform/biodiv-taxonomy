@@ -62,15 +62,15 @@ public class TaxonomyESDocument {
 
 	@Type(type = "list-array")
 	@Column(columnDefinition = "bigint[]")
-	private List<Long> accepted_ids = new ArrayList<Long>();
+	private List<Long> accepted_ids = new ArrayList<>();
 
 	@Type(type = "list-array")
 	@Column(columnDefinition = "text[]")
-	private List<String> accepted_names = new ArrayList<String>();
+	private List<String> accepted_names = new ArrayList<>();
 
 	@Type(type = "jsonb")
 	@Column(columnDefinition = "json")
-	private List<JsonNode> common_names = new ArrayList<JsonNode>();
+	private List<JsonNode> common_names = new ArrayList<>();
 
 	private Long group_id;
 	private String group_name;

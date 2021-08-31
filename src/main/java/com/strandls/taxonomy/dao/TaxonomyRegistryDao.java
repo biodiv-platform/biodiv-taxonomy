@@ -3,14 +3,11 @@
  */
 package com.strandls.taxonomy.dao;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -22,6 +19,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonRelation;
@@ -36,22 +34,11 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyRegistryDao.class);
 
-	private static final Long CLASSIFICATION_ID;
-	
 	private static final String CLASSIFICATION_ID_STRING = "classificationId";
+	private static final Long CLASSIFICATION_ID = Long.parseLong(TaxonomyConfig.getString(CLASSIFICATION_ID_STRING));
 	
 	private static final String PARENT_CHECK = "parentCheck";
 	private static final String TAXON_ID = "taxonId";
-
-	static {
-		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
-		Properties properties = new Properties();
-		try {
-			properties.load(in);
-		} catch (IOException e) {
-		}
-		CLASSIFICATION_ID = Long.parseLong(properties.getProperty(CLASSIFICATION_ID_STRING));
-	}
 	
 	public static Long getDefaultClassificationId() {
 		return CLASSIFICATION_ID;

@@ -147,7 +147,7 @@ public class TaxonomyUtil {
 	}
 
 	public static Map<TreeRoles, Long> getRoleIdMap() {
-		Map<TreeRoles, Long> roleMap = new EnumMap<TreeRoles, Long>(TreeRoles.class);
+		Map<TreeRoles, Long> roleMap = new EnumMap<>(TreeRoles.class);
 		roleMap.put(TreeRoles.OBSERVATIONCURATOR,
 				Long.parseLong(PropertyFileUtil.fetchProperty("config.properties", "OBSERVATIONCURATOR")));
 		roleMap.put(TreeRoles.SPECIESCONTRIBUTOR,

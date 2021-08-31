@@ -129,7 +129,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	 */
 	private List<TaxonRelation> buildHierarchy(List<TaxonRelation> items, List<String> ids) {
 
-		Map<Long, TaxonRelation> idItemMap = new HashMap<Long, TaxonRelation>();
+		Map<Long, TaxonRelation> idItemMap = new HashMap<>();
 		for (TaxonRelation item : items) {
 			item.setIds(ids);
 			idItemMap.put(item.getId(), item);
@@ -238,7 +238,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 							candidateToSnap = taxonomyRegistrys.get(0);
 
 							// Reporting this because we are falling back to IBP hierarchy
-							Map<String, Object> duplicateHierarchyStatus = new HashMap<String, Object>();
+							Map<String, Object> duplicateHierarchyStatus = new HashMap<>();
 							duplicateHierarchyStatus.put("Snapping candidate status", "found");
 							duplicateHierarchyStatus.put("Snapping candidate", candidateToSnap);
 							duplicateHierarchyStatus.put("Snapping Hierarchy",
@@ -255,7 +255,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 						candidateToSnap = taxonomyRegistrys.get(0);
 					} else {
 						// We do not have proper snapping candidate here. Report
-						Map<String, Object> duplicateHierarchyStatus = new HashMap<String, Object>();
+						Map<String, Object> duplicateHierarchyStatus = new HashMap<>();
 						duplicateHierarchyStatus.put("Snapping candidate status", "Not found");
 						duplicateHierarchyStatus.put("duplicate hierarchy", taxonomyRegistrys);
 						duplicateWithoutSnapping.put(definition.getId().toString(), duplicateHierarchyStatus);
@@ -266,13 +266,13 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 					// Get Name details for the path
 					List<TaxonomyRegistryResponse> nodeWithParents = taxonomyRegistryDao
 							.getNameFromPath(candidateToSnap.getPath());
-					Set<String> rankNames = new HashSet<String>();
+					Set<String> rankNames = new HashSet<>();
 					for (TaxonomyRegistryResponse r : nodeWithParents)
 						rankNames.add(r.getRank());
 
 					// We got the duplicate hierarchy here
 					if (rankNames.size() != nodeWithParents.size()) {
-						Map<String, Object> r = new HashMap<String, Object>();
+						Map<String, Object> r = new HashMap<>();
 						r.put("status", "Duplicates in the hierarchy");
 						r.put("path", candidateToSnap.getPath());
 						r.put("hierarchy", nodeWithParents);
@@ -285,7 +285,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 					StringBuilder newPath = new StringBuilder();
 					if (!TaxonomyUtil.validateHierarchy(ranksBottomToTop, rankNames)) {
 						if (TaxonomyPosition.CLEAN.name().equals(definition.getPosition())) {
-							Map<String, Object> r = new HashMap<String, Object>();
+							Map<String, Object> r = new HashMap<>();
 							r.put("status", "Required rank missing in the hierarchy");
 							r.put("path", candidateToSnap.getPath());
 							r.put("hierarchy", nodeWithParents);
@@ -295,7 +295,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 							continue;
 						} else {
 							Double highestRank = TaxonomyUtil.getHighestInputRank(ranksBottomToTop, rankNames);
-							Map<String, TaxonomyRegistryResponse> rankToRegistry = new HashMap<String, TaxonomyRegistryResponse>();
+							Map<String, TaxonomyRegistryResponse> rankToRegistry = new HashMap<>();
 
 							for (TaxonomyRegistryResponse r : nodeWithParents) {
 								rankToRegistry.put(r.getRank(), r);

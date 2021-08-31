@@ -78,7 +78,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		Long userId = Long.parseLong(profile.getId());
 		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonId);
 		Boolean permission = false;
-		List<TreeRoles> roles = new ArrayList<TreeRoles>();
+		List<TreeRoles> roles = new ArrayList<>();
 		roles.add(TreeRoles.SPECIESCONTRIBUTOR);
 		roles.add(TreeRoles.TAXONOMYCONTRIBUTOR);
 		for (BreadCrumb crumb : breadcrumbs) {
