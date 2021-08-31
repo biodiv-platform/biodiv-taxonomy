@@ -48,13 +48,17 @@ public class RankDao extends AbstractDAO<Rank, Long> {
 		}
 		return entity;
 	}
-	
+
 	public List<Rank> getAllRank() {
 		return getAllRank(false);
 	}
-	
+
 	public List<Rank> getAllRank(boolean topToBottom) {
-		String queryStr = "from Rank t where isDeleted = false order by rankValue" + (topToBottom? "":" desc");
+		String queryStr;
+		if (topToBottom)
+			queryStr = "from Rank t where isDeleted = false order by rankValue";
+		else
+			queryStr = "from Rank t where isDeleted = false order by rankValue desc";
 		try (Session session = sessionFactory.openSession()) {
 			Query<Rank> query = session.createQuery(queryStr, Rank.class);
 			try {

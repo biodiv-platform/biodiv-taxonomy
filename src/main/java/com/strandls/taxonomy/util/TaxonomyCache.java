@@ -78,9 +78,8 @@ class TaxonomyParsedNameCache extends Cache<String, ParsedName>{
 		try {
 			return utilityServiceApi.getNameParsed(k);
 		} catch (ApiException e) {
-			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
 }
 
