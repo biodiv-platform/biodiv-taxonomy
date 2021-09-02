@@ -3,7 +3,6 @@
  */
 package com.strandls.taxonomy.service.impl;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -78,12 +77,14 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		Long userId = Long.parseLong(profile.getId());
 		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonId);
 		Boolean permission = false;
-		List<TreeRoles> roles = new ArrayList<>();
-		roles.add(TreeRoles.SPECIESCONTRIBUTOR);
-		roles.add(TreeRoles.TAXONOMYCONTRIBUTOR);
 		for (BreadCrumb crumb : breadcrumbs) {
-
+//			for species contributor role
 			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.SPECIESCONTRIBUTOR);
+			if (permission.booleanValue())
+				break;
+
+//			for taxonomy contrbutor role
+			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.TAXONOMYCONTRIBUTOR);
 			if (permission.booleanValue())
 				break;
 		}
