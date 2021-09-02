@@ -3,6 +3,7 @@
  */
 package com.strandls.taxonomy.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -37,38 +38,35 @@ public class MailUtils {
 
 	public void sendPermissionRequest(List<User> requestors, String taxonName, Long taxonId, String role,
 			User requestee, String encryptedKey) {
+		List<String> emailList = new ArrayList<String>();
 		for (User requestor : requestors) {
+			if (requestor.getEmail() != null)
+				emailList.add(requestor.getEmail());
+		}
+		try {
+			Map<String, Object> data = new HashMap<>();
+			data.put(FIELDS.TO.getAction(),  emailList.toArray());
+			data.put(FIELDS.SUBSCRIPTION.getAction(), true);
+			Map<String, Object> permissionRequest = new HashMap<>();
 
-			try {
-				if (requestor.getEmail() != null) {
-					Map<String, Object> data = new HashMap<>();
-					data.put(FIELDS.TO.getAction(), new String[] { requestor.getEmail() });
-					data.put(FIELDS.SUBSCRIPTION.getAction(), true);
-					Map<String, Object> permissionRequest = new HashMap<>();
+			permissionRequest.put(PERMISSION_REQUEST.ENCRYPTED_KEY.getAction(), encryptedKey);
+			permissionRequest.put(PERMISSION_REQUEST.REQUESTEE_ID.getAction(), requestee.getId());
+			permissionRequest.put(PERMISSION_REQUEST.REQUESTEE_NAME.getAction(), requestee.getName());
+			permissionRequest.put(PERMISSION_REQUEST.ROLE.getAction(), role);
+			permissionRequest.put(PERMISSION_REQUEST.TAXON_ID.getAction(), taxonId);
+			permissionRequest.put(PERMISSION_REQUEST.TAXON_NAME.getAction(), taxonName);
 
-					permissionRequest.put(PERMISSION_REQUEST.ENCRYPTED_KEY.getAction(), encryptedKey);
-					permissionRequest.put(PERMISSION_REQUEST.REQUESTEE_ID.getAction(), requestee.getId());
-					permissionRequest.put(PERMISSION_REQUEST.REQUESTEE_NAME.getAction(), requestee.getName());
-					permissionRequest.put(PERMISSION_REQUEST.REQUESTOR_NAME.getAction(), requestor.getName());
-					permissionRequest.put(PERMISSION_REQUEST.ROLE.getAction(), role);
-					permissionRequest.put(PERMISSION_REQUEST.TAXON_ID.getAction(), taxonId);
-					permissionRequest.put(PERMISSION_REQUEST.TAXON_NAME.getAction(), taxonName);
+			data.put(FIELDS.DATA.getAction(), JsonUtil.unflattenJSON(permissionRequest));
 
-					data.put(FIELDS.DATA.getAction(), JsonUtil.unflattenJSON(permissionRequest));
+			Map<String, Object> mData = new HashMap<>();
+			mData.put(INFO_FIELDS.TYPE.getAction(), MAIL_TYPE.PERMISSION_REQUEST.getAction());
+			mData.put(INFO_FIELDS.RECIPIENTS.getAction(), Arrays.asList(data));
 
-					Map<String, Object> mData = new HashMap<>();
-					mData.put(INFO_FIELDS.TYPE.getAction(), MAIL_TYPE.PERMISSION_REQUEST.getAction());
-					mData.put(INFO_FIELDS.RECIPIENTS.getAction(), Arrays.asList(data));
+			mailProducer.produceMail(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.MAIL_ROUTING_KEY, null,
+					JsonUtil.mapToJSON(mData));
 
-					mailProducer.produceMail(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.MAIL_ROUTING_KEY,
-							null, JsonUtil.mapToJSON(mData));
-
-				}
-
-			} catch (Exception e) {
-				logger.error(e.getMessage());
-			}
-
+		} catch (Exception e) {
+			logger.error(e.getMessage());
 		}
 
 	}
