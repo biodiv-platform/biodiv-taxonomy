@@ -5,6 +5,7 @@ package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.util.AbstractDAO;
+import com.strandls.taxonomy.util.TaxonomyUtil;
 
 /**
  * @author Abhishek Rudra
@@ -26,6 +28,8 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(SpeciesPermissionDao.class);
 	private static final String USER_ID = "userId";
+
+	private Map<TreeRoles, Long> roleIdMap = TaxonomyUtil.getRoleIdMap();
 
 	/**
 	 * @param sessionFactory
@@ -96,7 +100,7 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 			Query<SpeciesPermission> query = session.createQuery(qry);
 			query.setParameter(USER_ID, userId);
 			query.setParameter("taxonId", taxonId);
-			query.setParameter("role", role.getValue());
+			query.setParameter("role", roleIdMap.get(role));
 			SpeciesPermission dataRow = null;
 			dataRow = query.getSingleResult();
 			if (dataRow != null)

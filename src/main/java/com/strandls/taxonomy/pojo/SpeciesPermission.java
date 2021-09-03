@@ -24,6 +24,20 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SpeciesPermission {
 
+	private Long id;
+	private Long version;
+	private Long authorId;
+	private Date createdOn;
+	private Long permissionType;
+	private Long taxonConceptId;
+
+	/**
+	 * 
+	 */
+	public SpeciesPermission() {
+		super();
+	}
+
 	/**
 	 * @param id
 	 * @param version
@@ -41,20 +55,6 @@ public class SpeciesPermission {
 		this.createdOn = createdOn;
 		this.permissionType = permissionType;
 		this.taxonConceptId = taxonConceptId;
-	}
-
-	private Long id;
-	private Long version;
-	private Long authorId;
-	private Date createdOn;
-	private Long permissionType;
-	private Long taxonConceptId;
-
-	/**
-	 * 
-	 */
-	public SpeciesPermission() {
-		super();
 	}
 
 	@Id
