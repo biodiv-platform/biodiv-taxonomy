@@ -45,7 +45,7 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyDefinition save(TaxonomyDefinition taxonomyDefinition);
 
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
-			throws IOException, ApiException, InterruptedException, ExecutionException;
+			throws IOException, ApiException, ExecutionException;
 
 	public TaxonomicNames findSynonymCommonName(Long taxonId);
 

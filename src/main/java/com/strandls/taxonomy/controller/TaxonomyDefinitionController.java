@@ -142,8 +142,8 @@ public class TaxonomyDefinitionController {
 		try {
 			Map<String, Object> result = taxonomyService.uploadFile(request, multiPart);
 			return Response.ok().entity(result).build();
-		} catch (Exception e) {
-			Thread.currentThread().interrupt();
+		} 
+		catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}

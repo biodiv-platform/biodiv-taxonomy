@@ -559,7 +559,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Override
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
-			throws IOException, ApiException, InterruptedException, ExecutionException {
+			throws IOException, ApiException, ExecutionException {
 		Map<String, Object> result = new HashMap<>();
 		Long startTime = System.currentTimeMillis();
 		FormDataBodyPart formdata = multiPart.getField("metadata");
