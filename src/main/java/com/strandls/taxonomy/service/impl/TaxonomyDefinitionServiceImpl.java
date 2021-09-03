@@ -302,7 +302,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Create and update hierarchy if not exist
 			if (status.equals(TaxonomyStatus.ACCEPTED)) {
-				Map<String, TaxonomyDefinition> hierarchyCreated = updateAndCreateHierarchyUtil(path, ranks, userId,
+				Map<String, TaxonomyDefinition> hierarchyCreated = updateAndCreateHierarchyUtil(request, path, ranks, userId,
 						taxonomyData);
 				taxonomyDefinitions.addAll(hierarchyCreated.values());
 			}
@@ -434,7 +434,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	 *                                    creation.
 	 * @throws UnRecongnizedRankException
 	 */
-	private Map<String, TaxonomyDefinition> updateAndCreateHierarchyUtil(StringBuilder path, List<Rank> ranks,
+	private Map<String, TaxonomyDefinition> updateAndCreateHierarchyUtil(HttpServletRequest request, StringBuilder path, List<Rank> ranks,
 			Long userId, TaxonomySave taxonomyData)
 			throws ApiException, TaxonCreationException, UnRecongnizedRankException {
 
@@ -462,10 +462,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			rankToParsedName.put(e.getKey().toLowerCase(), parsedName);
 		}
 
-		return updateAndCreateHierarchy(path, ranks, rankToParsedName, position, source, sourceId, userId);
+		return updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position, source, sourceId, userId);
 	}
 
-	private Map<String, TaxonomyDefinition> updateAndCreateHierarchy(StringBuilder path, List<Rank> ranks,
+	private Map<String, TaxonomyDefinition> updateAndCreateHierarchy(HttpServletRequest request, StringBuilder path, List<Rank> ranks,
 			Map<String, ParsedName> rankToParsedName, TaxonomyPosition position, String source, String sourceId,
 			Long userId) throws ApiException, TaxonCreationException {
 
@@ -490,13 +490,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				return createdHierarchy;
 			}
 
-			createdHierarchy = updateAndCreateHierarchy(path, ranks, rankToParsedName, position, source, sourceId,
+			createdHierarchy = updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position, source, sourceId,
 					userId);
 
 			// Generate node here and go for the higher hierarchy
 			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, highestRankName,
 					TaxonomyStatus.ACCEPTED, position, source, sourceId, userId);
 			createdHierarchy.put(highestRankName, taxonomyDefinition);
+			
+			String desc = "Taxon created : " + taxonomyDefinition.getName();
+			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+					"Taxon created");
 
 			// Add the created taxonomy to the registry.
 			Long taxonId = taxonomyDefinition.getId();
@@ -526,7 +531,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				String rank = r.getRank();
 				String name = r.getCanonicalForm();
 				ParsedName inputParsedName = rankToParsedName.get(rank);
-				if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase(name))
+				if (inputParsedName != null && inputParsedName.getCanonicalName().getFull().equalsIgnoreCase(name))
 					score++;
 			}
 
@@ -893,7 +898,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
 
 			StringBuilder path = new StringBuilder();
-			updateAndCreateHierarchy(path, ranks, rankToParsedName, position, taxonomyDefinition.getViaDatasource(),
+			updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position, taxonomyDefinition.getViaDatasource(),
 					taxonomyDefinition.getNameSourceId(), userId);
 
 			// Update the tree and add to the registry

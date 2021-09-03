@@ -58,7 +58,10 @@ public class TaxonomyESDocument {
 	private String status;
 	private String position;
 	private String path;
-	private String hierarchy;
+	
+	@Type(type = "jsonb")
+	@Column(columnDefinition = "json")
+	private List<JsonNode> hierarchy = new ArrayList<>();
 
 	@Type(type = "list-array")
 	@Column(columnDefinition = "bigint[]")
@@ -80,7 +83,7 @@ public class TaxonomyESDocument {
 	}
 
 	public TaxonomyESDocument(Long id, String name, String canonical_form, String italicised_form, String rank,
-			String status, String position, String path, String hierarchy, List<Long> accepted_ids,
+			String status, String position, String path, List<JsonNode> hierarchy, List<Long> accepted_ids,
 			List<String> accepted_names, List<JsonNode> common_names, Long group_id, String group_name) {
 		super();
 		this.id = id;
@@ -163,11 +166,11 @@ public class TaxonomyESDocument {
 		this.path = path;
 	}
 
-	public String getHierarchy() {
+	public List<JsonNode> getHierarchy() {
 		return hierarchy;
 	}
 
-	public void setHierarchy(String hierarchy) {
+	public void setHierarchy(List<JsonNode> hierarchy) {
 		this.hierarchy = hierarchy;
 	}
 
