@@ -40,7 +40,7 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 		Long speciesGroupId = speciesGroupDao.getGroupIdByTaxonId(taxonId);
 		return findById(speciesGroupId);
 	}
-	
+
 	@Override
 	public SpeciesGroupMapping save(SpeciesGroupMapping speciesGroupMapping) {
 		return speciesMappingDao.save(speciesGroupMapping);
@@ -62,6 +62,7 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 			traitTaxonIds.add(Long.parseLong(taxonId));
 		List<String> result = taxonomyRegistryDao.findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxons);
 		traitTaxonList.retainAll(result);
+
 		return traitTaxonList;
 	}
 

@@ -16,6 +16,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
+import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +37,10 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	private static final String CLASSIFICATION_ID_STRING = "classificationId";
 	private static final Long CLASSIFICATION_ID = Long.parseLong(TaxonomyConfig.getString(CLASSIFICATION_ID_STRING));
-	
+
 	private static final String PARENT_CHECK = "parentCheck";
 	private static final String TAXON_ID = "taxonId";
-	
+
 	public static Long getDefaultClassificationId() {
 		return CLASSIFICATION_ID;
 	}
@@ -125,7 +126,6 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		String queryString = "select taxon_definition_id from taxonomy_registry t where t.classification_id = :classificationId and "
 				+ "t.path @> any(select tr.path from taxonomy_registry tr where tr.taxon_definition_id in (:traitTaxonIds) "
 				+ "and tr.path ~ lquery(:speciesGroupTaxons) and classification_id = :classificationId)";
-
 		Session session = sessionFactory.openSession();
 
 		List<String> result = new ArrayList<>();
@@ -134,6 +134,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			query.setParameterList("traitTaxonIds", traitTaxonIds);
 			query.setParameter("speciesGroupTaxons", speciesGroupTaxons);
+			query.addScalar("taxon_definition_id", StandardBasicTypes.STRING).list();
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -231,9 +232,10 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return new ArrayList<>();
 	}
-	
+
 	/**
 	 * Code below this point is only for the migration purpose.
+	 * 
 	 * @param taxonId
 	 * @param classificationIds
 	 * @return
@@ -257,15 +259,15 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			session.close();
 		}
 	}
-	
+
 	@SuppressWarnings("rawtypes")
 	public List<TaxonomyRegistryResponse> getPathToRootForOldHierarchy(Long taxonId, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry_backup where path @> "
 					+ "(select path from taxonomy_registry_backup where taxon_definition_id = :taxonId and "
-					+ "classification_id=:classificationId) and classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
-					+ "on td.id = tr.taxon_definition_id order by tr.path";
+					+ "classification_id=:classificationId) and classification_id=:classificationId) tr "
+					+ "left outer join taxonomy_definition td " + "on td.id = tr.taxon_definition_id order by tr.path";
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter(TAXON_ID, taxonId);
 			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
@@ -278,15 +280,15 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return new ArrayList<>();
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<TaxonomyRegistryResponse> getNameFromPath(String path) {
 		Session session = sessionFactory.openSession();
 		try {
 			List<Long> taxonIds = new ArrayList<>();
-			for(String s : path.split("\\."))
+			for (String s : path.split("\\."))
 				taxonIds.add(Long.parseLong(s));
-			
+
 			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from taxonomy_definition td "
 					+ " left join taxonomy_rank r on td.rank = r.name "
 					+ " where td.id in (:taxonIds) order by r.rankvalue";
@@ -303,35 +305,26 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	/**
 	 * 
-	 * Order for choosing candidate is as follow
-	 * 821 - Catalog of Life
-	 * 820 - FishBase Taxonomy Hierarchy
-	 * 819 - IUCN Taxonomy Hierarchy (2010)
-	 * 818 - GBIF Taxonomy Hierarchy
-	 * 817 - Author Contributed Taxonomy Hierarchy
-	 * 265798 - Combined Taxonomy Hierarchy
+	 * Order for choosing candidate is as follow 821 - Catalog of Life 820 -
+	 * FishBase Taxonomy Hierarchy 819 - IUCN Taxonomy Hierarchy (2010) 818 - GBIF
+	 * Taxonomy Hierarchy 817 - Author Contributed Taxonomy Hierarchy 265798 -
+	 * Combined Taxonomy Hierarchy
 	 * 
-	 * If we found any duplicate candidate the we fall back to IBP hierarchy. so we are maintaining both the record
-	 * Pulling out one of the hierarchy mentioned above in given order and IBP hierarchy
+	 * If we found any duplicate candidate the we fall back to IBP hierarchy. so we
+	 * are maintaining both the record Pulling out one of the hierarchy mentioned
+	 * above in given order and IBP hierarchy
 	 * 
 	 * 265799 - IBP hierarchy
 	 * 
 	 * Query to execute is as follow
 	 * 
-	 * select * from taxonomy_registry_backup
-	 * where taxon_definition_id = :taxonId and (classification_id = :classificationId or classification_id = (
-	 * 		select classification_id from taxonomy_registry_backup
-	 * 		where taxon_definition_id = :taxonId
-	 * 		group by classification_id
-	 * 		order by case classification_id
-	 * 			when 821 then 1 
-	 * 			when 820 then 2	
-	 * 			when 819 then 3
-	 * 			when 818 then 4	
-	 * 			when 817 then 5
-	 * 			when 265798 then 6
-	 * 			end limit 1
-	 * )) order by classification_id desc
+	 * select * from taxonomy_registry_backup where taxon_definition_id = :taxonId
+	 * and (classification_id = :classificationId or classification_id = ( select
+	 * classification_id from taxonomy_registry_backup where taxon_definition_id =
+	 * :taxonId group by classification_id order by case classification_id when 821
+	 * then 1 when 820 then 2 when 819 then 3 when 818 then 4 when 817 then 5 when
+	 * 265798 then 6 end limit 1 )) order by classification_id desc
+	 * 
 	 * @param taxonId
 	 * @return
 	 */
@@ -343,16 +336,9 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			String sqlString = "select * from taxonomy_registry_backup "
 					+ " where taxon_definition_id =:taxonId and (classification_id =:classificationId or classification_id = ( "
 					+ " select classification_id from taxonomy_registry_backup "
-					+ " where taxon_definition_id = :taxonId "
-					+ " group by classification_id "
-					+ " order by case classification_id "
-						+ " when 821 then 1"
-						+ " when 820 then 2"
-						+ "	when 819 then 3"
-						+ "	when 818 then 4"
-						+ "	when 817 then 5"
-						+ "	when 265798 then 6"
-						+ " else 7 end limit 1"
+					+ " where taxon_definition_id = :taxonId " + " group by classification_id "
+					+ " order by case classification_id " + " when 821 then 1" + " when 820 then 2" + "	when 819 then 3"
+					+ "	when 818 then 4" + "	when 817 then 5" + "	when 265798 then 6" + " else 7 end limit 1"
 					+ ")) order by classification_id desc";
 			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class);
 			query.setParameter(TAXON_ID, taxonId);
@@ -374,9 +360,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			List<String> paths = Arrays.asList(path.split("\\."));
 			String parentCheck = String.join("|", paths);
 			parentCheck = "*." + parentCheck;
-			
-			String sqlString = "select * from taxonomy_registry tr "
-					+ " left join taxonomy_rank r on tr.rank = r.name "
+
+			String sqlString = "select * from taxonomy_registry tr " + " left join taxonomy_rank r on tr.rank = r.name "
 					+ " where tr.path ~ lquery(:parentCheck) and tr.classification_id = :classificationId "
 					+ " order by r.rankvalue desc, nlevel(path) desc";
 			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class).setMaxResults(1);
@@ -396,17 +381,17 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		try {
 
 			String parentCheck = "*." + parentId + ".*{1}";
-			
+
 			String sqlString = "select td.* "
 					+ "from (select * from taxonomy_registry where path ~ lquery(:parentCheck) and classification_id = :classificationId) tr "
 					+ "left join (select * from taxonomy_definition where name like 'Not assigned') td "
-					+ "on td.id = tr.taxon_definition_id "
-					+ "where td.id is not null";
-			Query<TaxonomyDefinition> query = session.createNativeQuery(sqlString, TaxonomyDefinition.class).setMaxResults(1);
+					+ "on td.id = tr.taxon_definition_id " + "where td.id is not null";
+			Query<TaxonomyDefinition> query = session.createNativeQuery(sqlString, TaxonomyDefinition.class)
+					.setMaxResults(1);
 			query.setParameter(PARENT_CHECK, parentCheck);
 			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			List<TaxonomyDefinition> taxonList = query.getResultList();
-			if(taxonList.isEmpty())
+			if (taxonList.isEmpty())
 				return null;
 			else
 				return taxonList.get(0);
