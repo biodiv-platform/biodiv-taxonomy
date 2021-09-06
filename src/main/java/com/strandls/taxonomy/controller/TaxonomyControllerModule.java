@@ -14,6 +14,11 @@ public class TaxonomyControllerModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(TaxonomyController.class).in(Scopes.SINGLETON);
+		bind(TaxonomyDefinitionController.class).in(Scopes.SINGLETON);
+		bind(RankController.class).in(Scopes.SINGLETON);
+		bind(SpeciesGroupController.class).in(Scopes.SINGLETON);
+		bind(TaxonomyRegistryController.class).in(Scopes.SINGLETON);
+		bind(CommonNameController.class).in(Scopes.SINGLETON);
+		bind(TaxonomyPermissionController.class).in(Scopes.SINGLETON);
 	}
 }

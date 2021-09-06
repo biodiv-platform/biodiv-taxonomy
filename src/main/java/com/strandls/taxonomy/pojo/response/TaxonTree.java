@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.strandls.taxonomy.pojo;
+package com.strandls.taxonomy.pojo.response;
 
 import java.util.List;
 

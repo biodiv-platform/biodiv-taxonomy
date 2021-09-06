@@ -4,7 +4,9 @@
 package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -52,7 +54,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 
 		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();
-		List<SpeciesGroupMapping> result = new ArrayList<SpeciesGroupMapping>();
+		List<SpeciesGroupMapping> result = new ArrayList<>();
 		try {
 			Query<SpeciesGroupMapping> query = session.createQuery(qry);
 			query.setParameter("sGroup", sGroup);
@@ -61,6 +63,26 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 			logger.error(e.getMessage());
 		} finally {
 			session.close();
+		}
+		return result;
+	}
+	
+	public Set<String> getTaxonIds(Long speciesGroupId) {
+		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
+		Session session = sessionFactory.openSession();
+		List<SpeciesGroupMapping> speciesGroupMappings = new ArrayList<>();
+		try {
+			Query<SpeciesGroupMapping> query = session.createQuery(qry, SpeciesGroupMapping.class);
+			query.setParameter("sGroup", speciesGroupId);
+			speciesGroupMappings = query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		Set<String> result = new HashSet<>();
+		for(SpeciesGroupMapping s : speciesGroupMappings) {
+			result.add(s.getTaxonConceptId().toString());
 		}
 		return result;
 	}

@@ -28,8 +28,34 @@ public class SpeciesPermission {
 	private Long version;
 	private Long authorId;
 	private Date createdOn;
-	private String permissionType;
+	private Long permissionType;
 	private Long taxonConceptId;
+
+	/**
+	 * 
+	 */
+	public SpeciesPermission() {
+		super();
+	}
+
+	/**
+	 * @param id
+	 * @param version
+	 * @param authorId
+	 * @param createdOn
+	 * @param permissionType
+	 * @param taxonConceptId
+	 */
+	public SpeciesPermission(Long id, Long version, Long authorId, Date createdOn, Long permissionType,
+			Long taxonConceptId) {
+		super();
+		this.id = id;
+		this.version = version;
+		this.authorId = authorId;
+		this.createdOn = createdOn;
+		this.permissionType = permissionType;
+		this.taxonConceptId = taxonConceptId;
+	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -70,11 +96,11 @@ public class SpeciesPermission {
 	}
 
 	@Column(name = "permission_type")
-	public String getPermissionType() {
+	public Long getPermissionType() {
 		return permissionType;
 	}
 
-	public void setPermissionType(String permissionType) {
+	public void setPermissionType(Long permissionType) {
 		this.permissionType = permissionType;
 	}
 
