@@ -70,4 +70,6 @@ public interface TaxonomyDefinitionSerivce {
 
 	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData);
 
+	public Map<String, TaxonomyDefinition> updateItalicisedForm();
+
 }
