@@ -37,5 +37,6 @@ public class ApiConstants {
 	public static final String REINDEX = "/reindex";
 	public static final String COMMENT = "/comment";
 	public static final String ADD = "/add";
+	public static final String ITALICISED = "/italicised";
 
 }

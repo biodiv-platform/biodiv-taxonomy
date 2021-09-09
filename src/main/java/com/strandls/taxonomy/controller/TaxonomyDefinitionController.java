@@ -434,5 +434,35 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
+	
+	
+	/**
+	 * Only for migration purpose
+	 * @param request
+	 * @return
+	 */
+	@PUT
+	@Path(ApiConstants.NAMES + ApiConstants.ITALICISED )
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "Update Italicised form for all the taxonomy definition", response = Map.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to upate the italicised form for the names", response = String.class) })
+	
+	public Response updateItalicisedForm(@Context HttpServletRequest request) {
+		try {
+			if (TaxonomyUtil.isAdmin(request)) {
+				Map<String, TaxonomyDefinition> mapResponse = taxonomyService.updateItalicisedForm();
+				return Response.status(Status.OK).entity(mapResponse).build();
+			} else
+				throw new WebApplicationException(
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do the complete update of the name").build());
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build());
+		}
+	}
 
 }
