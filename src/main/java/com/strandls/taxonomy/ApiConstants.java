@@ -38,5 +38,6 @@ public class ApiConstants {
 	public static final String COMMENT = "/comment";
 	public static final String ADD = "/add";
 	public static final String ITALICISED = "/italicised";
+	public static final String OBSERVATION = "/observation";
 
 }

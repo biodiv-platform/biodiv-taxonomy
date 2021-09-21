@@ -19,6 +19,8 @@ public interface TaxonomyPermisisonService {
 
 	public Boolean checkIsContributor(HttpServletRequest request, Long taxonomyId);
 
+	public Boolean checkIsObservationCurator(HttpServletRequest request, Long taxonomyId);
+
 	public Boolean assignUpdatePermissionDirectly(HttpServletRequest request, PermissionData permissionData);
 
 	public Boolean requestPermission(HttpServletRequest request, PermissionData permissionData);

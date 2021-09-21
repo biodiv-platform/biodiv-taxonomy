@@ -260,4 +260,26 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		return false;
 
 	}
+
+	@Override
+	public Boolean checkIsObservationCurator(HttpServletRequest request, Long taxonomyId) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		JSONArray userRole = (JSONArray) profile.getAttribute("roles");
+		Long userId = Long.parseLong(profile.getId());
+		if (userRole.contains("ROLE_ADMIN")) {
+			return true;
+		}
+
+		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonomyId);
+		Boolean permission = false;
+		for (BreadCrumb crumb : breadcrumbs) {
+//			for observation curator role
+			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.OBSERVATIONCURATOR);
+			if (permission.booleanValue())
+				return permission;
+
+		}
+		return permission;
+
+	}
 }
