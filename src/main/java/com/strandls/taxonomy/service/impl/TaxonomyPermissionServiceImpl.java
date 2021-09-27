@@ -94,39 +94,52 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 
 	@Override
 	public Boolean assignUpdatePermissionDirectly(HttpServletRequest request, PermissionData permissionData) {
-		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
-		JSONArray userRole = (JSONArray) profile.getAttribute("roles");
-		if (userRole.contains("ROLE_ADMIN")) {
 
-			TreeRoles role = TreeRoles.valueOf(permissionData.getRole().replace(" ", ""));
+		try {
+			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+			JSONArray userRole = (JSONArray) profile.getAttribute("roles");
+			if (userRole.contains("ROLE_ADMIN")) {
 
-			if (role == null)
-				return false;
+				TreeRoles role = TreeRoles.valueOf(permissionData.getRole().replace(" ", ""));
 
-			SpeciesPermission hasPermission = speciesPermissionDao.findPermissionOntaxon(permissionData.getUserId(),
-					permissionData.getTaxonId());
+				if (role == null)
+					return false;
 
-//			deleting the req if already it was raised
-			SpeciesPermissionRequest isExist = permissionReqDao.requestPermissionExist(permissionData.getUserId(),
-					permissionData.getTaxonId(), role);
-			if (isExist != null) {
-				permissionReqDao.delete(isExist);
+				SpeciesPermission hasPermission = speciesPermissionDao.findPermissionOntaxon(permissionData.getUserId(),
+						permissionData.getTaxonId());
+
+//				deleting the req if already it was raised
+				SpeciesPermissionRequest isExist = permissionReqDao.requestPermissionExist(permissionData.getUserId(),
+						permissionData.getTaxonId(), role);
+				if (isExist != null) {
+					permissionReqDao.delete(isExist);
+				}
+
+				if (hasPermission == null) {
+//				no previous permission, create a new permission
+					SpeciesPermission speciesPermission = new SpeciesPermission(null, 0L, permissionData.getUserId(),
+							new Date(), roleIdMap.get(role), permissionData.getTaxonId());
+					speciesPermissionDao.save(speciesPermission);
+				} else {
+					hasPermission.setPermissionType(roleIdMap.get(role));
+					speciesPermissionDao.update(hasPermission);
+
+				}
+
+				User requestee = userService.getUser(permissionData.getUserId().toString());
+				TaxonomyDefinition taxDef = taxDefinationDao.findById(permissionData.getTaxonId());
+
+				mailUtils.sendPermissionGrant(requestee, taxDef.getName(), permissionData.getRole(),
+						permissionData.getTaxonId());
+				return true;
+
 			}
-
-			if (hasPermission == null) {
-//			no previous permission, create a new permission
-				SpeciesPermission speciesPermission = new SpeciesPermission(null, 0L, permissionData.getUserId(),
-						new Date(), roleIdMap.get(role), permissionData.getTaxonId());
-				speciesPermissionDao.save(speciesPermission);
-			} else {
-				hasPermission.setPermissionType(roleIdMap.get(role));
-				speciesPermissionDao.update(hasPermission);
-
-			}
-			return true;
-
+			return false;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
 		}
 		return false;
+
 	}
 
 	@Override
@@ -148,18 +161,15 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 					userId, role.getValue());
 			permissionRequest = permissionReqDao.save(permissionRequest);
 			sendMail(permissionRequest);
-			return true;
 		} else {
 			if (!role.getValue().equalsIgnoreCase(isExist.getRole())) {
 				isExist.setRole(role.getValue());
 				isExist = permissionReqDao.update(isExist);
-				sendMail(isExist);
-				return true;
 			}
+			sendMail(isExist);
 
 		}
-
-		return false;
+		return true;
 	}
 
 	private void sendMail(SpeciesPermissionRequest permissionReq) {
@@ -248,6 +258,28 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			logger.error(e.getMessage());
 		}
 		return false;
+
+	}
+
+	@Override
+	public Boolean checkIsObservationCurator(HttpServletRequest request, Long taxonomyId) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		JSONArray userRole = (JSONArray) profile.getAttribute("roles");
+		Long userId = Long.parseLong(profile.getId());
+		if (userRole.contains("ROLE_ADMIN")) {
+			return true;
+		}
+
+		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonomyId);
+		Boolean permission = false;
+		for (BreadCrumb crumb : breadcrumbs) {
+//			for observation curator role
+			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.OBSERVATIONCURATOR);
+			if (permission.booleanValue())
+				return permission;
+
+		}
+		return permission;
 
 	}
 }
