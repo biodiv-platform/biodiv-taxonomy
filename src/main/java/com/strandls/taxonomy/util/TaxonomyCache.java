@@ -6,9 +6,6 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
@@ -18,14 +15,12 @@ import com.strandls.utility.pojo.ParsedName;
 
 public class TaxonomyCache {
 
-	private final Logger logger = LoggerFactory.getLogger(TaxonomyCache.class);
-	
 	private List<Rank> ranks;
 
 	private Map<String, TaxonomyParsedNameCache> rankToCache;
 	private static long cacheHit = 0;
 	private static long cacheMiss = 0;
-	
+
 	@Inject
 	public TaxonomyCache(RankSerivce rankSerivce, UtilityServiceApi utilityServiceApi) {
 		ranks = rankSerivce.getAllRank(null);
@@ -56,18 +51,20 @@ public class TaxonomyCache {
 	public static void increamentCacheMiss() {
 		cacheMiss++;
 	}
+
 	public static long getCacheHit() {
 		return cacheHit;
 	}
+
 	public static long getCacheMiss() {
 		return cacheMiss;
 	}
 }
 
-class TaxonomyParsedNameCache extends Cache<String, ParsedName>{
+class TaxonomyParsedNameCache extends Cache<String, ParsedName> {
 
 	private UtilityServiceApi utilityServiceApi;
-	
+
 	public TaxonomyParsedNameCache(UtilityServiceApi utilityServiceApi, int size) {
 		super(size);
 		this.utilityServiceApi = utilityServiceApi;
@@ -98,7 +95,7 @@ abstract class Cache<K, V> {
 		if (hashTable.containsKey(k)) {
 			TaxonomyCache.increamentCacheHit();
 			node = hashTable.get(k);
-			if(node.getValue() == null) {
+			if (node.getValue() == null) {
 				doublyLinkedList.remove(node);
 				hashTable.remove(node);
 				return getValue(k);
@@ -210,7 +207,7 @@ class DoublyLinkedList<K, V> {
 			last.setNext(node);
 			last = node;
 		}
-		
+
 		currSize++;
 		return node;
 	}
@@ -221,7 +218,7 @@ class DoublyLinkedList<K, V> {
 		}
 		DLLNode<K, V> node = first;
 		first = first.getNext();
-		if(first == null) 
+		if (first == null)
 			last = null;
 		node.setNext(null);
 		node.setPrev(null);

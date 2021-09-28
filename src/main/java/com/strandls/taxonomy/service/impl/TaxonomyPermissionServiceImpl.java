@@ -129,7 +129,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 				User requestee = userService.getUser(permissionData.getUserId().toString());
 				TaxonomyDefinition taxDef = taxDefinationDao.findById(permissionData.getTaxonId());
 
-				mailUtils.sendPermissionGrant(requestee, taxDef.getName(), permissionData.getRole(),
+				mailUtils.sendPermissionGrant(requestee, taxDef.getName(), role.getValue(),
 						permissionData.getTaxonId());
 				return true;
 
@@ -182,9 +182,10 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			User requestee = userService.getUser(permissionReq.getUserId().toString());
 			TaxonomyDefinition taxDef = taxDefinationDao.findById(permissionReq.getTaxonConceptId());
 			List<User> requestors = userService.getAllAdmins();
+			TreeRoles role = TreeRoles.valueOf(permissionReq.getRole().replace(" ", ""));
 
-			mailUtils.sendPermissionRequest(requestors, taxDef.getName(), taxDef.getId(), permissionReq.getRole(),
-					requestee, encryptedKey);
+			mailUtils.sendPermissionRequest(requestors, taxDef.getName(), taxDef.getId(), role.getValue(), requestee,
+					encryptedKey);
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -202,19 +203,18 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 				String reqdata = encryptUtils.decrypt(encryptedKey.getToken());
 				SpeciesPermissionRequest permissionReq = om.readValue(reqdata, SpeciesPermissionRequest.class);
 				SpeciesPermissionRequest permissionReqOriginal = permissionReqDao.findById(permissionReq.getId());
+				TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole().replace(" ", ""));
 				if (permissionReqOriginal.equals(permissionReq)) {
 
 					SpeciesPermission alreadyExist = speciesPermissionDao.findPermissionOntaxon(
 							permissionReqOriginal.getUserId(), permissionReqOriginal.getTaxonConceptId());
 					if (alreadyExist == null) {
-						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole().replace(" ", ""));
 						SpeciesPermission permission = new SpeciesPermission(null, 0L,
 								permissionReqOriginal.getUserId(), new Date(), roleIdMap.get(role),
 								permissionReqOriginal.getTaxonConceptId());
 						speciesPermissionDao.save(permission);
 
 					} else {
-						TreeRoles role = TreeRoles.valueOf(permissionReqOriginal.getRole().replace(" ", ""));
 
 						if (!alreadyExist.getPermissionType().equals(roleIdMap.get(role))) {
 							alreadyExist.setPermissionType(roleIdMap.get(role));
@@ -226,7 +226,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 					User requestee = userService.getUser(permissionReq.getUserId().toString());
 					TaxonomyDefinition taxDef = taxDefinationDao.findById(permissionReq.getTaxonConceptId());
 
-					mailUtils.sendPermissionGrant(requestee, taxDef.getName(), permissionReq.getRole(),
+					mailUtils.sendPermissionGrant(requestee, taxDef.getName(), role.getValue(),
 							permissionReq.getTaxonConceptId());
 
 					return true;
