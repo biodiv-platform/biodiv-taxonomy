@@ -29,6 +29,7 @@ import com.strandls.taxonomy.pojo.response.BreadCrumb;
 import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.service.TaxonomyRegistryService;
 import com.strandls.taxonomy.util.EncryptionUtils;
+import com.strandls.taxonomy.util.EsUserSpeciesPermissionUpdate;
 import com.strandls.taxonomy.util.MailUtils;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.user.controller.UserServiceApi;
@@ -68,6 +69,10 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 
 	@Inject
 	private UserServiceApi userService;
+	
+	@Inject
+	private EsUserSpeciesPermissionUpdate userPermissionUpdate;
+
 
 	private Map<TreeRoles, Long> roleIdMap = TaxonomyUtil.getRoleIdMap();
 
@@ -120,9 +125,11 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 					SpeciesPermission speciesPermission = new SpeciesPermission(null, 0L, permissionData.getUserId(),
 							new Date(), roleIdMap.get(role), permissionData.getTaxonId());
 					speciesPermissionDao.save(speciesPermission);
+					userPermissionUpdate.speciesUserPermissionEsUpdate(permissionData.getUserId());
 				} else {
 					hasPermission.setPermissionType(roleIdMap.get(role));
 					speciesPermissionDao.update(hasPermission);
+					userPermissionUpdate.speciesUserPermissionEsUpdate(permissionData.getUserId());
 
 				}
 
@@ -213,12 +220,15 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 								permissionReqOriginal.getUserId(), new Date(), roleIdMap.get(role),
 								permissionReqOriginal.getTaxonConceptId());
 						speciesPermissionDao.save(permission);
+						userPermissionUpdate.speciesUserPermissionEsUpdate(permissionReqOriginal.getUserId());
 
 					} else {
 
 						if (!alreadyExist.getPermissionType().equals(roleIdMap.get(role))) {
 							alreadyExist.setPermissionType(roleIdMap.get(role));
 							speciesPermissionDao.update(alreadyExist);
+							userPermissionUpdate.speciesUserPermissionEsUpdate(permissionReqOriginal.getUserId());
+
 						}
 					}
 					permissionReqDao.delete(permissionReqOriginal);

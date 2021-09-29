@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.inject.Inject;
 import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
@@ -15,8 +18,12 @@ import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.service.SpeciesGroupService;
 import com.strandls.taxonomy.util.AbstractService;
+import com.strandls.taxonomy.util.EsUserSpeciesPermissionUpdate;
+import com.strandls.user.ApiException;
 
 public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> implements SpeciesGroupService {
+
+	private final Logger logger = LoggerFactory.getLogger(SpeciesGroupServiceImpl.class);
 
 	@Inject
 	private SpeciesGroupMappingDao speciesMappingDao;
@@ -29,6 +36,9 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 
 	@Inject
 	private TaxonomyRegistryDao taxonomyRegistryDao;
+
+	@Inject
+	private EsUserSpeciesPermissionUpdate userPermissionUpdate;
 
 	@Inject
 	public SpeciesGroupServiceImpl(SpeciesGroupDao dao) {
@@ -48,7 +58,13 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 
 	@Override
 	public SpeciesPermission save(SpeciesPermission speciesPermission) {
-		return speciesPermissionDao.save(speciesPermission);
+		SpeciesPermission resp  = speciesPermissionDao.save(speciesPermission);
+		try {
+			userPermissionUpdate.speciesUserPermissionEsUpdate(speciesPermission.getAuthorId());
+		} catch (ApiException e) {
+			logger.error(e.getMessage());
+		}
+		return resp;
 	}
 
 	@Override
