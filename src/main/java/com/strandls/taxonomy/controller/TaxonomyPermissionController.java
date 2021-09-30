@@ -21,8 +21,6 @@ import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.EncryptedKey;
 import com.strandls.taxonomy.pojo.PermissionData;
 import com.strandls.taxonomy.service.TaxonomyPermisisonService;
-import com.strandls.taxonomy.util.EsUserSpeciesPermissionUpdate;
-import com.strandls.user.ApiException;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,19 +40,12 @@ public class TaxonomyPermissionController {
 
 	@Inject
 	private TaxonomyPermisisonService permissionService;
-	@Inject
-	private  EsUserSpeciesPermissionUpdate speciesPermissionUpdate;
 
 	@GET
 	@Path(ApiConstants.PING)
 	@Produces(MediaType.TEXT_PLAIN)
 	@ApiOperation(value = "Dummy API Ping", notes = "Checks validity of war file at deployment", response = String.class)
 	public Response ping() {
-		try {
-			speciesPermissionUpdate.speciesUserPermissionEsUpdate(1L);
-		} catch (ApiException e) {
-			e.printStackTrace();
-		}
 		return Response.status(Status.OK).entity("PONG").build();
 	}
 

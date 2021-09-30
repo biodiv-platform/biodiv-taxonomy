@@ -41,9 +41,8 @@ public class EsUserSpeciesPermissionUpdate {
 			List<Long> taxonList = list.stream().map(x -> x.getTaxonConceptId()).collect(Collectors.toList());
 			UserTaxonRoleMapping taxonRoleMapping = new UserTaxonRoleMapping(userId, role.getId(), role.getAuthority(),
 					taxonList.stream().toArray(Long[]::new));
-			
+			if (!taxonList.isEmpty())
 				ugRoleMapping.add(taxonRoleMapping);
-			
 
 		});
 		Map<String, Object> doc = new HashMap<String, Object>();
