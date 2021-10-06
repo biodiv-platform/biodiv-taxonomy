@@ -295,6 +295,9 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, List<String> rankList,
 			List<String> statusList, List<String> positionList, Integer limit, Integer offset) throws IOException {
 
+		classificationId = classificationId == null ? TaxonomyRegistryDao.getDefaultClassificationId()
+				: classificationId;
+		
 		String qryString = TaxonomyConfig.fetchFileAsString(TAXONOMY_NAMELIST_QUERY);
 		String countQueryString = "select count(*) from ( " + qryString + ") C";
 
@@ -312,9 +315,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 		Query<TaxonomyNamelistItem> query = session.createNativeQuery(qryString)
 				.setResultSetMapping("TaxonomyNameList");
-
-		classificationId = classificationId == null ? TaxonomyRegistryDao.getDefaultClassificationId()
-				: classificationId;
 
 		query.setParameter(TAXON_ID, taxonId);
 		query.setParameter("classificationId", classificationId);

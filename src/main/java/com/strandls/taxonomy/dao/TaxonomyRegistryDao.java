@@ -336,16 +336,9 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			String sqlString = "select * from taxonomy_registry_backup "
 					+ " where taxon_definition_id =:taxonId and (classification_id =:classificationId or classification_id = ( "
 					+ " select classification_id from taxonomy_registry_backup "
-					+ " where taxon_definition_id = :taxonId " 
-					+ " group by classification_id "
-					+ " order by case classification_id " 
-					+ " when 7 then 1" 
-					+ " when 5 then 2" 
-					+ "	when 4 then 3"
-					+ "	when 8 then 4" 
-					+ "	when 3 then 5" 
-					+ "	when 2 then 6" 
-					+ " else 7 end limit 1"
+					+ " where taxon_definition_id = :taxonId " + " group by classification_id "
+					+ " order by case classification_id " + " when 821 then 1" + " when 820 then 2" + "	when 819 then 3"
+					+ "	when 818 then 4" + "	when 817 then 5" + "	when 265798 then 6" + " else 7 end limit 1"
 					+ ")) order by classification_id desc";
 			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class);
 			query.setParameter(TAXON_ID, taxonId);
