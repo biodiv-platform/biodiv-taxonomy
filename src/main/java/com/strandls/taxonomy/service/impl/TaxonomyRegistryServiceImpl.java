@@ -66,7 +66,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 		String[] paths = taxoRegistry.getPath().split("\\.");
 		List<Long> taxonIds = new ArrayList<>();
-		for(String path : paths) {
+		for (String path : paths) {
 			taxonIds.add(Long.parseLong(path));
 		}
 		List<BreadCrumb> breadCrumbs = new ArrayList<>();
@@ -173,8 +173,8 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	@Override
 	public Map<String, Object> snapRawNames()
 			throws CloneNotSupportedException, UnRecongnizedRankException, ApiException, TaxonCreationException {
-		String countQueryString = "select id from taxonomy_definition where position = :position and status = :status and rank = :rank";
-		String queryString = "from TaxonomyDefinition td where td.position = :position and td.status = :status and rank = :rank order by id";
+		String countQueryString = "select id from taxonomy_definition where position = :position and status = :status and rank = :rank and is_deleted = false";
+		String queryString = "from TaxonomyDefinition td where td.position = :position and td.status = :status and rank = :rank and isDeleted = false order by id";
 
 		Map<String, Object> parameters = new HashMap<>();
 		parameters.put(STATUS, TaxonomyStatus.ACCEPTED.name());
@@ -183,7 +183,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		return snapNames(queryString, parameters, countQueryString);
 	}
 
-	private Map<String, Object> snapNames(String queryString, Map<String, Object> parameters, String countQueryString){
+	private Map<String, Object> snapNames(String queryString, Map<String, Object> parameters, String countQueryString) {
 
 		Map<String, Object> duplicateWithSnapping = new HashMap<>();
 		Map<String, Object> duplicateWithoutSnapping = new HashMap<>();
@@ -192,15 +192,12 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		Map<String, Object> hierarchyMissmatched = new HashMap<>();
 		Map<String, Object> duplicatesInHierarchy = new HashMap<>();
 
-		Long duplicateWithSnappingCount = 0L;
-		Long duplicateWithoutSnappingCount = 0L;
-		Long requiredRankMissingCount = 0L;
-		Long hierarchyMissmatchedCount = 0L;
-		Long missingEntryCount = 0L;
-		Long duplicatesInHierarchyCount = 0L;
-
 		Long defaultClassificationId = TaxonomyRegistryDao.getDefaultClassificationId();
 		List<Rank> ranksBottomToTop = rankDao.getAllRank(false);
+
+		TaxonomyDefinition rootDefinition = taxonomyDefinitionDao.findByCanonicalForm("Root", "root").get(0);
+
+		TaxonomyRegistry root = taxonomyRegistryDao.findbyTaxonomyId(rootDefinition.getId(), defaultClassificationId);
 
 		// Snapping the name rank wise from top to bottom
 		List<Rank> ranksTopToBottom = rankDao.getAllRank(true);
@@ -221,46 +218,29 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 					Long userId = definition.getUploaderId();
 					List<TaxonomyRegistry> taxonomyRegistrys = taxonomyRegistryDao
 							.getSnappingCandidates(definition.getId());
-					if (taxonomyRegistrys.isEmpty()) { // Missing the entry in taxonomy registry
-						if (definition.getIsDeleted().booleanValue())
-							continue;
-						missingEntry.put(definition.getId().toString(), "Missing entry for the definition in taxonomy");
-						missingEntryCount++;
-						continue;
-					}
 
-					boolean isDefaultHierchy = defaultClassificationId
-							.equals(taxonomyRegistrys.get(0).getClassificationId());
 					TaxonomyRegistry candidateToSnap;
-					int size = taxonomyRegistrys.size();
-					if (isDefaultHierchy) {
-						if (size > 2) {
-							candidateToSnap = taxonomyRegistrys.get(0);
+					boolean isDefaultHierchy;
+					if (taxonomyRegistrys.isEmpty()) {
+						candidateToSnap = new TaxonomyRegistry();
 
-							// Reporting this because we are falling back to IBP hierarchy
-							Map<String, Object> duplicateHierarchyStatus = new HashMap<>();
-							duplicateHierarchyStatus.put("Snapping candidate status", "found");
-							duplicateHierarchyStatus.put("Snapping candidate", candidateToSnap);
-							duplicateHierarchyStatus.put("Snapping Hierarchy",
-									taxonomyRegistryDao.getNameFromPath(candidateToSnap.getPath()));
-							duplicateHierarchyStatus.put("duplicate hierarchy", taxonomyRegistrys.subList(1, size));
-							duplicateWithSnapping.put(definition.getId().toString(), duplicateHierarchyStatus);
-							duplicateWithSnappingCount++;
-						} else {
-							// This is perfect scenario where you got single candidate for snapping
-							candidateToSnap = taxonomyRegistrys.get(size - 1);
-						}
-					} else if (size == 1) {
-						// Only one decision we have here to snap
-						candidateToSnap = taxonomyRegistrys.get(0);
+						String path = root.getPath() + "." + definition.getId();
+
+						candidateToSnap.setPath(path);
+						candidateToSnap.setClassificationId(defaultClassificationId);
+						candidateToSnap.setRank(definition.getRank());
+						candidateToSnap.setTaxonomyDefinationId(definition.getId());
+						candidateToSnap.setUploaderId(definition.getUploaderId());
+						candidateToSnap.setUploadTime(definition.getUploadTime());
+						isDefaultHierchy = true;
 					} else {
-						// We do not have proper snapping candidate here. Report
-						Map<String, Object> duplicateHierarchyStatus = new HashMap<>();
-						duplicateHierarchyStatus.put("Snapping candidate status", "Not found");
-						duplicateHierarchyStatus.put("duplicate hierarchy", taxonomyRegistrys);
-						duplicateWithoutSnapping.put(definition.getId().toString(), duplicateHierarchyStatus);
-						duplicateWithoutSnappingCount++;
-						continue;
+						isDefaultHierchy = defaultClassificationId
+								.equals(taxonomyRegistrys.get(0).getClassificationId());
+						
+						candidateToSnap = getCandidateToSnap(definition, taxonomyRegistrys, duplicateWithSnapping,
+								duplicateWithoutSnapping, isDefaultHierchy);
+						if (candidateToSnap == null)
+							continue;
 					}
 
 					// Get Name details for the path
@@ -278,56 +258,13 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 						r.put("hierarchy", nodeWithParents);
 						r.put("classification", candidateToSnap.getClassificationId());
 						duplicatesInHierarchy.put(definition.getId().toString(), r);
-						duplicatesInHierarchyCount++;
 						continue;
 					}
 
 					StringBuilder newPath = new StringBuilder();
 					if (!TaxonomyUtil.validateHierarchy(ranksBottomToTop, rankNames)) {
-						if (TaxonomyPosition.CLEAN.name().equals(definition.getPosition())) {
-							Map<String, Object> r = new HashMap<>();
-							r.put("status", "Required rank missing in the hierarchy");
-							r.put("path", candidateToSnap.getPath());
-							r.put("hierarchy", nodeWithParents);
-							r.put("classification", candidateToSnap.getClassificationId());
-							requiredRankMissing.put(definition.getId().toString(), r);
-							requiredRankMissingCount++;
-							continue;
-						} else {
-							Double highestRank = TaxonomyUtil.getHighestInputRank(ranksBottomToTop, rankNames);
-							Map<String, TaxonomyRegistryResponse> rankToRegistry = new HashMap<>();
-
-							for (TaxonomyRegistryResponse r : nodeWithParents) {
-								rankToRegistry.put(r.getRank(), r);
-							}
-
-							Long parentId = 0L;
-
-							for (Rank rank : ranksTopToBottom) {
-								// Skipping these ranks,
-								if (rank.getRankValue() > highestRank)
-									break;
-								if (rank.getIsRequired().booleanValue() && !rankNames.contains(rank.getName())) {
-									TaxonomyPosition position = TaxonomyPosition.fromValue(definition.getPosition());
-									TaxonomyDefinition notAssignedName = taxonomyRegistryDao
-											.findChildWithNotAssigned(parentId, null);
-									if (notAssignedName == null) {
-										// Create not assigned name.
-										notAssignedName = taxonomyDefinitionDao.createNotAssignedName(rank.getName(),
-												position, userId);
-									}
-									parentId = notAssignedName.getId();
-								} else if (!rank.getIsRequired().booleanValue()
-										&& !rankNames.contains(rank.getName())) {
-									continue;
-								} else {
-									parentId = Long.parseLong(rankToRegistry.get(rank.getName()).getId());
-								}
-								if (!"".equals(newPath.toString()))
-									newPath.append(".");
-								newPath.append(parentId);
-							}
-						}
+						newPath = createNotAssignedHierarchy(definition, ranksBottomToTop, ranksTopToBottom, rankNames,
+								nodeWithParents, userId);
 					}
 
 					// If there is no update to path then use existing one
@@ -342,32 +279,16 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 					// Get the parent on which we are going to snap
 					TaxonomyRegistry parentToSnapOn = taxonomyRegistryDao.getParentToSnapOn(newPath.toString());
 
-					// Generate base path with respect to snapping parent
-					StringBuilder path = new StringBuilder(parentToSnapOn.getPath());
-
-					// Move till you get the correct parent on which you will snap.
-					int index = 0;
-					while (!nodeWithParents.get(index).getId()
-							.equals(parentToSnapOn.getTaxonomyDefinationId().toString()))
-						index++;
-
-					// Moving for the node.
-					index++;
-
-					// Create registry for all the children below the node.
-					while (index < nodeWithParents.size()) {
-						TaxonomyRegistryResponse treeNode = nodeWithParents.get(index);
-						path.append(".");
-						path.append(treeNode.getId());
-						String rank = treeNode.getRank();
-						Long taxonId = Long.parseLong(treeNode.getId());
-						taxonomyRegistryDao.createRegistry(defaultClassificationId, path.toString(), rank, taxonId,
-								userId, definition.getUploadTime());
-						index++;
-					}
+					StringBuilder path = createRequiredChildren(rootDefinition, parentToSnapOn, nodeWithParents,
+							defaultClassificationId, userId);
 
 					if (isDefaultHierchy) {
-						String defaultHierarchy = taxonomyRegistrys.get(0).getPath();
+						String defaultHierarchy;
+						if(taxonomyRegistrys.isEmpty()) {
+							defaultHierarchy = candidateToSnap.getPath();
+						} else {
+							defaultHierarchy = taxonomyRegistrys.get(0).getPath();
+						}
 						if (!defaultHierarchy.equals(path.toString())) {
 							Map<String, Object> hierarchyMissmatchedStatus = new HashMap<>();
 							hierarchyMissmatchedStatus.put("Taxon Id", definition.getId());
@@ -385,19 +306,18 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 									taxonomyRegistryDao.getNameFromPath(newPath.toString()));
 							hierarchyMissmatchedStatus.put("classification", candidateToSnap.getClassificationId());
 							hierarchyMissmatched.put(definition.getId().toString(), hierarchyMissmatchedStatus);
-							hierarchyMissmatchedCount++;
 						}
 					}
 				}
 			}
 		}
 
-		requiredRankMissing.put("requiredRankMissingCount", requiredRankMissingCount);
-		missingEntry.put("missingEntryCount", missingEntryCount);
-		duplicateWithSnapping.put("duplicateWithSnappingCount", duplicateWithSnappingCount);
-		duplicateWithoutSnapping.put("duplicateWithoutSnappingCount", duplicateWithoutSnappingCount);
-		hierarchyMissmatched.put("hierarchyMissmatchedCount", hierarchyMissmatchedCount);
-		duplicatesInHierarchy.put("duplicatesInHierarchyCount", duplicatesInHierarchyCount);
+		requiredRankMissing.put("requiredRankMissingCount", requiredRankMissing.size());
+		missingEntry.put("missingEntryCount", missingEntry.size());
+		duplicateWithSnapping.put("duplicateWithSnappingCount", duplicateWithSnapping.size());
+		duplicateWithoutSnapping.put("duplicateWithoutSnappingCount", duplicateWithoutSnapping.size());
+		hierarchyMissmatched.put("hierarchyMissmatchedCount", hierarchyMissmatched.size());
+		duplicatesInHierarchy.put("duplicatesInHierarchyCount", duplicatesInHierarchy.size());
 
 		Map<String, Object> response = new HashMap<>();
 		Long count = taxonomyDefinitionDao.getRowCount();
@@ -411,10 +331,113 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		return response;
 	}
 
+	private StringBuilder createRequiredChildren(TaxonomyDefinition definition, TaxonomyRegistry parentToSnapOn,
+			List<TaxonomyRegistryResponse> nodeWithParents, Long defaultClassificationId, Long userId) {
+		// Generate base path with respect to snapping parent
+		StringBuilder path = new StringBuilder(parentToSnapOn.getPath());
+
+		// Move till you get the correct parent on which you will snap.
+		int index = 0;
+		while (!nodeWithParents.get(index).getId().equals(parentToSnapOn.getTaxonomyDefinationId().toString()))
+			index++;
+
+		// Moving for the node.
+		index++;
+
+		// Create registry for all the children below the node.
+		while (index < nodeWithParents.size()) {
+			TaxonomyRegistryResponse treeNode = nodeWithParents.get(index);
+			path.append(".");
+			path.append(treeNode.getId());
+			String rank = treeNode.getRank();
+			Long taxonId = Long.parseLong(treeNode.getId());
+			taxonomyRegistryDao.createRegistry(defaultClassificationId, path.toString(), rank, taxonId, userId,
+					definition.getUploadTime());
+			index++;
+		}
+		return path;
+	}
+
+	private TaxonomyRegistry getCandidateToSnap(TaxonomyDefinition definition, List<TaxonomyRegistry> taxonomyRegistrys,
+			Map<String, Object> duplicateWithSnapping, Map<String, Object> duplicateWithoutSnapping,
+			boolean isDefaultHierchy) {
+
+		TaxonomyRegistry candidateToSnap;
+		int size = taxonomyRegistrys.size();
+		if (isDefaultHierchy) {
+			if (size > 2) {
+				candidateToSnap = taxonomyRegistrys.get(0);
+
+				// Reporting this because we are falling back to IBP hierarchy
+				Map<String, Object> duplicateHierarchyStatus = new HashMap<>();
+				duplicateHierarchyStatus.put("Snapping candidate status", "found");
+				duplicateHierarchyStatus.put("Snapping candidate", candidateToSnap);
+				duplicateHierarchyStatus.put("Snapping Hierarchy",
+						taxonomyRegistryDao.getNameFromPath(candidateToSnap.getPath()));
+				duplicateHierarchyStatus.put("duplicate hierarchy", taxonomyRegistrys.subList(1, size));
+				duplicateWithSnapping.put(definition.getId().toString(), duplicateHierarchyStatus);
+			} else {
+				// This is perfect scenario where you got single candidate for snapping
+				candidateToSnap = taxonomyRegistrys.get(size - 1);
+			}
+		} else if (size == 1) {
+			// Only one decision we have here to snap
+			candidateToSnap = taxonomyRegistrys.get(0);
+		} else {
+			// We do not have proper snapping candidate here. Report
+			Map<String, Object> duplicateHierarchyStatus = new HashMap<>();
+			duplicateHierarchyStatus.put("Snapping candidate status", "Not found");
+			duplicateHierarchyStatus.put("duplicate hierarchy", taxonomyRegistrys);
+			duplicateWithoutSnapping.put(definition.getId().toString(), duplicateHierarchyStatus);
+			return null;
+		}
+		return candidateToSnap;
+	}
+
+	private StringBuilder createNotAssignedHierarchy(TaxonomyDefinition definition, List<Rank> ranksBottomToTop,
+			List<Rank> ranksTopToBottom, Set<String> rankNames, List<TaxonomyRegistryResponse> nodeWithParents,
+			Long userId) {
+		StringBuilder newPath = new StringBuilder();
+		Double highestRank = TaxonomyUtil.getHighestInputRank(ranksBottomToTop, rankNames);
+		Map<String, TaxonomyRegistryResponse> rankToRegistry = new HashMap<>();
+
+		for (TaxonomyRegistryResponse r : nodeWithParents) {
+			rankToRegistry.put(r.getRank(), r);
+		}
+
+		Long parentId = 0L;
+
+		for (Rank rank : ranksTopToBottom) {
+			// Skipping these ranks,
+			if (rank.getRankValue() > highestRank)
+				break;
+			if (rank.getIsRequired().booleanValue() && !rankNames.contains(rank.getName())) {
+				TaxonomyPosition position = TaxonomyPosition.fromValue(definition.getPosition());
+				TaxonomyDefinition notAssignedName = taxonomyRegistryDao.findChildWithNotAssigned(parentId, null);
+				if (notAssignedName == null) {
+					// Create not assigned name.
+					notAssignedName = taxonomyDefinitionDao.createNotAssignedName(rank.getName(), position, userId);
+				}
+				parentId = notAssignedName.getId();
+			} else if (!rank.getIsRequired().booleanValue() && !rankNames.contains(rank.getName())) {
+				continue;
+			} else {
+				parentId = Long.parseLong(rankToRegistry.get(rank.getName()).getId());
+			}
+			if (!"".equals(newPath.toString()))
+				newPath.append(".");
+			newPath.append(parentId);
+		}
+
+		return newPath;
+	}
+
+	
+	
 	public Map<String, Object> migrateCleanName() throws CloneNotSupportedException {
 
-		String countQueryString = "select id from taxonomy_definition where position = :position and status = :status";
-		String queryString = "from TaxonomyDefinition td where td.position = :position and td.status = :status order by id";
+		String countQueryString = "select id from taxonomy_definition where position = :position and status = :status and is_deleted = false";
+		String queryString = "from TaxonomyDefinition td where td.position = :position and td.status = :status and isDeleted = false order by id";
 
 		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("status", TaxonomyStatus.ACCEPTED.name());
@@ -436,10 +459,6 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		int requiredRankMissingCount = 0;
 
 		List<Rank> ranks = rankDao.getAllRank();
-		/*
-		 * classificationIds.add(821L); classificationIds.add(819L);
-		 * classificationIds.add(818L); classificationIds.add(817L);
-		 */
 
 		// migrate in the batch of 1000
 		for (int i = 0; i < cleanNameCount; i += BATCH_SIZE) {
