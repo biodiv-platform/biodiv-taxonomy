@@ -31,7 +31,7 @@ public class EsUserSpeciesPermissionUpdate {
 	private SpeciesPermissionDao speciesPermissionDao;
 
 	@Inject
-	EsServicesApi esService;
+	private EsServicesApi esService;
 
 	public void speciesUserPermissionEsUpdate(Long userId) throws ApiException {
 		List<UserTaxonRoleMapping> ugRoleMapping = new ArrayList<UserTaxonRoleMapping>();
@@ -40,7 +40,7 @@ public class EsUserSpeciesPermissionUpdate {
 			List<SpeciesPermission> list = speciesPermissionDao.getTaxonIdByUserAndRole(userId, role.getId());
 			List<Long> taxonList = list.stream().map(x -> x.getTaxonConceptId()).collect(Collectors.toList());
 			UserTaxonRoleMapping taxonRoleMapping = new UserTaxonRoleMapping(userId, role.getId(), role.getAuthority(),
-					taxonList.stream().toArray(Long[]::new));
+					taxonList);
 			if (!taxonList.isEmpty())
 				ugRoleMapping.add(taxonRoleMapping);
 

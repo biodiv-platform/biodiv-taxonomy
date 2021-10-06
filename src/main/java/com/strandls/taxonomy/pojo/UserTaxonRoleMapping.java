@@ -1,11 +1,13 @@
 package com.strandls.taxonomy.pojo;
 
+import java.util.List;
+
 public class UserTaxonRoleMapping {
 
 	private Long userid;
 	private Long roleid;
 	private String role;
-	private Long[] taxonomyids;
+	private List<Long> taxonomyids;
 
 	public UserTaxonRoleMapping() {
 		super();
@@ -18,7 +20,7 @@ public class UserTaxonRoleMapping {
 	 * @param role
 	 * @param taxonomyids
 	 */
-	public UserTaxonRoleMapping(Long userid, Long roleid, String role, Long[] taxonomyids) {
+	public UserTaxonRoleMapping(Long userid, Long roleid, String role, List<Long> taxonomyids) {
 		super();
 		this.userid = userid;
 		this.roleid = roleid;
@@ -50,11 +52,11 @@ public class UserTaxonRoleMapping {
 		this.role = role;
 	}
 
-	public Long[] getTaxonomyids() {
+	public List<Long> getTaxonomyids() {
 		return taxonomyids;
 	}
 
-	public void setTaxonomyids(Long[] taxonomyids) {
+	public void setTaxonomyids(List<Long>taxonomyids) {
 		this.taxonomyids = taxonomyids;
 	}
 
