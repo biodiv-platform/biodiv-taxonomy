@@ -42,6 +42,14 @@ public class TaxonomyPermissionController {
 	private TaxonomyPermisisonService permissionService;
 
 	@GET
+	@Path(ApiConstants.PING)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "Dummy API Ping", notes = "Checks validity of war file at deployment", response = String.class)
+	public Response ping() {
+		return Response.status(Status.OK).entity("PONG").build();
+	}
+
+	@GET
 	@Path(ApiConstants.SPECIES + "/{taxonId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)

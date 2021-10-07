@@ -113,4 +113,22 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
+	public List<SpeciesPermission> getTaxonIdByUserAndRole(Long userId, Long roleId) {
+		String qry = "from SpeciesPermission where authorId = :userId  and permissionType = :roleId";
+		Session session = sessionFactory.openSession();
+		List<SpeciesPermission> result = null;
+		try {
+			Query<SpeciesPermission> query = session.createQuery(qry);
+			query.setParameter(USER_ID, userId);
+			query.setParameter("roleId", roleId);
+			result = query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
 }
