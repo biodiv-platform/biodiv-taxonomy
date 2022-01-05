@@ -120,7 +120,7 @@ public class CommonNameController {
 	@ApiOperation(value = "Update the preffered common name over all", notes = "Return the common name", response = CommonName.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 404, message = "Could not set the common name to preffered", response = String.class) })
-	public Response updateIsPreffered(@Context HttpServletRequest request, @QueryParam("commonNameId") Long id) {
+	public Response updateIsPreffered(@Context HttpServletRequest request, @ApiParam("commonNameId") Long id) {
 		try {
 			CommonName commonName = commonNameService.updateIsPreffered(id);
 			return Response.ok().entity(commonName).build();
