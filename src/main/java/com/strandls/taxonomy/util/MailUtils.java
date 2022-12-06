@@ -37,7 +37,7 @@ public class MailUtils {
 	private RabbitMQProducer mailProducer;
 
 	public void sendPermissionRequest(List<User> requestors, String taxonName, Long taxonId, String role,
-			User requestee, String encryptedKey) {
+			User requestee, String encryptedKey, String requestorMessage) {
 		List<String> emailList = new ArrayList<String>();
 		for (User requestor : requestors) {
 			if (requestor.getEmail() != null)
@@ -45,7 +45,7 @@ public class MailUtils {
 		}
 		try {
 			Map<String, Object> data = new HashMap<>();
-			data.put(FIELDS.TO.getAction(),  emailList.toArray());
+			data.put(FIELDS.TO.getAction(), emailList.toArray());
 			data.put(FIELDS.SUBSCRIPTION.getAction(), true);
 			Map<String, Object> permissionRequest = new HashMap<>();
 
@@ -55,6 +55,7 @@ public class MailUtils {
 			permissionRequest.put(PERMISSION_REQUEST.ROLE.getAction(), role);
 			permissionRequest.put(PERMISSION_REQUEST.TAXON_ID.getAction(), taxonId);
 			permissionRequest.put(PERMISSION_REQUEST.TAXON_NAME.getAction(), taxonName);
+			permissionRequest.put(PERMISSION_REQUEST.REQUESTOR_MESSAGE.getAction(), requestorMessage);
 
 			data.put(FIELDS.DATA.getAction(), JsonUtil.unflattenJSON(permissionRequest));
 

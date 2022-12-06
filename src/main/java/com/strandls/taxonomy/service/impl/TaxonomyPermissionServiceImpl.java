@@ -69,10 +69,9 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 
 	@Inject
 	private UserServiceApi userService;
-	
+
 	@Inject
 	private EsUserSpeciesPermissionUpdate userPermissionUpdate;
-
 
 	private Map<TreeRoles, Long> roleIdMap = TaxonomyUtil.getRoleIdMap();
 
@@ -167,19 +166,19 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			SpeciesPermissionRequest permissionRequest = new SpeciesPermissionRequest(null, permissionData.getTaxonId(),
 					userId, role.getValue());
 			permissionRequest = permissionReqDao.save(permissionRequest);
-			sendMail(permissionRequest);
+			sendMail(permissionRequest, permissionData.getRequestorMessage());
 		} else {
 			if (!role.getValue().equalsIgnoreCase(isExist.getRole())) {
 				isExist.setRole(role.getValue());
 				isExist = permissionReqDao.update(isExist);
 			}
-			sendMail(isExist);
+			sendMail(isExist, permissionData.getRequestorMessage());
 
 		}
 		return true;
 	}
 
-	private void sendMail(SpeciesPermissionRequest permissionReq) {
+	private void sendMail(SpeciesPermissionRequest permissionReq, String requestorMessage) {
 
 		String reqText;
 		try {
@@ -192,7 +191,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			TreeRoles role = TreeRoles.valueOf(permissionReq.getRole().replace(" ", ""));
 
 			mailUtils.sendPermissionRequest(requestors, taxDef.getName(), taxDef.getId(), role.getValue(), requestee,
-					encryptedKey);
+					encryptedKey, requestorMessage);
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());

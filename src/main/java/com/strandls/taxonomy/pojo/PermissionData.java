@@ -13,6 +13,7 @@ public class PermissionData {
 	private Long taxonId;
 	private Long userId;
 	private String role;
+	private String requestorMessage;
 
 	/**
 	 * 
@@ -25,12 +26,14 @@ public class PermissionData {
 	 * @param taxonId
 	 * @param userId
 	 * @param role
+	 * @param requestorMessage
 	 */
-	public PermissionData(Long taxonId, Long userId, String role) {
+	public PermissionData(Long taxonId, Long userId, String role, String requestorMessage) {
 		super();
 		this.taxonId = taxonId;
 		this.userId = userId;
 		this.role = role;
+		this.requestorMessage = requestorMessage;
 	}
 
 	public Long getTaxonId() {
@@ -55,6 +58,14 @@ public class PermissionData {
 
 	public void setRole(String role) {
 		this.role = role;
+	}
+
+	public String getRequestorMessage() {
+		return requestorMessage;
+	}
+
+	public void setRequestorMessage(String requestorMessage) {
+		this.requestorMessage = requestorMessage;
 	}
 
 }
