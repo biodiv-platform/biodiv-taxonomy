@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 import com.strandls.activity.pojo.Activity;
@@ -47,6 +48,8 @@ public interface TaxonomyDefinitionSerivce {
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
 			throws IOException, ApiException, ExecutionException;
 
+	public Map<String, Object> nameMatching(FormDataBodyPart filePart) throws IOException;
+
 	public TaxonomicNames findSynonymCommonName(Long taxonId);
 
 	public List<TaxonomyDefinition> updateAddSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
@@ -57,7 +60,8 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 
-	public TaxonomyDefinitionShow updateName(HttpServletRequest request,Long taxonId, String taxonName) throws ApiException;
+	public TaxonomyDefinitionShow updateName(HttpServletRequest request, Long taxonId, String taxonName)
+			throws ApiException;
 
 	public TaxonomyDefinitionShow updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
 			throws ApiException, TaxonCreationException;
