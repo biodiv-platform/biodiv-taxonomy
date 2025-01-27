@@ -75,6 +75,7 @@ import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
 import com.strandls.esmodule.controllers.EsServicesApi;
+import com.strandls.esmodule.pojo.ExtendedTaxonDefinition;
 import com.strandls.utility.pojo.ParsedName;
 
 /**
@@ -658,8 +659,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 			if (cell != null) {
 				try {
-					List<Object> matches = esServicesApi.autoCompletion("etd", "_doc", "name", cell.toString(), null,
-							null);
+					ParsedName parsedName = utilityServiceApi.getNameParsed(cell.toString());
+
+					if (parsedName.getCanonicalName() == null)
+						throw new IllegalArgumentException("Scientific Name Cannot start with Small letter");
+
+					String canonicalName = parsedName.getCanonicalName().getSimple();
+					List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
+							"canonical_form", canonicalName);
 					List<Object> optMatches = new ArrayList<>();
 					for (Object match : matches) {
 						Long id = ((Integer) ((Map) match).get("id")).longValue();
@@ -676,6 +683,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					rowMap.put(rowValues, optMatches);
 					values.add(rowMap);
 				} catch (com.strandls.esmodule.ApiException e) {
+					e.printStackTrace();
+				} catch (ApiException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
