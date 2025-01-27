@@ -650,9 +650,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Map<Object, Object> rowMap = new HashMap<>();
 			Cell cell = row.getCell(0);
 			String rowValues = "";
-			for (Cell c : row) {
-				if (c != null) {
-					rowValues = rowValues + c.toString() + "|";
+			for (int i = 0; i < headers.size(); i++) {
+				if (row.getCell(i) != null) {
+					rowValues = rowValues + row.getCell(i).toString() + "|";
 				} else {
 					rowValues = rowValues + "" + "|";
 				}
