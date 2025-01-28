@@ -626,7 +626,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public Map<String, Object> nameMatching(FormDataBodyPart filePart) throws IOException {
+	public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index) throws IOException {
 		InputStream inputStream = filePart.getValueAs(InputStream.class);
 		Workbook workbook = new XSSFWorkbook(inputStream);
 		Map<String, Object> result = new LinkedHashMap<>();
@@ -648,7 +648,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Read the first column (index 0)
 			Map<Object, Object> rowMap = new HashMap<>();
-			Cell cell = row.getCell(0);
+			Cell cell = row.getCell(index);
 			String rowValues = "";
 			for (int i = 0; i < headers.size(); i++) {
 				if (row.getCell(i) != null) {

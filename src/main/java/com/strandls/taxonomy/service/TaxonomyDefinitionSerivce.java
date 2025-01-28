@@ -48,7 +48,7 @@ public interface TaxonomyDefinitionSerivce {
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
 			throws IOException, ApiException, ExecutionException;
 
-	public Map<String, Object> nameMatching(FormDataBodyPart filePart) throws IOException;
+	public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index) throws IOException;
 
 	public TaxonomicNames findSynonymCommonName(Long taxonId);
 

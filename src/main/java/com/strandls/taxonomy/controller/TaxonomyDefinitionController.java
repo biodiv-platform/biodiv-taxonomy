@@ -165,12 +165,13 @@ public class TaxonomyDefinitionController {
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response uploadSearch(final FormDataMultiPart multiPart) {
 		FormDataBodyPart filePart = multiPart.getField("file");
+		Integer index = Integer.valueOf(multiPart.getField("column").getValue());
 		if (filePart == null) {
 			return Response.status(Response.Status.BAD_REQUEST).entity("File not present").build();
 		} else {
 			Map<String, Object> result;
 			try {
-				result = taxonomyService.nameMatching(filePart);
+				result = taxonomyService.nameMatching(filePart, index);
 				return Response.ok().entity(result).build();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
