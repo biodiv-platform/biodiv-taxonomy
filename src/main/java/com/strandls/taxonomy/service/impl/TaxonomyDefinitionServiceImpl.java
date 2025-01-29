@@ -661,26 +661,30 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				try {
 					ParsedName parsedName = utilityServiceApi.getNameParsed(cell.toString());
 
-					if (parsedName.getCanonicalName() == null)
-						throw new IllegalArgumentException("Scientific Name Cannot start with Small letter");
+					if (parsedName.getCanonicalName() != null) {
 
-					String canonicalName = parsedName.getCanonicalName().getSimple();
-					List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
-							"canonical_form", canonicalName);
-					List<Object> optMatches = new ArrayList<>();
-					for (Object match : matches) {
-						Long id = ((Integer) ((Map) match).get("id")).longValue();
-						Map<String, Object> optMatch = new LinkedHashMap<>();
-						optMatch.put("name", ((Map) match).get("name"));
-						optMatch.put("rank", ((Map) match).get("rank"));
-						optMatch.put("status", ((Map) match).get("status"));
-						optMatch.put("position", ((Map) match).get("position"));
-						optMatch.put("group_name", ((Map) match).get("group_name"));
-						optMatch.put("id", id);
-						optMatches.add(optMatch);
+						String canonicalName = parsedName.getCanonicalName().getSimple();
+						List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
+								"canonical_form", canonicalName);
+						List<Object> optMatches = new ArrayList<>();
+						for (Object match : matches) {
+							Long id = ((Integer) ((Map) match).get("id")).longValue();
+							Map<String, Object> optMatch = new LinkedHashMap<>();
+							optMatch.put("name", ((Map) match).get("name"));
+							optMatch.put("rank", ((Map) match).get("rank"));
+							optMatch.put("status", ((Map) match).get("status"));
+							optMatch.put("position", ((Map) match).get("position"));
+							optMatch.put("group_name", ((Map) match).get("group_name"));
+							optMatch.put("id", id);
+							optMatches.add(optMatch);
+						}
+						rowMap.put(rowValues, optMatches);
+						values.add(rowMap);
 					}
-					rowMap.put(rowValues, optMatches);
-					values.add(rowMap);
+					else {
+						rowMap.put(rowValues, new ArrayList<>());
+						values.add(rowMap);
+					}
 				} catch (com.strandls.esmodule.ApiException e) {
 					e.printStackTrace();
 				} catch (ApiException e) {
