@@ -675,6 +675,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							optMatch.put("status", ((Map) match).get("status"));
 							optMatch.put("position", ((Map) match).get("position"));
 							optMatch.put("group_name", ((Map) match).get("group_name"));
+							optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
 							optMatch.put("id", id);
 							optMatches.add(optMatch);
 						}
