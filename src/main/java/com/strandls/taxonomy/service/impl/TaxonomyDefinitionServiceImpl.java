@@ -75,7 +75,6 @@ import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
 import com.strandls.esmodule.controllers.EsServicesApi;
-import com.strandls.esmodule.pojo.ExtendedTaxonDefinition;
 import com.strandls.utility.pojo.ParsedName;
 
 /**
@@ -681,16 +680,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						}
 						rowMap.put(rowValues, optMatches);
 						values.add(rowMap);
-					}
-					else {
+					} else {
 						rowMap.put(rowValues, new ArrayList<>());
 						values.add(rowMap);
 					}
-				} catch (com.strandls.esmodule.ApiException e) {
-					e.printStackTrace();
-				} catch (ApiException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} catch (Exception e) {
+					logger.error(e.getMessage());
 				}
 			}
 		}

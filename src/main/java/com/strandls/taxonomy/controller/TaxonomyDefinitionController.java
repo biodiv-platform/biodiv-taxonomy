@@ -4,10 +4,7 @@
 package com.strandls.taxonomy.controller;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -59,9 +56,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  * @author Abhishek Rudra
@@ -156,7 +150,7 @@ public class TaxonomyDefinitionController {
 		}
 	}
 
-	@Path("upload/search")
+	@Path(ApiConstants.UPLOAD + ApiConstants.SEARCH)
 	@POST
 	@Consumes({ MediaType.MULTIPART_FORM_DATA })
 	@Produces(MediaType.APPLICATION_JSON)
@@ -174,8 +168,6 @@ public class TaxonomyDefinitionController {
 				result = taxonomyService.nameMatching(filePart, index);
 				return Response.ok().entity(result).build();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 				return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 			}
 		}
