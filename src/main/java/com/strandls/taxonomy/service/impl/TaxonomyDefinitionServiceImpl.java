@@ -22,6 +22,11 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.pac4j.core.profile.CommonProfile;
@@ -69,6 +74,7 @@ import com.strandls.taxonomy.util.TaxonomyCache;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
+import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.utility.pojo.ParsedName;
 
 /**
@@ -93,6 +99,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private UtilityServiceApi utilityServiceApi;
+
+	@Inject
+	private EsServicesApi esServicesApi;
 
 	@Inject
 	private RankSerivce rankService;
@@ -616,6 +625,77 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
+	public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index) throws IOException {
+		InputStream inputStream = filePart.getValueAs(InputStream.class);
+		Workbook workbook = new XSSFWorkbook(inputStream);
+		Map<String, Object> result = new LinkedHashMap<>();
+		List<Map<Object, Object>> values = new ArrayList<>();
+		Sheet sheet = workbook.getSheetAt(0);
+
+		Row headersRow = sheet.getRow(0);
+		List<String> headers = new ArrayList<>();
+		for (Cell header : headersRow) {
+			headers.add(header.getStringCellValue());
+		}
+
+		result.put("headers", headers);
+
+		for (Row row : sheet) {
+			if (row.getRowNum() == 0) {
+				continue;
+			}
+
+			// Read the first column (index 0)
+			Map<Object, Object> rowMap = new HashMap<>();
+			Cell cell = row.getCell(index);
+			String rowValues = "";
+			for (int i = 0; i < headers.size(); i++) {
+				if (row.getCell(i) != null) {
+					rowValues = rowValues + row.getCell(i).toString() + "|";
+				} else {
+					rowValues = rowValues + "" + "|";
+				}
+			}
+			if (cell != null) {
+				try {
+					ParsedName parsedName = utilityServiceApi.getNameParsed(cell.toString());
+
+					if (parsedName.getCanonicalName() != null) {
+
+						String canonicalName = parsedName.getCanonicalName().getSimple();
+						List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
+								"canonical_form", canonicalName);
+						List<Object> optMatches = new ArrayList<>();
+						for (Object match : matches) {
+							Long id = ((Integer) ((Map) match).get("id")).longValue();
+							Map<String, Object> optMatch = new LinkedHashMap<>();
+							optMatch.put("name", ((Map) match).get("name"));
+							optMatch.put("rank", ((Map) match).get("rank"));
+							optMatch.put("status", ((Map) match).get("status"));
+							optMatch.put("position", ((Map) match).get("position"));
+							optMatch.put("group_name", ((Map) match).get("group_name"));
+							optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
+							optMatch.put("id", id);
+							optMatches.add(optMatch);
+						}
+						rowMap.put(rowValues, optMatches);
+						values.add(rowMap);
+					} else {
+						rowMap.put(rowValues, new ArrayList<>());
+						values.add(rowMap);
+					}
+				} catch (Exception e) {
+					logger.error(e.getMessage());
+				}
+			}
+		}
+		result.put("data", values);
+		workbook.close();
+		inputStream.close();
+		return result;
+	}
+
+	@Override
 	public TaxonomicNames findSynonymCommonName(Long taxonId) {
 
 		try {
@@ -1038,11 +1118,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	 */
 	@Override
 	public Map<String, TaxonomyDefinition> updateItalicisedForm() {
-		
+
 		Map<String, TaxonomyDefinition> result = new HashMap<>();
 		String queryString = "from TaxonomyDefinition td order by id";
 		Map<String, Object> param = new HashMap<>();
-				
+
 		Long rowCount = taxonomyDao.getRowCount();
 
 		int i = 0;
@@ -1065,8 +1145,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			i += BATCH_SIZE;
 		}
-		
+
 		return result;
-		
+
 	}
 }
