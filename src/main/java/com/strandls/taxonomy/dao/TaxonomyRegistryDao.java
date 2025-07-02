@@ -76,11 +76,16 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		String qry = "from TaxonomyRegistry tr where tr.taxonomyDefinationId = :taxonomyId "
 				+ "and tr.classificationId = :classificationId";
+		if (taxonomyId == null) {
+			qry = "from TaxonomyRegistry tr where tr.classificationId = :classificationId";
+		}
 		Session session = sessionFactory.openSession();
 		TaxonomyRegistry result = null;
 		try {
 			Query<TaxonomyRegistry> query = session.createQuery(qry);
-			query.setParameter("taxonomyId", taxonomyId);
+			if (taxonomyId != null) {
+				query.setParameter("taxonomyId", taxonomyId);
+			}
 			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			result = query.getSingleResult();
 		} catch (Exception e) {
@@ -197,7 +202,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
 					+ "any(select path from taxonomy_registry where taxon_definition_id in (:taxonIds) and classification_id=:classificationId) and "
 					+ "classification_id=:classificationId";
-			if(taxonIds==null) {
+			if (taxonIds == null) {
 				sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
 						+ "any(select path from taxonomy_registry where classification_id=:classificationId) and "
 						+ "classification_id=:classificationId";
