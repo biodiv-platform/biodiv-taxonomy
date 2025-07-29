@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.strandls.taxonomy.pojo.enumtype.CommonNameTagType;
@@ -55,7 +55,7 @@ public class FileMetadata {
 		super();
 		this.rankToIndex = new HashMap<>();
 	}
-	
+
 	public FileMetadata(String fileType, Map<String, String> nameToRank, String scientificColumnName,
 			String synonymColumnName, String rankColumnName, String statusColumnName, String positionColumnName,
 			String sourceColumnName, String sourceIdColumnName) {
@@ -142,7 +142,7 @@ public class FileMetadata {
 
 		if (commonNameColumnIndex != -1 && data[commonNameColumnIndex] != null && !"".equals(data[commonNameColumnIndex])) {
 			String commonNameColumnValue = data[commonNameColumnIndex];
-			List<String> otherCommonNames = new ArrayList<>(); 
+			List<String> otherCommonNames = new ArrayList<>();
 			Map<Long, String[]> commonNames = new HashMap<>();
 			String[] commonNameForLanguage = commonNameColumnValue.split(";");
 			for (String cName : commonNameForLanguage) {

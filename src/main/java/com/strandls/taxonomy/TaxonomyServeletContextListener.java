@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy;
 
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import javax.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextEvent;
 
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.hibernate.SessionFactory;
@@ -37,7 +37,7 @@ import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
 import com.rabbitmq.client.Channel;
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.mail_utility.producer.RabbitMQProducer;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
@@ -93,13 +93,13 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				bind(ObjectMapper.class).toInstance(om);
 
 				Map<String, String> props = new HashMap<>();
-				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
+				props.put("jakarta.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.provider.packages", "com");
 				props.put("jersey.config.server.wadl.disableWadl", "true");
 
 				bind(LanguageServiceApi.class).in(Scopes.SINGLETON);
 				bind(SessionFactory.class).toInstance(sessionFactory);
-				bind(ActivitySerivceApi.class).in(Scopes.SINGLETON);
+				bind(ActivityServiceApi.class).in(Scopes.SINGLETON);
 				bind(Headers.class).in(Scopes.SINGLETON);
 				bind(EncryptionUtils.class).in(Scopes.SINGLETON);
 				bind(MailUtils.class).in(Scopes.SINGLETON);
@@ -122,7 +122,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 			Annotation[] annotations = cls.getAnnotations();
 
 			for (Annotation annotation : annotations) {
-				if (annotation instanceof javax.persistence.Entity) {
+				if (annotation instanceof jakarta.persistence.Entity) {
 					classes.add(cls);
 				}
 			}

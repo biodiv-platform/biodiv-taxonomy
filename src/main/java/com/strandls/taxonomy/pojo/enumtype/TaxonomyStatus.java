@@ -3,9 +3,9 @@ package com.strandls.taxonomy.pojo.enumtype;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlEnumValue;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlEnum;
+import jakarta.xml.bind.annotation.XmlEnumValue;
+import jakarta.xml.bind.annotation.XmlType;
 
 @XmlType(name = "taxonomyStatus")
 @XmlEnum
@@ -17,11 +17,11 @@ public enum TaxonomyStatus {
 	SYNONYM("SYNONYM");
 
 	private String value;
-	
+
 	private TaxonomyStatus(String value) {
 		this.value = value;
 	}
-	
+
 	public static TaxonomyStatus fromValue(String value) {
 		for(TaxonomyStatus layerStatus : TaxonomyStatus.values()) {
 			if(layerStatus.value.equals(value))
@@ -29,7 +29,7 @@ public enum TaxonomyStatus {
 		}
 		throw new IllegalArgumentException(value);
 	}
-	
+
 	public static List<String> getAllOrSpecified(String statusListString) {
 		List<String> statusList = new ArrayList<>();
 		if (statusListString == null || "".equals(statusListString)) {

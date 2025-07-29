@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.dao;
 
@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

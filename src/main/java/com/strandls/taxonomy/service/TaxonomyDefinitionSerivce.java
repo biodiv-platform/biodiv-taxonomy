@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.service;
 
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -28,7 +28,7 @@ import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.utility.ApiException;
 
 /**
- * 
+ *
  * @author vilay
  *
  */

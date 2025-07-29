@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.RankDao;
@@ -122,7 +122,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	}
 
 	/**
-	 * 
+	 *
 	 * @param items dummy
 	 * @param ids
 	 * @return dummy
@@ -152,7 +152,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	/**
 	 * Code below from here on is only for the migration purpose It does the tree
 	 * migration
-	 * 
+	 *
 	 * @throws TaxonCreationException
 	 * @throws ApiException
 	 * @throws UnRecongnizedRankException
@@ -236,7 +236,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 					} else {
 						isDefaultHierchy = defaultClassificationId
 								.equals(taxonomyRegistrys.get(0).getClassificationId());
-						
+
 						candidateToSnap = getCandidateToSnap(definition, taxonomyRegistrys, duplicateWithSnapping,
 								duplicateWithoutSnapping, isDefaultHierchy);
 						if (candidateToSnap == null)
@@ -432,8 +432,8 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		return newPath;
 	}
 
-	
-	
+
+
 	public Map<String, Object> migrateCleanName() throws CloneNotSupportedException {
 
 		String countQueryString = "select id from taxonomy_definition where position = :position and status = :status and is_deleted = false";

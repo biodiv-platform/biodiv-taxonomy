@@ -4,11 +4,10 @@
   "invokerPackage": "com.strandls.taxonomy",
   "groupId": "com.strandls.biodiv",
   "artifactId": "taxonomy-client",
-  "artifactVersion": "1.0.0",
+  "artifactVersion": "0.0.21",
   "fullJavaUtil": true,
-  "dateLibrary": "legacy",
-  "library": "jersey2",
+  "dateLibrary": "java8",
+  "library": "jersey3",
   "developerName": "Abhishek Kumar Rudra",
-  "developerEmail": "abhishek.rudra@strandls.com",
-  "java8": true
+  "developerEmail": "abhishek.rudra@strandls.com"
 }

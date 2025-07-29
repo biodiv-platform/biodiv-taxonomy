@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.dao;
 
@@ -14,7 +14,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.util.AbstractDAO;
@@ -66,7 +66,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 		}
 		return result;
 	}
-	
+
 	public Set<String> getTaxonIds(Long speciesGroupId) {
 		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();

@@ -1,13 +1,13 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.persistence.NoResultException;
+import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -19,7 +19,7 @@ import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.util.AbstractDAO;
 
 /**
- * 
+ *
  * @author vilay
  *
  */

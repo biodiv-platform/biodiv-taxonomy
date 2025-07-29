@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.service.impl;
 
@@ -7,8 +7,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.pac4j.core.profile.CommonProfile;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ import net.minidev.json.JSONArray;
 /**
  * @author Abhishek Rudra
  *
- * 
+ *
  */
 public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService {
 

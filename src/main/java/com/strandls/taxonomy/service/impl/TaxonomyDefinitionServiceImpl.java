@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.service.impl;
 
@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import javax.inject.Inject;
-import javax.persistence.NoResultException;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
@@ -78,7 +78,7 @@ import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.utility.pojo.ParsedName;
 
 /**
- * 
+ *
  * @author Vilay
  *
  */
@@ -125,7 +125,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private TaxonomyPermisisonService permissionService;
 
 	@Inject
-	private ActivitySerivceApi activityService;
+	private ActivityServiceApi activityService;
 
 	@Inject
 	private Headers headers;
@@ -376,7 +376,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	/**
 	 * This is internally used by the addTaxonomyMethod
-	 * 
+	 *
 	 * @param request
 	 * @param taxonId
 	 * @param synonymData
@@ -431,7 +431,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	/**
 	 * Utility to update and create the hierarchy
-	 * 
+	 *
 	 * @param path         - String builder which store the path for hierarchy.
 	 *                     (call by reference variable)
 	 * @param ranks        - Pull of object for the available rank in the system.

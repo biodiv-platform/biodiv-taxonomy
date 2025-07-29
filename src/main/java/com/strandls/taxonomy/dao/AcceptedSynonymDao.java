@@ -1,11 +1,11 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.dao;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -27,7 +27,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 
 	private static final String ACCEPTED_ID = "acceptedId";
 	private static final String SYNONYM_ID= "synonymId";
-	
+
 	/**
 	 * @param sessionFactory
 	 */
@@ -49,7 +49,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return result;
 	}
-	
+
 	public AcceptedSynonym createAcceptedSynonym(Long acceptedId, Long synonymId) {
 		AcceptedSynonym acceptedSynonym = findByAccpetedIdSynonymId(acceptedId, synonymId);
 		if (acceptedSynonym == null) {
@@ -98,7 +98,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return result;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<AcceptedSynonym> findByAccepetdId(Long acceptedId) {
 		String qry = "from AcceptedSynonym where acceptedId = :acceptedId";

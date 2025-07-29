@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package com.strandls.taxonomy.dao;
 
@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -24,6 +24,7 @@ import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonRelation;
+import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.util.AbstractDAO;
 
@@ -155,7 +156,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
 					+ " nlevel(tR.path) = 2" + " order by nlevel(tR.path), t.name";
-			query = session.createNativeQuery(queryString).setResultSetMapping("TaxonomyRelation");
+			query = session.createNativeQuery(queryString, TaxonomyNamelistItem.class);
 		} else {
 			String parentCheck = " ";
 			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
@@ -173,7 +174,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
 					+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 " + " order by nlevel(tR.path), t.name";
-			query = session.createNativeQuery(queryString).setResultSetMapping("TaxonomyRelation");
+			query = session.createNativeQuery(queryString, TaxonomyNamelistItem.class);
 			query.setParameter(PARENT_CHECK, parentCheck);
 		}
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
@@ -242,7 +243,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	/**
 	 * Code below this point is only for the migration purpose.
-	 * 
+	 *
 	 * @param taxonId
 	 * @param classificationIds
 	 * @return
@@ -311,27 +312,27 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	}
 
 	/**
-	 * 
+	 *
 	 * Order for choosing candidate is as follow 821 - Catalog of Life 820 -
 	 * FishBase Taxonomy Hierarchy 819 - IUCN Taxonomy Hierarchy (2010) 818 - GBIF
 	 * Taxonomy Hierarchy 817 - Author Contributed Taxonomy Hierarchy 265798 -
 	 * Combined Taxonomy Hierarchy
-	 * 
+	 *
 	 * If we found any duplicate candidate the we fall back to IBP hierarchy. so we
 	 * are maintaining both the record Pulling out one of the hierarchy mentioned
 	 * above in given order and IBP hierarchy
-	 * 
+	 *
 	 * 265799 - IBP hierarchy
-	 * 
+	 *
 	 * Query to execute is as follow
-	 * 
+	 *
 	 * select * from taxonomy_registry_backup where taxon_definition_id = :taxonId
 	 * and (classification_id = :classificationId or classification_id = ( select
 	 * classification_id from taxonomy_registry_backup where taxon_definition_id =
 	 * :taxonId group by classification_id order by case classification_id when 821
 	 * then 1 when 820 then 2 when 819 then 3 when 818 then 4 when 817 then 5 when
 	 * 265798 then 6 end limit 1 )) order by classification_id desc
-	 * 
+	 *
 	 * @param taxonId
 	 * @return
 	 */
