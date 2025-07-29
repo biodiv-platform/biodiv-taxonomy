@@ -1,29 +1,25 @@
-/**
- *
- */
+/** */
 package com.strandls.taxonomy.service;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import com.strandls.taxonomy.pojo.EncryptedKey;
 import com.strandls.taxonomy.pojo.PermissionData;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Abhishek Rudra
- *
- *
  */
 public interface TaxonomyPermisisonService {
 
-	public Boolean getPermissionOnTree(HttpServletRequest request, Long taxonId);
+  public Boolean getPermissionOnTree(HttpServletRequest request, Long taxonId);
 
-	public Boolean checkIsContributor(HttpServletRequest request, Long taxonomyId);
+  public Boolean checkIsContributor(HttpServletRequest request, Long taxonomyId);
 
-	public Boolean checkIsObservationCurator(HttpServletRequest request, Long taxonomyId);
+  public Boolean checkIsObservationCurator(HttpServletRequest request, Long taxonomyId);
 
-	public Boolean assignUpdatePermissionDirectly(HttpServletRequest request, PermissionData permissionData);
+  public Boolean assignUpdatePermissionDirectly(
+      HttpServletRequest request, PermissionData permissionData);
 
-	public Boolean requestPermission(HttpServletRequest request, PermissionData permissionData);
+  public Boolean requestPermission(HttpServletRequest request, PermissionData permissionData);
 
-	public Boolean verifyPermissionGrant(HttpServletRequest request, EncryptedKey encryptedKey);
+  public Boolean verifyPermissionGrant(HttpServletRequest request, EncryptedKey encryptedKey);
 }

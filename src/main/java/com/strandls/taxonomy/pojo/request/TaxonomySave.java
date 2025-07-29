@@ -1,111 +1,109 @@
 package com.strandls.taxonomy.pojo.request;
 
-import java.util.Map;
-
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
+import java.util.Map;
 
 public class TaxonomySave {
 
-	private String scientificName;
-	private String rank;
-	private String synonyms;
-	private TaxonomyStatus status;
-	private TaxonomyPosition position;
-	private String sourceId;
-	private String source;
-	private Map<Long, String[]> commonNames;
+  private String scientificName;
+  private String rank;
+  private String synonyms;
+  private TaxonomyStatus status;
+  private TaxonomyPosition position;
+  private String sourceId;
+  private String source;
+  private Map<Long, String[]> commonNames;
 
-	/**
-	 * This two are based on the taxonomy status 
-	 * acceptedId is required if the status is synonym. 
-	 * rankToName is required if the status is accepted.
-	 */
-	private Long acceptedId;
-	private Map<String, String> rankToName;
+  /**
+   * This two are based on the taxonomy status acceptedId is required if the status is synonym.
+   * rankToName is required if the status is accepted.
+   */
+  private Long acceptedId;
 
-	public TaxonomySave() {
-		super();
-	}
+  private Map<String, String> rankToName;
 
-	public String getScientificName() {
-		return scientificName;
-	}
+  public TaxonomySave() {
+    super();
+  }
 
-	public void setScientificName(String scientificName) {
-		this.scientificName = scientificName;
-	}
+  public String getScientificName() {
+    return scientificName;
+  }
 
-	public String getRank() {
-		return rank;
-	}
+  public void setScientificName(String scientificName) {
+    this.scientificName = scientificName;
+  }
 
-	public void setRank(String rank) {
-		this.rank = rank;
-	}
+  public String getRank() {
+    return rank;
+  }
 
-	public String getSynonyms() {
-		return synonyms;
-	}
+  public void setRank(String rank) {
+    this.rank = rank;
+  }
 
-	public void setSynonyms(String synonyms) {
-		this.synonyms = synonyms;
-	}
+  public String getSynonyms() {
+    return synonyms;
+  }
 
-	public TaxonomyStatus getStatus() {
-		return status;
-	}
+  public void setSynonyms(String synonyms) {
+    this.synonyms = synonyms;
+  }
 
-	public void setStatus(TaxonomyStatus status) {
-		this.status = status;
-	}
+  public TaxonomyStatus getStatus() {
+    return status;
+  }
 
-	public TaxonomyPosition getPosition() {
-		return position;
-	}
+  public void setStatus(TaxonomyStatus status) {
+    this.status = status;
+  }
 
-	public void setPosition(TaxonomyPosition position) {
-		this.position = position;
-	}
+  public TaxonomyPosition getPosition() {
+    return position;
+  }
 
-	public String getSourceId() {
-		return sourceId;
-	}
+  public void setPosition(TaxonomyPosition position) {
+    this.position = position;
+  }
 
-	public void setSourceId(String sourceId) {
-		this.sourceId = sourceId;
-	}
+  public String getSourceId() {
+    return sourceId;
+  }
 
-	public String getSource() {
-		return source;
-	}
+  public void setSourceId(String sourceId) {
+    this.sourceId = sourceId;
+  }
 
-	public void setSource(String source) {
-		this.source = source;
-	}
+  public String getSource() {
+    return source;
+  }
 
-	public Map<Long, String[]> getCommonNames() {
-		return commonNames;
-	}
+  public void setSource(String source) {
+    this.source = source;
+  }
 
-	public void setCommonNames(Map<Long, String[]> commonNames) {
-		this.commonNames = commonNames;
-	}
+  public Map<Long, String[]> getCommonNames() {
+    return commonNames;
+  }
 
-	public Long getAcceptedId() {
-		return acceptedId;
-	}
+  public void setCommonNames(Map<Long, String[]> commonNames) {
+    this.commonNames = commonNames;
+  }
 
-	public void setAcceptedId(Long acceptedId) {
-		this.acceptedId = acceptedId;
-	}
+  public Long getAcceptedId() {
+    return acceptedId;
+  }
 
-	public Map<String, String> getRankToName() {
-		return rankToName;
-	}
+  public void setAcceptedId(Long acceptedId) {
+    this.acceptedId = acceptedId;
+  }
 
-	public void setRankToName(Map<String, String> rankToName) {
-		this.rankToName = rankToName;
-	}
+  public Map<String, String> getRankToName() {
+    return rankToName;
+  }
 
+  public void setRankToName(Map<String, String> rankToName) {
+    this.rankToName = rankToName;
+  }
 }

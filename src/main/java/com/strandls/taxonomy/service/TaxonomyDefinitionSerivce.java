@@ -1,17 +1,5 @@
-/**
- *
- */
+/** */
 package com.strandls.taxonomy.service;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import org.glassfish.jersey.media.multipart.FormDataBodyPart;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
@@ -26,54 +14,68 @@ import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.utility.ApiException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 /**
- *
  * @author vilay
- *
  */
 public interface TaxonomyDefinitionSerivce {
 
-	public TaxonomyDefinition fetchById(Long id);
+  public TaxonomyDefinition fetchById(Long id);
 
-	public TaxonomyDefinitionShow getTaxonomyDetails(Long id);
+  public TaxonomyDefinitionShow getTaxonomyDetails(Long id);
 
-	public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
+  public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave)
+      throws ApiException;
 
-	public List<TaxonomyDefinition> saveList(HttpServletRequest request, List<TaxonomySave> taxonomyList)
-			throws ApiException;
+  public List<TaxonomyDefinition> saveList(
+      HttpServletRequest request, List<TaxonomySave> taxonomyList) throws ApiException;
 
-	public TaxonomyDefinition save(TaxonomyDefinition taxonomyDefinition);
+  public TaxonomyDefinition save(TaxonomyDefinition taxonomyDefinition);
 
-	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
-			throws IOException, ApiException, ExecutionException;
+  public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
+      throws IOException, ApiException, ExecutionException;
 
-	public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index) throws IOException;
+  public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index)
+      throws IOException;
 
-	public TaxonomicNames findSynonymCommonName(Long taxonId);
+  public TaxonomicNames findSynonymCommonName(Long taxonId);
 
-	public List<TaxonomyDefinition> updateAddSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
-			SynonymData synonymData);
+  public List<TaxonomyDefinition> updateAddSynonym(
+      HttpServletRequest request, Long speciesId, Long taxonId, SynonymData synonymData);
 
-	public List<TaxonomyDefinition> deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
-			Long synonymId);
+  public List<TaxonomyDefinition> deleteSynonym(
+      HttpServletRequest request, Long speciesId, Long taxonId, Long synonymId);
 
-	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
+  public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 
-	public TaxonomyDefinitionShow updateName(HttpServletRequest request, Long taxonId, String taxonName)
-			throws ApiException;
+  public TaxonomyDefinitionShow updateName(
+      HttpServletRequest request, Long taxonId, String taxonName) throws ApiException;
 
-	public TaxonomyDefinitionShow updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
-			throws ApiException, TaxonCreationException;
+  public TaxonomyDefinitionShow updateStatus(
+      HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
+      throws ApiException, TaxonCreationException;
 
-	public TaxonomyDefinitionShow updatePosition(HttpServletRequest request,
-			TaxonomyPositionUpdate taxonomyPositionUpdate);
+  public TaxonomyDefinitionShow updatePosition(
+      HttpServletRequest request, TaxonomyPositionUpdate taxonomyPositionUpdate);
 
-	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankList,
-			String statusList, String positionList, Integer limit, Integer offset) throws IOException;
+  public TaxonomyNameListResponse getTaxonomyNameList(
+      Long taxonId,
+      Long classificationId,
+      String rankList,
+      String statusList,
+      String positionList,
+      Integer limit,
+      Integer offset)
+      throws IOException;
 
-	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData);
+  public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData);
 
-	public Map<String, TaxonomyDefinition> updateItalicisedForm();
-
+  public Map<String, TaxonomyDefinition> updateItalicisedForm();
 }

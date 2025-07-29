@@ -1,39 +1,37 @@
 package com.strandls.taxonomy.pojo.response;
 
-import java.util.List;
-
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
+import java.util.List;
 
 public class TaxonomyDefinitionAndRegistry {
 
-	private TaxonomyDefinition taxonomyDefinition;
-	private List<TaxonomyRegistryResponse> registry;
+  private TaxonomyDefinition taxonomyDefinition;
+  private List<TaxonomyRegistryResponse> registry;
 
-	public TaxonomyDefinitionAndRegistry() {
-		super();
-	}
+  public TaxonomyDefinitionAndRegistry() {
+    super();
+  }
 
-	public TaxonomyDefinitionAndRegistry(TaxonomyDefinition taxonomyDefinition,
-			List<TaxonomyRegistryResponse> registry) {
-		super();
-		this.taxonomyDefinition = taxonomyDefinition;
-		this.registry = registry;
-	}
+  public TaxonomyDefinitionAndRegistry(
+      TaxonomyDefinition taxonomyDefinition, List<TaxonomyRegistryResponse> registry) {
+    super();
+    this.taxonomyDefinition = taxonomyDefinition;
+    this.registry = registry;
+  }
 
-	public TaxonomyDefinition getTaxonomyDefinition() {
-		return taxonomyDefinition;
-	}
+  public TaxonomyDefinition getTaxonomyDefinition() {
+    return taxonomyDefinition;
+  }
 
-	public void setTaxonomyDefinition(TaxonomyDefinition taxonomyDefinition) {
-		this.taxonomyDefinition = taxonomyDefinition;
-	}
+  public void setTaxonomyDefinition(TaxonomyDefinition taxonomyDefinition) {
+    this.taxonomyDefinition = taxonomyDefinition;
+  }
 
-	public List<TaxonomyRegistryResponse> getRegistry() {
-		return registry;
-	}
+  public List<TaxonomyRegistryResponse> getRegistry() {
+    return registry;
+  }
 
-	public void setRegistry(List<TaxonomyRegistryResponse> registry) {
-		this.registry = registry;
-	}
-
+  public void setRegistry(List<TaxonomyRegistryResponse> registry) {
+    this.registry = registry;
+  }
 }
