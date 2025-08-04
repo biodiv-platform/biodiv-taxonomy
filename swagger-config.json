@@ -6,7 +6,7 @@
   "artifactId": "taxonomy-client",
   "artifactVersion": "0.0.21",
   "fullJavaUtil": true,
-  "dateLibrary": "java8",
+  "dateLibrary": "legacy",
   "library": "jersey3",
   "developerName": "Abhishek Kumar Rudra",
   "developerEmail": "abhishek.rudra@strandls.com"
