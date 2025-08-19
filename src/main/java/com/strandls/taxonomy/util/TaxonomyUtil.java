@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.pac4j.core.profile.CommonProfile;
 
 import com.strandls.authentication_utility.util.AuthUtil;
@@ -17,6 +15,7 @@ import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.utility.pojo.ParsedName;
 
+import jakarta.servlet.http.HttpServletRequest;
 import net.minidev.json.JSONArray;
 
 public class TaxonomyUtil {
@@ -32,7 +31,6 @@ public class TaxonomyUtil {
 	public static final String INFRA_SPECIFIC_EPITHET = "infraspecificEpithet";
 
 	private TaxonomyUtil() {
-
 	}
 
 	public static String getBinomialName(String canonicalName) {
@@ -168,5 +166,4 @@ public class TaxonomyUtil {
 		JSONArray roles = (JSONArray) profile.getAttribute("roles");
 		return roles.contains("ROLE_ADMIN");
 	}
-
 }

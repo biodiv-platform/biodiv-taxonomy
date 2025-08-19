@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.NoResultException;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.strandls.taxonomy.pojo.enumtype.CommonNameTagType;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
@@ -15,6 +13,8 @@ import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
 import com.strandls.utility.pojo.Language;
+
+import jakarta.persistence.NoResultException;
 
 public class FileMetadata {
 
@@ -55,7 +55,7 @@ public class FileMetadata {
 		super();
 		this.rankToIndex = new HashMap<>();
 	}
-	
+
 	public FileMetadata(String fileType, Map<String, String> nameToRank, String scientificColumnName,
 			String synonymColumnName, String rankColumnName, String statusColumnName, String positionColumnName,
 			String sourceColumnName, String sourceIdColumnName) {
@@ -140,9 +140,10 @@ public class FileMetadata {
 		}
 		taxonomySave.setRankToName(rankToName);
 
-		if (commonNameColumnIndex != -1 && data[commonNameColumnIndex] != null && !"".equals(data[commonNameColumnIndex])) {
+		if (commonNameColumnIndex != -1 && data[commonNameColumnIndex] != null
+				&& !"".equals(data[commonNameColumnIndex])) {
 			String commonNameColumnValue = data[commonNameColumnIndex];
-			List<String> otherCommonNames = new ArrayList<>(); 
+			List<String> otherCommonNames = new ArrayList<>();
 			Map<Long, String[]> commonNames = new HashMap<>();
 			String[] commonNameForLanguage = commonNameColumnValue.split(";");
 			for (String cName : commonNameForLanguage) {
@@ -151,15 +152,15 @@ public class FileMetadata {
 				String commonNameString = languageCName[1].trim();
 				if (languageType != null && commonNameString != null) {
 					try {
-					Language language = utilityServiceApi.getLanguage(languageType, commonNameTagType.name());
-					Long languageId = language.getId();
-					commonNames.put(languageId, commonNameString.split(","));
+						Language language = utilityServiceApi.getLanguage(languageType, commonNameTagType.name());
+						Long languageId = language.getId();
+						commonNames.put(languageId, commonNameString.split(","));
 					} catch (ApiException | NoResultException e) {
 						otherCommonNames.addAll(Arrays.asList(commonNameString.split(",")));
 					}
 				}
 			}
-			if(!otherCommonNames.isEmpty())
+			if (!otherCommonNames.isEmpty())
 				commonNames.put(null, otherCommonNames.toArray(new String[0]));
 			taxonomySave.setCommonNames(commonNames);
 		}
@@ -325,5 +326,4 @@ public class FileMetadata {
 	public void setRankToIndex(Map<String, Integer> rankToIndex) {
 		this.rankToIndex = rankToIndex;
 	}
-
 }

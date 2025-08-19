@@ -1,9 +1,5 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
-
-import javax.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -15,10 +11,10 @@ import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.pojo.SpeciesPermissionRequest;
 import com.strandls.taxonomy.util.AbstractDAO;
 
+import jakarta.inject.Inject;
+
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class SpeciesPermissionRequestDao extends AbstractDAO<SpeciesPermissionRequest, Long> {
 
@@ -62,5 +58,4 @@ public class SpeciesPermissionRequestDao extends AbstractDAO<SpeciesPermissionRe
 		}
 		return result;
 	}
-
 }

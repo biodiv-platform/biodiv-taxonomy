@@ -1,13 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.inject.Inject;
-import javax.persistence.NoResultException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -18,10 +13,11 @@ import org.slf4j.LoggerFactory;
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.util.AbstractDAO;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
+
 /**
- * 
  * @author vilay
- *
  */
 public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 
@@ -65,7 +61,7 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 	public List<CommonName> getCommonName(Long languageId, Long taxonConceptId, String commonNameString) {
 		try (Session session = sessionFactory.openSession()) {
 			String queryStr;
-			
+
 			if (languageId == null)
 				queryStr = "from CommonName t where languageId is NULL and taxonConceptId =:taxonConceptId and name =:name and isDeleted = false";
 			else
@@ -99,5 +95,4 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 		}
 		return result;
 	}
-
 }

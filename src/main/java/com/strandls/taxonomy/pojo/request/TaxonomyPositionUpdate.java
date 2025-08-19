@@ -3,12 +3,9 @@ package com.strandls.taxonomy.pojo.request;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 
 /**
- * 
  * @author vilay
- *
  * @return
  */
-
 public class TaxonomyPositionUpdate {
 
 	private Long taxonId;
@@ -39,5 +36,4 @@ public class TaxonomyPositionUpdate {
 	public void setPosition(TaxonomyPosition position) {
 		this.position = position;
 	}
-
 }

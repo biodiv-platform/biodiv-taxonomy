@@ -14,7 +14,6 @@ public class UserTaxonRoleMapping {
 	}
 
 	/**
-	 * 
 	 * @param userid
 	 * @param roleid
 	 * @param role
@@ -56,8 +55,7 @@ public class UserTaxonRoleMapping {
 		return taxonomyids;
 	}
 
-	public void setTaxonomyids(List<Long>taxonomyids) {
+	public void setTaxonomyids(List<Long> taxonomyids) {
 		this.taxonomyids = taxonomyids;
 	}
-
 }

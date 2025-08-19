@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.RankDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
@@ -29,6 +27,8 @@ import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.taxonomy.util.AbstractService;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
+
+import jakarta.inject.Inject;
 
 public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistry> implements TaxonomyRegistryService {
 
@@ -122,7 +122,6 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	}
 
 	/**
-	 * 
 	 * @param items dummy
 	 * @param ids
 	 * @return dummy
@@ -152,7 +151,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	/**
 	 * Code below from here on is only for the migration purpose It does the tree
 	 * migration
-	 * 
+	 *
 	 * @throws TaxonCreationException
 	 * @throws ApiException
 	 * @throws UnRecongnizedRankException
@@ -236,7 +235,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 					} else {
 						isDefaultHierchy = defaultClassificationId
 								.equals(taxonomyRegistrys.get(0).getClassificationId());
-						
+
 						candidateToSnap = getCandidateToSnap(definition, taxonomyRegistrys, duplicateWithSnapping,
 								duplicateWithoutSnapping, isDefaultHierchy);
 						if (candidateToSnap == null)
@@ -284,7 +283,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 					if (isDefaultHierchy) {
 						String defaultHierarchy;
-						if(taxonomyRegistrys.isEmpty()) {
+						if (taxonomyRegistrys.isEmpty()) {
 							defaultHierarchy = candidateToSnap.getPath();
 						} else {
 							defaultHierarchy = taxonomyRegistrys.get(0).getPath();
@@ -432,8 +431,6 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		return newPath;
 	}
 
-	
-	
 	public Map<String, Object> migrateCleanName() throws CloneNotSupportedException {
 
 		String countQueryString = "select id from taxonomy_definition where position = :position and status = :status and is_deleted = false";
@@ -538,7 +535,6 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 				TaxonomyRegistry ibpHierarchy = taxonomyRegistrys.get(0).clone();
 				save(ibpHierarchy);
 			}
-
 		}
 
 		missingNameInDefinition.put("missingNameInDefinitionCount", missingNameInDefinitionCount);
@@ -554,7 +550,5 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		response.put("cleanNameCount", cleanNameCount);
 
 		return response;
-
 	}
-
 }

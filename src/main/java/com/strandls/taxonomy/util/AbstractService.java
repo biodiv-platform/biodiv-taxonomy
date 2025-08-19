@@ -36,5 +36,4 @@ public abstract class AbstractService<T> {
 	public List<T> findAll() {
 		return this.dao.findAll();
 	}
-
 }

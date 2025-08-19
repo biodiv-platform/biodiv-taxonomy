@@ -35,5 +35,4 @@ public class TaxonomyDefinitionAndRegistry {
 	public void setRegistry(List<TaxonomyRegistryResponse> registry) {
 		this.registry = registry;
 	}
-
 }

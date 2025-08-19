@@ -1,18 +1,14 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service;
 
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.strandls.taxonomy.pojo.Rank;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 /**
- * 
  * @author vilay
- *
  */
 public interface RankSerivce {
 
@@ -26,6 +22,6 @@ public interface RankSerivce {
 	public List<Rank> getAllRank(HttpServletRequest request);
 
 	public List<String> getAllRankNames();
-	
+
 	public List<String> getAllRequiredRanks();
 }

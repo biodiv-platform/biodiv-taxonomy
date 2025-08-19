@@ -1,14 +1,13 @@
 {
-  "modelPackage": "com.strandls.taxonomy.pojo",
-  "apiPackage": "com.strandls.taxonomy.controllers",
-  "invokerPackage": "com.strandls.taxonomy",
-  "groupId": "com.strandls.biodiv",
-  "artifactId": "taxonomy-client",
-  "artifactVersion": "1.0.0",
-  "fullJavaUtil": true,
-  "dateLibrary": "legacy",
-  "library": "jersey2",
-  "developerName": "Abhishek Kumar Rudra",
-  "developerEmail": "abhishek.rudra@strandls.com",
-  "java8": true
+	"modelPackage": "com.strandls.taxonomy.pojo",
+	"apiPackage": "com.strandls.taxonomy.controllers",
+	"invokerPackage": "com.strandls.taxonomy",
+	"groupId": "com.strandls.biodiv",
+	"artifactId": "taxonomy-client",
+	"artifactVersion": "0.0.21",
+	"fullJavaUtil": true,
+	"dateLibrary": "legacy",
+	"library": "jersey3",
+	"developerName": "Abhishek Kumar Rudra",
+	"developerEmail": "abhishek.rudra@strandls.com"
 }

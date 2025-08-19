@@ -1,11 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy;
 
 /**
  * @author Abhishek Rudra
- *
  */
 public class ApiConstants {
 
@@ -42,5 +39,4 @@ public class ApiConstants {
 	public static final String OBSERVATION = "/observation";
 	public static final String UPLOAD = "/upload";
 	public static final String SEARCH = "/search";
-
 }

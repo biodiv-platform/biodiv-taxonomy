@@ -1,14 +1,10 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -27,10 +23,10 @@ import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.utility.ApiException;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 /**
- * 
  * @author vilay
- *
  */
 public interface TaxonomyDefinitionSerivce {
 
@@ -75,5 +71,4 @@ public interface TaxonomyDefinitionSerivce {
 	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData);
 
 	public Map<String, TaxonomyDefinition> updateItalicisedForm();
-
 }

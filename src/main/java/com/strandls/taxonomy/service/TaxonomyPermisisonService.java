@@ -1,17 +1,13 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service;
-
-import javax.servlet.http.HttpServletRequest;
 
 import com.strandls.taxonomy.pojo.EncryptedKey;
 import com.strandls.taxonomy.pojo.PermissionData;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public interface TaxonomyPermisisonService {
 

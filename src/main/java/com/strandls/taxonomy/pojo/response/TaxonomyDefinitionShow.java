@@ -56,5 +56,4 @@ public class TaxonomyDefinitionShow {
 	public void setCommonNames(List<CommonName> commonNames) {
 		this.commonNames = commonNames;
 	}
-
 }

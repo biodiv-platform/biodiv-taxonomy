@@ -17,11 +17,11 @@ public class TaxonomySave {
 	private Map<Long, String[]> commonNames;
 
 	/**
-	 * This two are based on the taxonomy status 
-	 * acceptedId is required if the status is synonym. 
-	 * rankToName is required if the status is accepted.
+	 * This two are based on the taxonomy status acceptedId is required if the
+	 * status is synonym. rankToName is required if the status is accepted.
 	 */
 	private Long acceptedId;
+
 	private Map<String, String> rankToName;
 
 	public TaxonomySave() {
@@ -107,5 +107,4 @@ public class TaxonomySave {
 	public void setRankToName(Map<String, String> rankToName) {
 		this.rankToName = rankToName;
 	}
-
 }

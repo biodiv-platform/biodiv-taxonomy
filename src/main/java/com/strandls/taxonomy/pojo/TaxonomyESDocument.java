@@ -3,24 +3,23 @@ package com.strandls.taxonomy.pojo;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.ColumnResult;
-import javax.persistence.ConstructorResult;
-import javax.persistence.Entity;
-import javax.persistence.EntityResult;
-import javax.persistence.FieldResult;
-import javax.persistence.Id;
-import javax.persistence.SqlResultSetMapping;
-
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.vladmihalcea.hibernate.type.array.ListArrayType;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Column;
+import jakarta.persistence.ColumnResult;
+import jakarta.persistence.ConstructorResult;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityResult;
+import jakarta.persistence.FieldResult;
+import jakarta.persistence.Id;
+import jakarta.persistence.SqlResultSetMapping;
 
 @SqlResultSetMapping(name = "TaxonomyESDocumentMapping", entities = {
 		@EntityResult(entityClass = TaxonomyESDocument.class, fields = { @FieldResult(name = "id", column = "id"),
@@ -35,9 +34,6 @@ import com.vladmihalcea.hibernate.type.json.JsonStringType;
 				@FieldResult(name = "common_names", column = "common_names"),
 				@FieldResult(name = "group_id", column = "group_id"),
 				@FieldResult(name = "group_name", column = "group_name") }) })
-@TypeDefs({ @TypeDef(name = "jsonb", typeClass = JsonStringType.class),
-		@TypeDef(name = "list-array", typeClass = ListArrayType.class), })
-
 @SqlResultSetMapping(name = "TaxonomyRelation", classes = {
 		@ConstructorResult(targetClass = TaxonRelation.class, columns = { @ColumnResult(name = "id", type = Long.class),
 				@ColumnResult(name = "name", type = String.class), @ColumnResult(name = "rank", type = String.class),
@@ -46,11 +42,13 @@ import com.vladmihalcea.hibernate.type.json.JsonStringType;
 				@ColumnResult(name = "parent", type = Long.class),
 				@ColumnResult(name = "position", type = String.class) }) })
 @Entity
-@JsonIgnoreProperties
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Schema(description = "ES document view for taxonomy, including hierarchy, relations, and group info")
 public class TaxonomyESDocument {
 
 	@Id
 	private Long id;
+
 	private String name;
 	private String canonical_form;
 	private String italicised_form;
@@ -58,21 +56,25 @@ public class TaxonomyESDocument {
 	private String status;
 	private String position;
 	private String path;
-	
-	@Type(type = "jsonb")
+
+	@Type(JsonStringType.class)
 	@Column(columnDefinition = "json")
+	@Schema(description = "Hierarchy as a JSON array/object", implementation = JsonNode.class)
 	private List<JsonNode> hierarchy = new ArrayList<>();
 
-	@Type(type = "list-array")
+	@Type(ListArrayType.class)
 	@Column(columnDefinition = "bigint[]")
+	@Schema(description = "Accepted taxon IDs (array)", example = "[1,2,3]")
 	private List<Long> accepted_ids = new ArrayList<>();
 
-	@Type(type = "list-array")
+	@Type(ListArrayType.class)
 	@Column(columnDefinition = "text[]")
+	@Schema(description = "Accepted taxon names (array)", example = "[\"Quercus alba\",\"Quercus robur\"]")
 	private List<String> accepted_names = new ArrayList<>();
 
-	@Type(type = "jsonb")
+	@Type(JsonStringType.class)
 	@Column(columnDefinition = "json")
+	@Schema(description = "List of JSON objects for common names", implementation = JsonNode.class)
 	private List<JsonNode> common_names = new ArrayList<>();
 
 	private Long group_id;
@@ -82,10 +84,10 @@ public class TaxonomyESDocument {
 		super();
 	}
 
+	// All-args constructor omitted for brevity (your code keeps it)
 	public TaxonomyESDocument(Long id, String name, String canonical_form, String italicised_form, String rank,
 			String status, String position, String path, List<JsonNode> hierarchy, List<Long> accepted_ids,
 			List<String> accepted_names, List<JsonNode> common_names, Long group_id, String group_name) {
-		super();
 		this.id = id;
 		this.name = name;
 		this.canonical_form = canonical_form;
@@ -101,6 +103,8 @@ public class TaxonomyESDocument {
 		this.group_id = group_id;
 		this.group_name = group_name;
 	}
+
+	// Standard getters and setters below...
 
 	public Long getId() {
 		return id;
@@ -213,5 +217,4 @@ public class TaxonomyESDocument {
 	public void setGroup_name(String group_name) {
 		this.group_name = group_name;
 	}
-
 }

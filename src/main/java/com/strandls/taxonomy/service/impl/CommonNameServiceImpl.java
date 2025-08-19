@@ -6,10 +6,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-
 import org.pac4j.core.profile.CommonProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +19,10 @@ import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.util.AbstractService;
 import com.strandls.utility.controller.LanguageServiceApi;
 import com.strandls.utility.pojo.Language;
+
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
 
 public class CommonNameServiceImpl extends AbstractService<CommonName> implements CommonNameSerivce {
 
@@ -161,7 +161,6 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 				commonName = commonNameDao.update(commonName);
 				desc = "Updated common name : " + commonName.getName();
 				activityType = "Updated common name";
-
 			}
 			if (speciesId != null) {
 				logActivity.logSpeciesActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
@@ -183,7 +182,6 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			logger.error(e.getMessage());
 		}
 		return new ArrayList<>();
-
 	}
 
 	@Override

@@ -1,22 +1,17 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo.response;
 
 import java.util.List;
 
 /**
  * @author Abhishek Rudra
- *
  */
 public class TaxonTree {
 
 	private Long taxonId;
 	private List<Long> taxonList;
 
-	/**
-	 * 
-	 */
+	/** */
 	public TaxonTree() {
 		super();
 	}
@@ -46,5 +41,4 @@ public class TaxonTree {
 	public void setTaxonList(List<Long> taxonList) {
 		this.taxonList = taxonList;
 	}
-
 }

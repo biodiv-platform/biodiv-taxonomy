@@ -1,14 +1,9 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service.impl;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
 
 import org.pac4j.core.profile.CommonProfile;
 import org.slf4j.Logger;
@@ -35,12 +30,12 @@ import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.user.controller.UserServiceApi;
 import com.strandls.user.pojo.User;
 
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
 import net.minidev.json.JSONArray;
 
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService {
 
@@ -82,12 +77,12 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonId);
 		Boolean permission = false;
 		for (BreadCrumb crumb : breadcrumbs) {
-//			for species contributor role
+			// for species contributor role
 			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.SPECIESCONTRIBUTOR);
 			if (permission.booleanValue())
 				break;
 
-//			for taxonomy contrbutor role
+			// for taxonomy contrbutor role
 			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.TAXONOMYCONTRIBUTOR);
 			if (permission.booleanValue())
 				break;
@@ -112,7 +107,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 				SpeciesPermission hasPermission = speciesPermissionDao.findPermissionOntaxon(permissionData.getUserId(),
 						permissionData.getTaxonId());
 
-//				deleting the req if already it was raised
+				// deleting the req if already it was raised
 				SpeciesPermissionRequest isExist = permissionReqDao.requestPermissionExist(permissionData.getUserId(),
 						permissionData.getTaxonId(), role);
 				if (isExist != null) {
@@ -120,7 +115,7 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 				}
 
 				if (hasPermission == null) {
-//				no previous permission, create a new permission
+					// no previous permission, create a new permission
 					SpeciesPermission speciesPermission = new SpeciesPermission(null, 0L, permissionData.getUserId(),
 							new Date(), roleIdMap.get(role), permissionData.getTaxonId());
 					speciesPermissionDao.save(speciesPermission);
@@ -129,7 +124,6 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 					hasPermission.setPermissionType(roleIdMap.get(role));
 					speciesPermissionDao.update(hasPermission);
 					userPermissionUpdate.speciesUserPermissionEsUpdate(permissionData.getUserId());
-
 				}
 
 				User requestee = userService.getUser(permissionData.getUserId().toString());
@@ -138,14 +132,12 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 				mailUtils.sendPermissionGrant(requestee, taxDef.getName(), role.getValue(),
 						permissionData.getTaxonId());
 				return true;
-
 			}
 			return false;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
 		return false;
-
 	}
 
 	@Override
@@ -173,7 +165,6 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 				isExist = permissionReqDao.update(isExist);
 			}
 			sendMail(isExist, permissionData.getRequestorMessage());
-
 		}
 		return true;
 	}
@@ -196,7 +187,6 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-
 	}
 
 	@Override
@@ -227,7 +217,6 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 							alreadyExist.setPermissionType(roleIdMap.get(role));
 							speciesPermissionDao.update(alreadyExist);
 							userPermissionUpdate.speciesUserPermissionEsUpdate(permissionReqOriginal.getUserId());
-
 						}
 					}
 					permissionReqDao.delete(permissionReqOriginal);
@@ -240,7 +229,6 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 
 					return true;
 				}
-
 			}
 
 		} catch (Exception e) {
@@ -267,7 +255,6 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 			logger.error(e.getMessage());
 		}
 		return false;
-
 	}
 
 	@Override
@@ -282,13 +269,11 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 		List<BreadCrumb> breadcrumbs = registryService.fetchByTaxonomyId(taxonomyId);
 		Boolean permission = false;
 		for (BreadCrumb crumb : breadcrumbs) {
-//			for observation curator role
+			// for observation curator role
 			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.OBSERVATIONCURATOR);
 			if (permission.booleanValue())
 				return permission;
-
 		}
 		return permission;
-
 	}
 }

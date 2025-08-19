@@ -2,20 +2,6 @@ package com.strandls.taxonomy.controller;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.pac4j.core.profile.CommonProfile;
 
 import com.strandls.authentication_utility.filter.ValidateUser;
@@ -27,28 +13,44 @@ import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.service.SpeciesGroupService;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
-@Api("Species Services")
+@Tag(name = "Species Services", description = "APIs for managing species groups and permissions")
 @Path(ApiConstants.V1 + ApiConstants.SPECIES)
+@Produces(MediaType.APPLICATION_JSON)
 public class SpeciesGroupController {
-	
+
 	@Inject
 	private SpeciesGroupService speciesGroupService;
-	
+
 	@GET
 	@Path("taxon")
 	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Get species group from the given taxon id", notes = "Returns Group details", response = SpeciesGroup.class)
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy not found", response = String.class) })
-
-	public Response getGroupId(@QueryParam("taxonId") Long taxonId) {
+	@Operation(summary = "Get species group from a given taxon id", responses = {
+			@ApiResponse(responseCode = "200", description = "Group details", content = @Content(schema = @Schema(implementation = SpeciesGroup.class))),
+			@ApiResponse(responseCode = "404", description = "Taxonomy not found", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response getGroupId(
+			@Parameter(description = "Taxon ID", required = true) @QueryParam("taxonId") Long taxonId) {
 		try {
 			SpeciesGroup speciesGroup = speciesGroupService.getGroupByTaxonId(taxonId);
 			return Response.status(Status.OK).entity(speciesGroup).build();
@@ -56,76 +58,68 @@ public class SpeciesGroupController {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-		
+
 	@POST
 	@Path(ApiConstants.GROUP)
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	
 	@ValidateUser
-	
-	@ApiOperation(value = "Add species group", notes = "Return added species group", response = SpeciesGroup.class)
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not add species group", response = String.class) })
-	
-	public Response addSpeciesGroup(@Context HttpServletRequest request, @ApiParam("speciesGroup") SpeciesGroup speciesGroup) {
+	@Operation(summary = "Add species group", requestBody = @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SpeciesGroup.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Added species group", content = @Content(schema = @Schema(implementation = SpeciesGroup.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "404", description = "Could not add species group", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response addSpeciesGroup(@Context HttpServletRequest request, SpeciesGroup speciesGroup) {
 		try {
-			if(!TaxonomyUtil.isAdmin(request))
+			if (!TaxonomyUtil.isAdmin(request))
 				return Response.status(Status.UNAUTHORIZED).entity("Only admin can add the species group").build();
 			speciesGroup = speciesGroupService.save(speciesGroup);
 			return Response.status(Status.OK).entity(speciesGroup).build();
-		} catch(Exception e) {
+		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@POST
 	@Path(ApiConstants.MAPPING)
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	
 	@ValidateUser
-	
-	@ApiOperation(value = "Add species group mapping", notes = "Return a added species group mapping", response = SpeciesGroup.class)
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not add species group mapping", response = String.class) })
-	
-	public Response addSpeciesGroupMapping(@Context HttpServletRequest request, @ApiParam("speciesGroupMapping") SpeciesGroupMapping speciesGroupMapping) {
+	@Operation(summary = "Add species group mapping", requestBody = @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SpeciesGroupMapping.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Added species group mapping", content = @Content(schema = @Schema(implementation = SpeciesGroupMapping.class))),
+			@ApiResponse(responseCode = "404", description = "Could not add species group mapping", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response addSpeciesGroupMapping(@Context HttpServletRequest request,
+			SpeciesGroupMapping speciesGroupMapping) {
 		try {
 			speciesGroupMapping = speciesGroupService.save(speciesGroupMapping);
 			return Response.status(Status.OK).entity(speciesGroupMapping).build();
-		} catch(Exception e) {
+		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@POST
 	@Path(ApiConstants.PERMISSION)
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	
 	@ValidateUser
-	
-	@ApiOperation(value = "Add species group mapping", notes = "Return a added species group mapping", response = SpeciesGroup.class)
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not add species group mapping", response = String.class) })
-	
-	public Response addSpeciesPermission(@Context HttpServletRequest request, @ApiParam("speciesPermission") SpeciesPermission speciesPermission) {
+	@Operation(summary = "Add species permission mapping", requestBody = @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SpeciesPermission.class))), responses = {
+			@ApiResponse(responseCode = "200", description = "Added species group permission", content = @Content(schema = @Schema(implementation = SpeciesPermission.class))),
+			@ApiResponse(responseCode = "404", description = "Could not add species group mapping", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response addSpeciesPermission(@Context HttpServletRequest request, SpeciesPermission speciesPermission) {
 		try {
 			speciesPermission = speciesGroupService.save(speciesPermission);
 			return Response.status(Status.OK).entity(speciesPermission).build();
-		} catch(Exception e) {
+		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@GET
 	@Path("/{speciesGroupId}")
 	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Find taxonomy by SpeciesId", notes = "Return a List of Species Id", response = String.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy not Found", response = String.class) })
-
-	public Response getTaxonomyBySpeciesGroup(@PathParam("speciesGroupId") String sGroup,
-			@QueryParam("taxonomyList") List<String> taxonList) {
+	@Operation(summary = "Find taxonomy by SpeciesGroup ID", responses = {
+			@ApiResponse(responseCode = "200", description = "List of taxonomy IDs", content = @Content(array = @ArraySchema(schema = @Schema(implementation = String.class)))),
+			@ApiResponse(responseCode = "404", description = "Taxonomy not found", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response getTaxonomyBySpeciesGroup(
+			@Parameter(description = "Species Group ID", required = true) @PathParam("speciesGroupId") String sGroup,
+			@Parameter(description = "Optional taxonomy filter list") @QueryParam("taxonomyList") List<String> taxonList) {
 		try {
 			Long speciesId = Long.parseLong(sGroup);
 			List<String> taxonomyList = speciesGroupService.fetchBySpeciesGroupId(speciesId, taxonList);
@@ -134,14 +128,12 @@ public class SpeciesGroupController {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@GET
 	@Path(ApiConstants.ALL)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Find all the SpeciesGroup", notes = "Returns all speciesGroup", response = SpeciesGroup.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 404, message = "Species Group not Found", response = String.class) })
-
+	@Operation(summary = "Find all the SpeciesGroup", responses = {
+			@ApiResponse(responseCode = "200", description = "All species groups", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SpeciesGroup.class)))),
+			@ApiResponse(responseCode = "404", description = "Species Group not found", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response getAllSpeciesGroup() {
 		try {
 			List<SpeciesGroup> result = speciesGroupService.findAllSpecies();
@@ -150,16 +142,13 @@ public class SpeciesGroupController {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@GET
 	@Path(ApiConstants.PERMISSION)
-	@Produces(MediaType.APPLICATION_JSON)
-
 	@ValidateUser
-
-	@ApiOperation(value = "get the speciesPermisison", notes = "return list of taxonomy id in which user can validate", response = SpeciesPermission.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the list", response = String.class) })
-
+	@Operation(summary = "Get the species permission", responses = {
+			@ApiResponse(responseCode = "200", description = "List of taxonomy IDs the user can validate", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SpeciesPermission.class)))),
+			@ApiResponse(responseCode = "400", description = "Unable to get the permission list", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response getSpeciesPermission(@Context HttpServletRequest request) {
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);

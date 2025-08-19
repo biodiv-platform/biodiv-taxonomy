@@ -1,12 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class SynonymData {
 
@@ -16,9 +12,7 @@ public class SynonymData {
 	private String dataSource;
 	private String dataSourceId;
 
-	/**
-	 * 
-	 */
+	/** */
 	public SynonymData() {
 		super();
 	}
@@ -78,5 +72,4 @@ public class SynonymData {
 	public void setDataSourceId(String dataSourceId) {
 		this.dataSourceId = dataSourceId;
 	}
-
 }

@@ -1,13 +1,9 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -20,9 +16,10 @@ import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.util.AbstractDAO;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
+import jakarta.inject.Inject;
+
 /**
  * @author Abhishek Rudra
- *
  */
 public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
@@ -70,7 +67,6 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 			session.close();
 		}
 		return allowedTaxonList;
-
 	}
 
 	@SuppressWarnings("unchecked")
@@ -130,5 +126,4 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 		}
 		return result;
 	}
-
 }

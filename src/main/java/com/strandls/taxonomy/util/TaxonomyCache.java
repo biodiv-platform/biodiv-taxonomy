@@ -4,14 +4,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
 import com.strandls.utility.pojo.ParsedName;
+
+import jakarta.inject.Inject;
 
 public class TaxonomyCache {
 

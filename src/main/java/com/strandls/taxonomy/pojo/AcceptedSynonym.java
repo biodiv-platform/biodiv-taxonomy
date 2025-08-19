@@ -1,36 +1,31 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.NamedQuery;
-import javax.persistence.SequenceGenerator;
-import javax.persistence.Table;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 
 /**
  * @author Abhishek Rudra
- *
  */
-
-@NamedQuery(name = "synonymTransfer", query = "update AcceptedSynonym set acceptedId = :newAcceptedId where acceptedId = :acceptedId") 
+@NamedQuery(name = "synonymTransfer", query = "update AcceptedSynonym set acceptedId = :newAcceptedId where acceptedId = :acceptedId")
 @Entity
 @Table(name = "accepted_synonym")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcceptedSynonym implements Serializable {
 
-	/**
-	 * 
-	 */
+	/** */
 	private static final long serialVersionUID = 1L;
+
 	private Long id;
 	private Long version;
 	private Long acceptedId;
@@ -74,5 +69,4 @@ public class AcceptedSynonym implements Serializable {
 	public void setSynonymId(Long synonymId) {
 		this.synonymId = synonymId;
 	}
-
 }

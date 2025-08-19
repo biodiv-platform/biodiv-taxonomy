@@ -70,5 +70,4 @@ public class TaxonomyNamelistItem {
 	public void setRankValue(Double rankValue) {
 		this.rankValue = rankValue;
 	}
-
 }

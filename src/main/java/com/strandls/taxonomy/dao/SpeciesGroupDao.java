@@ -1,11 +1,7 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
 
 import java.util.List;
-
-import javax.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -16,9 +12,10 @@ import org.slf4j.LoggerFactory;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.util.AbstractDAO;
 
+import jakarta.inject.Inject;
+
 /**
  * @author Abhishek Rudra
- *
  */
 public class SpeciesGroupDao extends AbstractDAO<SpeciesGroup, Long> {
 
@@ -86,5 +83,4 @@ public class SpeciesGroupDao extends AbstractDAO<SpeciesGroup, Long> {
 		}
 		return null;
 	}
-
 }

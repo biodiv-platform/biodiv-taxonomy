@@ -8,9 +8,7 @@ import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 
 /**
- * 
  * @author vilay
- *
  */
 public interface SpeciesGroupService {
 
@@ -29,5 +27,4 @@ public interface SpeciesGroupService {
 	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles roles);
 
 	public SpeciesGroup getGroupByTaxonId(Long taxonId);
-
 }

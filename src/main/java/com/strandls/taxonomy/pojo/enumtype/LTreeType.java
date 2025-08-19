@@ -5,48 +5,52 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Objects;
 
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
-public class LTreeType implements UserType{
+public class LTreeType implements UserType<String> {
 
 	@Override
-	public int[] sqlTypes() {
-		return  new int[] {Types.OTHER};
+	public int getSqlType() {
+		return Types.OTHER;
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
-	public Class returnedClass() {
+	public Class<String> returnedClass() {
 		return String.class;
 	}
 
 	@Override
-	public boolean equals(Object x, Object y) {
-		return x.equals(y);
+	public boolean equals(String x, String y) {
+		return Objects.equals(x, y);
 	}
 
 	@Override
-	public int hashCode(Object x) {
-		return x.hashCode();
+	public int hashCode(String x) {
+		return Objects.hashCode(x);
 	}
 
 	@Override
-	public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
+	public String nullSafeGet(ResultSet rs, int position, SharedSessionContractImplementor session, Object owner)
 			throws SQLException {
-		return rs.getString(names[0]);
+		return rs.getString(position);
 	}
 
 	@Override
-	public void nullSafeSet(PreparedStatement st, Object value, int index, SharedSessionContractImplementor session)
+	public void nullSafeSet(PreparedStatement st, String value, int index, SharedSessionContractImplementor session)
 			throws SQLException {
-		st.setObject(index, value, Types.OTHER);
+		if (value == null) {
+			st.setNull(index, Types.OTHER);
+		} else {
+			st.setObject(index, value, Types.OTHER);
+		}
 	}
 
 	@Override
-	public Object deepCopy(Object value) {
-		return new String((String) value);
+	public String deepCopy(String value) {
+		return value == null ? null : new String(value);
 	}
 
 	@Override
@@ -55,18 +59,17 @@ public class LTreeType implements UserType{
 	}
 
 	@Override
-	public Serializable disassemble(Object value) {
-		return (Serializable) value;
+	public Serializable disassemble(String value) {
+		return value;
 	}
 
 	@Override
-	public Object assemble(Serializable cached, Object owner) {
-		return cached;
+	public String assemble(Serializable cached, Object owner) {
+		return (String) cached;
 	}
 
 	@Override
-	public Object replace(Object original, Object target, Object owner) {
-		return deepCopy(original);
+	public String replace(String original, String target, Object owner) {
+		return original;
 	}
-
 }

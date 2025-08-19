@@ -8,16 +8,15 @@ import java.util.Properties;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.xml.bind.DatatypeConverter;
+
 /**
  * @author Abhishek Rudra
- *
  */
-
 public class EncryptionUtils {
 
 	private final Logger logger = LoggerFactory.getLogger(EncryptionUtils.class);
@@ -42,7 +41,6 @@ public class EncryptionUtils {
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-
 	}
 
 	public String encrypt(String plainText) {
@@ -77,5 +75,4 @@ public class EncryptionUtils {
 		}
 		return strData;
 	}
-
 }

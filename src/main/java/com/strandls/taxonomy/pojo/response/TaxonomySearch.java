@@ -33,5 +33,4 @@ public class TaxonomySearch {
 	public void setParentMatched(List<TaxonomyDefinitionAndRegistry> parentMatched) {
 		this.parentMatched = parentMatched;
 	}
-
 }

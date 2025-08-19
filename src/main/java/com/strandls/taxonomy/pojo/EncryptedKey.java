@@ -1,12 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class EncryptedKey {
 
@@ -19,5 +15,4 @@ public class EncryptedKey {
 	public void setToken(String token) {
 		this.token = token;
 	}
-
 }

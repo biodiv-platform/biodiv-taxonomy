@@ -38,7 +38,7 @@ public class TaxonRelation {
 		this.parent = parent;
 		this.position = position;
 	}
-	
+
 	public void addChild(TaxonRelation taxonRelation) {
 		this.children.add(taxonRelation);
 	}
@@ -146,5 +146,4 @@ public class TaxonRelation {
 	public void setChildren(List<TaxonRelation> children) {
 		this.children = children;
 	}
-
 }

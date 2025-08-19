@@ -40,7 +40,7 @@ public class TaxonomyCreationHierarchy {
 	public void setUnmatchedNodeToCreate(Map<String, ParsedName> unmatchedNodeToCreate) {
 		this.unmatchedNodeToCreate = unmatchedNodeToCreate;
 	}
-	
+
 	public void addUnmatchedNodeToCreate(String key, ParsedName value) {
 		this.unmatchedNodeToCreate.put(key, value);
 	}

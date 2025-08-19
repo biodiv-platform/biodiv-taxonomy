@@ -1,24 +1,20 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 import java.util.Date;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * @author Abhishek Rudra
- *
  */
-
 @Entity
 @Table(name = "species_permission")
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,9 +27,7 @@ public class SpeciesPermission {
 	private Long permissionType;
 	private Long taxonConceptId;
 
-	/**
-	 * 
-	 */
+	/** */
 	public SpeciesPermission() {
 		super();
 	}
@@ -112,5 +106,4 @@ public class SpeciesPermission {
 	public void setTaxonConceptId(Long taxonConceptId) {
 		this.taxonConceptId = taxonConceptId;
 	}
-
 }

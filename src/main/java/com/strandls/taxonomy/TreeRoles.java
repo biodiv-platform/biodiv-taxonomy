@@ -1,15 +1,10 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy;
 
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public enum TreeRoles {
-
 	OBSERVATIONCURATOR("OBSERVATION CURATOR"), SPECIESCONTRIBUTOR("SPECIES CONTRIBUTOR"),
 	TAXONOMYCONTRIBUTOR("TAXONOMY CONTRIBUTOR");
 
@@ -22,5 +17,4 @@ public enum TreeRoles {
 	public String getValue() {
 		return value;
 	}
-
 }

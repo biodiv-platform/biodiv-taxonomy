@@ -1,6 +1,4 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service.impl;
 
 import java.io.IOException;
@@ -15,13 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import javax.inject.Inject;
-import javax.persistence.NoResultException;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -35,10 +26,11 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
+import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
@@ -74,13 +66,17 @@ import com.strandls.taxonomy.util.TaxonomyCache;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
-import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.utility.pojo.ParsedName;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 /**
- * 
  * @author Vilay
- *
  */
 public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefinition>
 		implements TaxonomyDefinitionSerivce {
@@ -125,7 +121,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private TaxonomyPermisisonService permissionService;
 
 	@Inject
-	private ActivitySerivceApi activityService;
+	private ActivityServiceApi activityService;
 
 	@Inject
 	private Headers headers;
@@ -210,7 +206,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (td.getRank().equalsIgnoreCase(taxonomySave.getRank())
 					&& td.getStatus().equalsIgnoreCase(taxonomySave.getStatus().name()))
 				taxonomyDefinition = td;
-
 		}
 
 		taxonomyESUpdate.pushToElastic(taxonIds);
@@ -279,7 +274,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 		return taxonomyDefinition;
-
 	}
 
 	private List<TaxonomyDefinition> addTaxonomy(HttpServletRequest request, TaxonomySave taxonomyData)
@@ -322,7 +316,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					sourceId, userId);
 			taxonomyDefinitions.add(taxonomyDefinition);
 
-//			taxonomy Creation activity
+			// taxonomy Creation activity
 			String desc = "Taxon created : " + taxonomyDefinition.getName();
 			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
 					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
@@ -376,7 +370,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	/**
 	 * This is internally used by the addTaxonomyMethod
-	 * 
+	 *
 	 * @param request
 	 * @param taxonId
 	 * @param synonymData
@@ -426,12 +420,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyDefinitions.addAll(synonyms);
 		}
 		return taxonomyDefinitions;
-
 	}
 
 	/**
 	 * Utility to update and create the hierarchy
-	 * 
+	 *
 	 * @param path         - String builder which store the path for hierarchy.
 	 *                     (call by reference variable)
 	 * @param ranks        - Pull of object for the available rank in the system.
@@ -706,7 +699,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logger.error(e.getMessage());
 		}
 		return null;
-
 	}
 
 	private List<TaxonomyDefinition> findSynonyms(Long taxonId) {
@@ -779,7 +771,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					synonymId = synonymTaxonomy.getId();
 					name = synonymTaxonomy.getName();
 				} else {
-//					delete previous synonym
+					// delete previous synonym
 					synonymId = synonymCheck.getId();
 					name = synonymCheck.getName();
 					AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId,
@@ -789,13 +781,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxnomyDefinition.setIsDeleted(true);
 					taxonomyDao.update(taxnomyDefinition);
 
-//					map the exist synonym
+					// map the exist synonym
 					acceptedSynonym = new AcceptedSynonym();
 					acceptedSynonym.setAcceptedId(taxonId);
 					acceptedSynonym.setSynonymId(synonymId);
 					acceptedSynonym.setVersion(0L);
 					acceptedSynonymDao.save(acceptedSynonym);
-
 				}
 
 				desc = "Updated synonym : " + name;
@@ -992,7 +983,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());
 			taxonomyDefinition = update(taxonomyDefinition);
 
-//			adding desc for activity
+			// adding desc for activity
 			desc = "Taxon status updated : " + TaxonomyStatus.SYNONYM.name() + "-->" + TaxonomyStatus.ACCEPTED.name();
 
 			// Update the elastic for all the accepted name it was associated and the node
@@ -1031,7 +1022,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the status for given taxon node.
 			taxonomyDefinition = update(taxonomyDefinition);
 
-//			activity description
+			// activity description
 			desc = "Taxon status updated : " + TaxonomyStatus.ACCEPTED.name() + "-->" + TaxonomyStatus.SYNONYM.name();
 
 			// Update elastic search for the taxon
@@ -1113,9 +1104,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	private static final int BATCH_SIZE = 1000;
 
-	/**
-	 * Only for the migration purpose
-	 */
+	/** Only for the migration purpose */
 	@Override
 	public Map<String, TaxonomyDefinition> updateItalicisedForm() {
 
@@ -1147,6 +1136,5 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 
 		return result;
-
 	}
 }

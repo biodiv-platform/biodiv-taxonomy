@@ -1,6 +1,4 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service.impl;
 
 import com.google.inject.AbstractModule;
@@ -15,7 +13,6 @@ import com.strandls.taxonomy.util.TaxonomyCache;
 
 /**
  * @author Abhishek Rudra
- *
  */
 public class TaxonomyServiceModule extends AbstractModule {
 

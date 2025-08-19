@@ -1,6 +1,4 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy;
 
 import java.io.File;
@@ -22,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import javax.servlet.ServletContextEvent;
-
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -37,7 +33,7 @@ import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
 import com.rabbitmq.client.Channel;
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.mail_utility.producer.RabbitMQProducer;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
@@ -47,9 +43,10 @@ import com.strandls.taxonomy.util.MailUtils;
 import com.strandls.user.controller.UserServiceApi;
 import com.strandls.utility.controller.LanguageServiceApi;
 
+import jakarta.servlet.ServletContextEvent;
+
 /**
  * @author Abhishek Rudra
- *
  */
 public class TaxonomyServeletContextListener extends GuiceServletContextListener {
 
@@ -76,7 +73,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				configuration = configuration.configure();
 				SessionFactory sessionFactory = configuration.buildSessionFactory();
 
-//				Rabbit MQ initialization
+				// Rabbit MQ initialization
 				RabbitMqConnection rabbitConnetion = new RabbitMqConnection();
 				Channel channel = null;
 				try {
@@ -93,13 +90,13 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				bind(ObjectMapper.class).toInstance(om);
 
 				Map<String, String> props = new HashMap<>();
-				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
+				props.put("jakarta.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.provider.packages", "com");
 				props.put("jersey.config.server.wadl.disableWadl", "true");
 
 				bind(LanguageServiceApi.class).in(Scopes.SINGLETON);
 				bind(SessionFactory.class).toInstance(sessionFactory);
-				bind(ActivitySerivceApi.class).in(Scopes.SINGLETON);
+				bind(ActivityServiceApi.class).in(Scopes.SINGLETON);
 				bind(Headers.class).in(Scopes.SINGLETON);
 				bind(EncryptionUtils.class).in(Scopes.SINGLETON);
 				bind(MailUtils.class).in(Scopes.SINGLETON);
@@ -109,7 +106,6 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				serve("/api/*").with(ServletContainer.class, props);
 			}
 		}, new TaxonomyControllerModule(), new TaxonomyServiceModule(), new TaxonomyDaoModule());
-
 	}
 
 	protected List<Class<?>> getEntityClassesFromPackage(String packageName)
@@ -122,7 +118,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 			Annotation[] annotations = cls.getAnnotations();
 
 			for (Annotation annotation : annotations) {
-				if (annotation instanceof javax.persistence.Entity) {
+				if (annotation instanceof jakarta.persistence.Entity) {
 					classes.add(cls);
 				}
 			}
@@ -197,6 +193,5 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 						driver);
 			}
 		}
-
 	}
 }

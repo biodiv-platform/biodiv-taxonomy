@@ -1,28 +1,24 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service.impl;
-
-import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.activity.controller.ActivityServiceApi;
 import com.strandls.activity.pojo.MailData;
 import com.strandls.activity.pojo.SpeciesActivityLogging;
 import com.strandls.activity.pojo.TaxonomyActivityLogging;
 import com.strandls.taxonomy.Headers;
 
+import jakarta.inject.Inject;
+
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class LogActivities {
 
 	@Inject
-	private ActivitySerivceApi activityService;
+	private ActivityServiceApi activityService;
 
 	@Inject
 	private Headers headers;
@@ -47,7 +43,6 @@ public class LogActivities {
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-
 	}
 
 	public void logTaxonomyActivities(String authHeader, String activityDescription, Long rootObjectId,
@@ -68,5 +63,4 @@ public class LogActivities {
 			logger.error(e.getMessage());
 		}
 	}
-
 }

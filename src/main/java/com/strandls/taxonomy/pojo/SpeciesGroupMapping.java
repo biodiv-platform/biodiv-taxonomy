@@ -1,33 +1,28 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * @author Abhishek Rudra
- *
  */
-
 @Entity
 @Table(name = "species_group_mapping")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SpeciesGroupMapping implements Serializable {
 
-	/**
-	 * 
-	 */
+	/** */
 	private static final long serialVersionUID = -2596164245379270182L;
+
 	private Long id;
 	private Long speciesGroupId;
 	private Long taxonConceptId;
@@ -60,5 +55,4 @@ public class SpeciesGroupMapping implements Serializable {
 	public void setTaxonConceptId(Long taxonConceptId) {
 		this.taxonConceptId = taxonConceptId;
 	}
-
 }

@@ -1,6 +1,4 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
 
 import java.io.IOException;
@@ -8,12 +6,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import javax.inject.Inject;
-import javax.persistence.NoResultException;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -36,9 +28,14 @@ import com.strandls.taxonomy.util.AbstractDAO;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.pojo.ParsedName;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+
 /**
  * @author Abhishek Rudra
- *
  */
 public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long> {
 
@@ -100,7 +97,8 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	}
 
 	public List<TaxonomyDefinition> findByCanonicalForm(String canonicalForm, String rankName) {
-		String queryStr = "" + "from TaxonomyDefinition t where t.canonicalForm = :canonicalForm and t.rank = :rank and isDeleted = false";
+		String queryStr = ""
+				+ "from TaxonomyDefinition t where t.canonicalForm = :canonicalForm and t.rank = :rank and isDeleted = false";
 		try (Session session = sessionFactory.openSession()) {
 			Query<TaxonomyDefinition> query = session.createQuery(queryStr, TaxonomyDefinition.class);
 			query.setParameter("canonicalForm", canonicalForm);
@@ -157,7 +155,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 	/**
 	 * This code is to get the hierarchy of all the child of given taxonId
-	 * 
+	 *
 	 * @param taxonId - input taxonomy id
 	 * @return - hierarchy for all the children
 	 */
@@ -297,7 +295,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 		classificationId = classificationId == null ? TaxonomyRegistryDao.getDefaultClassificationId()
 				: classificationId;
-		
+
 		String qryString = TaxonomyConfig.fetchFileAsString(TAXONOMY_NAMELIST_QUERY);
 		String countQueryString = "select count(*) from ( " + qryString + ") C";
 
@@ -313,8 +311,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 		Integer count = countQuery.getSingleResult();
 
-		Query<TaxonomyNamelistItem> query = session.createNativeQuery(qryString)
-				.setResultSetMapping("TaxonomyNameList");
+		Query<TaxonomyNamelistItem> query = session.createNativeQuery(qryString, TaxonomyNamelistItem.class);
 
 		query.setParameter(TAXON_ID, taxonId);
 		query.setParameter("classificationId", classificationId);

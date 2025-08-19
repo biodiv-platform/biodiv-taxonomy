@@ -50,5 +50,4 @@ public class TaxonomyRegistryResponse {
 	public void setCanonicalForm(String canonicalForm) {
 		this.canonicalForm = canonicalForm;
 	}
-
 }

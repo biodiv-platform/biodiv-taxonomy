@@ -32,5 +32,4 @@ public class TaxonomyNameListResponse {
 	public void setTaxonomyNameListItems(List<TaxonomyNamelistItem> taxonomyNameListItems) {
 		this.taxonomyNameListItems = taxonomyNameListItems;
 	}
-
 }

@@ -1,12 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class CommonNamesData {
 
@@ -15,9 +11,7 @@ public class CommonNamesData {
 	private String name;
 	private Long taxonConceptId;
 
-	/**
-	 * 
-	 */
+	/** */
 	public CommonNamesData() {
 		super();
 	}
@@ -67,5 +61,4 @@ public class CommonNamesData {
 	public void setTaxonConceptId(Long taxonConceptId) {
 		this.taxonConceptId = taxonConceptId;
 	}
-
 }

@@ -1,6 +1,4 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy;
 
 import java.io.IOException;
@@ -18,10 +16,9 @@ import com.strandls.taxonomy.util.PropertyFileUtil;
 
 /**
  * @author Abhishek Rudra
- *
  */
 public class RabbitMqConnection {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(RabbitMqConnection.class);
 
 	public static final String EXCHANGE_BIODIV;
@@ -64,6 +61,5 @@ public class RabbitMqConnection {
 		channel.queueBind(MAIL_QUEUE, EXCHANGE_BIODIV, MAIL_ROUTING_KEY);
 
 		return channel;
-
 	}
 }

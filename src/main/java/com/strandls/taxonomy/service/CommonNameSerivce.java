@@ -1,20 +1,16 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.service;
 
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.CommonNamesData;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 /**
- * 
  * @author vilay
- *
  */
 public interface CommonNameSerivce {
 
@@ -39,5 +35,4 @@ public interface CommonNameSerivce {
 	public CommonName getPrefferedCommonName(Long taxonId);
 
 	public List<CommonName> fetchByTaxonId(Long taxonId);
-
 }

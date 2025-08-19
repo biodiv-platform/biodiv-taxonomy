@@ -1,6 +1,4 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
@@ -14,14 +12,13 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.util.AbstractDAO;
 
+import jakarta.inject.Inject;
+
 /**
  * @author Abhishek Rudra
- *
  */
 public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Long> {
 
@@ -66,7 +63,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 		}
 		return result;
 	}
-	
+
 	public Set<String> getTaxonIds(Long speciesGroupId) {
 		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();
@@ -81,7 +78,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 			session.close();
 		}
 		Set<String> result = new HashSet<>();
-		for(SpeciesGroupMapping s : speciesGroupMappings) {
+		for (SpeciesGroupMapping s : speciesGroupMappings) {
 			result.add(s.getTaxonConceptId().toString());
 		}
 		return result;

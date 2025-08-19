@@ -1,11 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo.response;
 
 /**
  * @author Abhishek Rudra
- *
  */
 public class BreadCrumb {
 
@@ -47,5 +44,4 @@ public class BreadCrumb {
 	public void setRankName(String rankName) {
 		this.rankName = rankName;
 	}
-
 }

@@ -1,13 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.dao;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.inject.Inject;
-import javax.persistence.NoResultException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -18,10 +13,11 @@ import org.slf4j.LoggerFactory;
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.util.AbstractDAO;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
+
 /**
- * 
  * @author vilay
- *
  */
 public class RankDao extends AbstractDAO<Rank, Long> {
 
@@ -81,5 +77,4 @@ public class RankDao extends AbstractDAO<Rank, Long> {
 			}
 		}
 	}
-
 }

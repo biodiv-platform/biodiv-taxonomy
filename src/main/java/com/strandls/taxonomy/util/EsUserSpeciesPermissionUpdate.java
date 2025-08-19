@@ -43,7 +43,6 @@ public class EsUserSpeciesPermissionUpdate {
 					taxonList);
 			if (!taxonList.isEmpty())
 				ugRoleMapping.add(taxonRoleMapping);
-
 		});
 		Map<String, Object> doc = new HashMap<String, Object>();
 		doc.put("taxonomy", ugRoleMapping);
@@ -52,7 +51,5 @@ public class EsUserSpeciesPermissionUpdate {
 		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error("Unable to update Es User Details " + e.getMessage());
 		}
-
 	}
-
 }

@@ -1,12 +1,8 @@
-/**
- * 
- */
+/** */
 package com.strandls.taxonomy.pojo;
 
 /**
  * @author Abhishek Rudra
- *
- * 
  */
 public class PermissionData {
 
@@ -15,9 +11,7 @@ public class PermissionData {
 	private String role;
 	private String requestorMessage;
 
-	/**
-	 * 
-	 */
+	/** */
 	public PermissionData() {
 		super();
 	}
@@ -67,5 +61,4 @@ public class PermissionData {
 	public void setRequestorMessage(String requestorMessage) {
 		this.requestorMessage = requestorMessage;
 	}
-
 }

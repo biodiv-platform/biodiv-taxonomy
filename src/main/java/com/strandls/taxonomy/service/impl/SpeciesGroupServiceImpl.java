@@ -58,7 +58,7 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 
 	@Override
 	public SpeciesPermission save(SpeciesPermission speciesPermission) {
-		SpeciesPermission resp  = speciesPermissionDao.save(speciesPermission);
+		SpeciesPermission resp = speciesPermissionDao.save(speciesPermission);
 		try {
 			userPermissionUpdate.speciesUserPermissionEsUpdate(speciesPermission.getAuthorId());
 		} catch (ApiException e) {
@@ -96,5 +96,4 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles roles) {
 		return speciesPermissionDao.checkPermission(userId, taxonId, roles);
 	}
-
 }
