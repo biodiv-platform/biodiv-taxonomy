@@ -853,9 +853,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
 		String canonicalForm = parsedName.getCanonicalName().getFull();
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, rankName);
+
 		if (taxonomyDefinitions.isEmpty()) {
 			List<Object> details = parsedName.getDetails();
-			if (details.get(0) instanceof LinkedHashMap) {
+			if (!details.isEmpty() && details.get(0) instanceof LinkedHashMap) {
 				Map<String, Object> m = (Map<String, Object>) details.get(0);
 				if (m.containsKey(TaxonomyUtil.GENUS))
 					canonicalForm = (String) ((LinkedHashMap<String, Object>) m.get(TaxonomyUtil.GENUS)).get("value");
