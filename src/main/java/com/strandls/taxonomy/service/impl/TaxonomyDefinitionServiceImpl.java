@@ -810,6 +810,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						"taxonomy", synonymId, activityType);
 			}
 
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonomyESUpdate.pushToElastic(taxonIds);
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -839,6 +842,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
 						"taxonomy", synonym.getId(), "Deleted synonym");
 			}
+
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonomyESUpdate.pushToElastic(taxonIds);
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
