@@ -84,17 +84,19 @@ public class TaxonomyUtil {
 		if (parsedName == null)
 			return acceptedRank;
 
-		List<Object> details = parsedName.getDetails();
-		if (details == null || details.isEmpty())
+		Object details = parsedName.getDetails();
+		if (details == null)
 			return acceptedRank;
 
-		if (details.get(0) instanceof LinkedHashMap) {
-			Map<String, Object> m = (Map<String, Object>) details.get(0);
-			if (m.containsKey(INFRA_SPECIFIC_EPITHETS))
+		if (details instanceof LinkedHashMap) {
+			Map<String, Object> detailsMap = (Map<String, Object>) details;
+			
+			// Handle new gnparser details structure
+			if (detailsMap.containsKey("infraspecies")) {
 				return INFRA_SPECIES;
-			else if (m.containsKey(SPECIFIC_EPITHET))
+			} else if (detailsMap.containsKey("species")) {
 				return SPECIES;
-			else if (m.containsKey(UNINOMIAL)
+			} else if (detailsMap.containsKey("uninomial")
 					&& (INFRA_SPECIES.equalsIgnoreCase(acceptedRank) || SPECIES.equalsIgnoreCase(acceptedRank))) {
 				throw new UnRecongnizedRankException("Getting uninomial rank for " + parsedName.getVerbatim());
 			}
@@ -108,7 +110,7 @@ public class TaxonomyUtil {
 
 		String name = sciName.getVerbatim();
 
-		if (sciName.getPositions() == null || sciName.getPositions().isEmpty())
+		if (sciName.getWords() == null || sciName.getWords().isEmpty())
 			return name;
 
 		if (!rankName.equalsIgnoreCase(GENUS) && !rankName.equalsIgnoreCase(SUB_GENUS)
@@ -117,17 +119,33 @@ public class TaxonomyUtil {
 
 		StringBuilder italicisedFormBuilder = new StringBuilder();
 		int index = 0;
-		for (Object positions : sciName.getPositions()) {
-			ArrayList<Object> position = (ArrayList) positions;
+		for (Object wordObj : sciName.getWords()) {
+			// In the new structure, words is a List<Word> but we need to handle it generically
+			// Extract word information from the Word object
+			Map<String, Object> wordMap = null;
+			if (wordObj instanceof Map) {
+				wordMap = (Map<String, Object>) wordObj;
+			} else {
+				// Skip if we can't process this word
+				continue;
+			}
 
-			int start = (int) position.get(1);
-			int end = (int) position.get(2);
+			Object startObj = wordMap.get("start");
+			Object endObj = wordMap.get("end");
+			Object wordTypeObj = wordMap.get("wordType");
+			
+			if (startObj == null || endObj == null || wordTypeObj == null)
+				continue;
+			
+			int start = (Integer) startObj;
+			int end = (Integer) endObj;
+			String wordType = (String) wordTypeObj;
 
 			if (start > index)
 				italicisedFormBuilder.append(name.substring(index, start));
 
-			if (position.get(0).equals(GENUS) || position.get(0).equals(SPECIFIC_EPITHET)
-					|| position.get(0).equals(INFRA_SPECIFIC_EPITHET) || position.get(0).equals(UNINOMIAL))
+			if ("GENUS".equals(wordType) || "SPECIES".equals(wordType)
+					|| "INFRASPECIES".equals(wordType) || "UNINOMIAL".equals(wordType))
 				italicisedFormBuilder.append("<i>" + name.substring(start, end) + "</i>");
 			else
 				italicisedFormBuilder.append(name.substring(start, end));

@@ -258,7 +258,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		TaxonomyDefinition taxonomyDefinition = taxonomyDao.findById(taxonId);
 
-		String canonicalName = parsedName.getCanonicalName().getFull();
+		String canonicalName = parsedName.getCanonical().getFull();
 		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		String status = taxonomyStatus.name();
@@ -275,7 +275,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setUploaderId(uploaderId);
 		taxonomyDefinition.setViaDatasource(source);
 		taxonomyDefinition.setNameSourceId(sourceId);
-		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship());
+		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 		return taxonomyDefinition;
@@ -526,7 +526,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Map<String, ParsedName> rankToParsedName) {
 
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao
-				.findByCanonicalForm(parsedName.getCanonicalName().getFull(), rankName);
+				.findByCanonicalForm(parsedName.getCanonical().getFull(), rankName);
 
 		int maxScore = 0;
 		TaxonomyDefinition matchedTaxonomy = null;
@@ -540,7 +540,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				String rank = r.getRank();
 				String name = r.getCanonicalForm();
 				ParsedName inputParsedName = rankToParsedName.get(rank);
-				if (inputParsedName != null && inputParsedName.getCanonicalName().getFull().equalsIgnoreCase(name))
+				if (inputParsedName != null && inputParsedName.getCanonical().getFull().equalsIgnoreCase(name))
 					score++;
 			}
 
@@ -554,10 +554,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	private TaxonomyDefinition getLeafMatchedNode(ParsedName parsedName, String rankName, TaxonomyStatus status) {
 
-		if (parsedName == null || parsedName.getCanonicalName() == null)
+		if (parsedName == null || parsedName.getCanonical() == null)
 			return null;
 
-		String canonicalName = parsedName.getCanonicalName().getFull();
+		String canonicalName = parsedName.getCanonical().getFull();
 
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalName, rankName);
 
@@ -660,9 +660,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				try {
 					ParsedName parsedName = utilityServiceApi.getNameParsed(cell.toString());
 
-					if (parsedName.getCanonicalName() != null) {
+					if (parsedName.getCanonical() != null) {
 
-						String canonicalName = parsedName.getCanonicalName().getSimple();
+						String canonicalName = parsedName.getCanonical().getSimple();
 						List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
 								"canonical_form", canonicalName);
 						List<Object> optMatches = new ArrayList<>();
@@ -810,6 +810,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						"taxonomy", synonymId, activityType);
 			}
 
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonIds.add(synonymId);
+			taxonomyESUpdate.pushToElastic(taxonIds);
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -851,19 +855,34 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException {
 		TaxonomySearch taxonomySearch = new TaxonomySearch();
 		ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
-		String canonicalForm = parsedName.getCanonicalName().getFull();
+		String canonicalForm = parsedName.getCanonical().getFull();
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, rankName);
+
 		if (taxonomyDefinitions.isEmpty()) {
-			List<Object> details = parsedName.getDetails();
-			if (details.get(0) instanceof LinkedHashMap) {
-				Map<String, Object> m = (Map<String, Object>) details.get(0);
-				if (m.containsKey(TaxonomyUtil.GENUS))
-					canonicalForm = (String) ((LinkedHashMap<String, Object>) m.get(TaxonomyUtil.GENUS)).get("value");
-				else if (m.containsKey(TaxonomyUtil.UNINOMIAL)) {
-					canonicalForm = (String) ((LinkedHashMap<String, Object>) m.get(TaxonomyUtil.UNINOMIAL))
-							.get("value");
+			Object details = parsedName.getDetails();
+			if (details != null && details instanceof LinkedHashMap) {
+				Map<String, Object> detailsMap = (Map<String, Object>) details;
+				
+				// Handle different detail types based on gnparser swagger specification
+				if (detailsMap.containsKey("species")) {
+					Map<String, Object> speciesDetail = (Map<String, Object>) detailsMap.get("species");
+					if (speciesDetail.containsKey("genus")) {
+						canonicalForm = (String) speciesDetail.get("genus");
+						taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, TaxonomyUtil.GENUS);
+					}
+				} else if (detailsMap.containsKey("infraspecies")) {
+					Map<String, Object> infraspeciesDetail = (Map<String, Object>) detailsMap.get("infraspecies");
+					if (infraspeciesDetail.containsKey("genus")) {
+						canonicalForm = (String) infraspeciesDetail.get("genus");
+						taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, TaxonomyUtil.GENUS);
+					}
+				} else if (detailsMap.containsKey("uninomial")) {
+					Map<String, Object> uninomialDetail = (Map<String, Object>) detailsMap.get("uninomial");
+					if (uninomialDetail.containsKey("value")) {
+						canonicalForm = (String) uninomialDetail.get("value");
+						taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, TaxonomyUtil.GENUS);
+					}
 				}
-				taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, TaxonomyUtil.GENUS);
 
 				if (!taxonomyDefinitions.isEmpty()) {
 					List<TaxonomyDefinitionAndRegistry> parentMatched = getPathTillRoot(taxonomyDefinitions);
@@ -904,10 +923,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		String name = parsedName.getVerbatim().trim();
 		String normalizedName = parsedName.getNormalized();
-		String canonicalName = parsedName.getCanonicalName().getFull();
+		String canonicalName = parsedName.getCanonical().getFull();
 		String binomialForm = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, taxonomyDefinition.getRank());
-		String authorShip = parsedName.getAuthorship();
+		String authorShip = parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null;
 
 		taxonomyDefinition.setName(name);
 		taxonomyDefinition.setNormalizedForm(normalizedName);

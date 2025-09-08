@@ -261,9 +261,9 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	public TaxonomyDefinition createTaxonomyDefiniiton(ParsedName parsedName, String rankName,
 			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId,
 			Long uploaderId) throws TaxonCreationException {
-		if (parsedName == null || parsedName.getCanonicalName() == null)
+		if (parsedName == null || parsedName.getCanonical() == null)
 			throw new TaxonCreationException("Not valid name");
-		String canonicalName = parsedName.getCanonicalName().getFull();
+		String canonicalName = parsedName.getCanonical().getFull();
 		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
@@ -285,7 +285,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		taxonomyDefinition.setClasss(classs);
 		taxonomyDefinition.setViaDatasource(source);
 		taxonomyDefinition.setNameSourceId(sourceId);
-		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship());
+		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
 		taxonomyDefinition.setIsDeleted(false);
 		taxonomyDefinition = save(taxonomyDefinition);
 		return taxonomyDefinition;
