@@ -810,6 +810,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						"taxonomy", synonymId, activityType);
 			}
 
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonIds.add(synonymId);
+			taxonomyESUpdate.pushToElastic(taxonIds);
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
