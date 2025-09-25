@@ -270,7 +270,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setUploaderId(uploaderId);
 		taxonomyDefinition.setViaDatasource(source);
 		taxonomyDefinition.setNameSourceId(sourceId);
-		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
+		taxonomyDefinition
+				.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 		return taxonomyDefinition;
@@ -853,7 +854,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Object details = parsedName.getDetails();
 			if (details != null && details instanceof LinkedHashMap) {
 				Map<String, Object> detailsMap = (Map<String, Object>) details;
-				
+
 				// Handle different detail types based on gnparser swagger specification
 				if (detailsMap.containsKey("species")) {
 					Map<String, Object> speciesDetail = (Map<String, Object>) detailsMap.get("species");

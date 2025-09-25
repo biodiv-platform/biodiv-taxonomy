@@ -283,7 +283,8 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		taxonomyDefinition.setClasss(classs);
 		taxonomyDefinition.setViaDatasource(source);
 		taxonomyDefinition.setNameSourceId(sourceId);
-		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
+		taxonomyDefinition
+				.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
 		taxonomyDefinition.setIsDeleted(false);
 		taxonomyDefinition = save(taxonomyDefinition);
 		return taxonomyDefinition;

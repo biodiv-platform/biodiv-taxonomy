@@ -1,6 +1,5 @@
 package com.strandls.taxonomy.util;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -88,7 +87,7 @@ public class TaxonomyUtil {
 
 		if (details instanceof LinkedHashMap) {
 			Map<String, Object> detailsMap = (Map<String, Object>) details;
-			
+
 			// Handle new gnparser details structure
 			if (detailsMap.containsKey("infraspecies")) {
 				return INFRA_SPECIES;
@@ -118,7 +117,8 @@ public class TaxonomyUtil {
 		StringBuilder italicisedFormBuilder = new StringBuilder();
 		int index = 0;
 		for (Object wordObj : sciName.getWords()) {
-			// In the new structure, words is a List<Word> but we need to handle it generically
+			// In the new structure, words is a List<Word> but we need to handle it
+			// generically
 			// Extract word information from the Word object
 			Map<String, Object> wordMap = null;
 			if (wordObj instanceof Map) {
@@ -131,10 +131,10 @@ public class TaxonomyUtil {
 			Object startObj = wordMap.get("start");
 			Object endObj = wordMap.get("end");
 			Object wordTypeObj = wordMap.get("wordType");
-			
+
 			if (startObj == null || endObj == null || wordTypeObj == null)
 				continue;
-			
+
 			int start = (Integer) startObj;
 			int end = (Integer) endObj;
 			String wordType = (String) wordTypeObj;
@@ -142,8 +142,8 @@ public class TaxonomyUtil {
 			if (start > index)
 				italicisedFormBuilder.append(name.substring(index, start));
 
-			if ("GENUS".equals(wordType) || "SPECIES".equals(wordType)
-					|| "INFRASPECIES".equals(wordType) || "UNINOMIAL".equals(wordType))
+			if ("GENUS".equals(wordType) || "SPECIES".equals(wordType) || "INFRASPECIES".equals(wordType)
+					|| "UNINOMIAL".equals(wordType))
 				italicisedFormBuilder.append("<i>" + name.substring(start, end) + "</i>");
 			else
 				italicisedFormBuilder.append(name.substring(start, end));
