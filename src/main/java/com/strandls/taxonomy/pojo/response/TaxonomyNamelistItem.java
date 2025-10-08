@@ -1,5 +1,24 @@
 package com.strandls.taxonomy.pojo.response;
 
+import jakarta.persistence.ColumnResult;
+import jakarta.persistence.ConstructorResult;
+import jakarta.persistence.SqlResultSetMapping;
+
+@SqlResultSetMapping(
+	name = "TaxonomyNamelistItemMapping",
+	classes = @ConstructorResult(
+		targetClass = TaxonomyNamelistItem.class,
+		columns = {
+			@ColumnResult(name = "id", type = Long.class),
+			@ColumnResult(name = "name", type = String.class),
+			@ColumnResult(name = "rank", type = String.class),
+			@ColumnResult(name = "path", type = String.class),
+			@ColumnResult(name = "classification", type = Long.class),
+			@ColumnResult(name = "parent", type = String.class),
+			@ColumnResult(name = "position", type = String.class)
+		}
+	)
+)
 public class TaxonomyNamelistItem {
 
 	private Long id;
@@ -11,6 +30,16 @@ public class TaxonomyNamelistItem {
 
 	public TaxonomyNamelistItem() {
 		super();
+	}
+
+	public TaxonomyNamelistItem(Long id, String name, String rank, String path, Long classification, String parent, String position) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.rank = rank;
+		this.status = path;
+		this.position = position;
+		this.rankValue = null;
 	}
 
 	public TaxonomyNamelistItem(Long id, String rank, String name, String status, String position, Double rankValue) {
