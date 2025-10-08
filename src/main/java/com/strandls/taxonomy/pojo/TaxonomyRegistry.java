@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,21 +24,38 @@ import jakarta.persistence.Table;
 @Table(name = "taxonomy_registry")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(description = "Registry entry mapping a taxonomy node to a classification and path using PostgreSQL ltree")
-@SqlResultSetMapping(
-	name = "TaxonomyNamelistItemMapping",
-	classes = @ConstructorResult(
-		targetClass = TaxonomyNamelistItem.class,
-		columns = {
-			@ColumnResult(name = "id", type = Long.class),
-			@ColumnResult(name = "name", type = String.class),
-			@ColumnResult(name = "rank", type = String.class),
-			@ColumnResult(name = "path", type = String.class),
-			@ColumnResult(name = "classification", type = Long.class),
-			@ColumnResult(name = "parent", type = String.class),
-			@ColumnResult(name = "position", type = String.class)
-		}
+@SqlResultSetMappings({
+	@SqlResultSetMapping(
+		name = "TaxonomyNamelistItemMapping",
+		classes = @ConstructorResult(
+			targetClass = TaxonomyNamelistItem.class,
+			columns = {
+				@ColumnResult(name = "id", type = Long.class),
+				@ColumnResult(name = "name", type = String.class),
+				@ColumnResult(name = "rank", type = String.class),
+				@ColumnResult(name = "path", type = String.class),
+				@ColumnResult(name = "classification", type = Long.class),
+				@ColumnResult(name = "parent", type = String.class),
+				@ColumnResult(name = "position", type = String.class)
+			}
+		)
+	),
+	@SqlResultSetMapping(
+		name = "TaxonRelationMapping",
+		classes = @ConstructorResult(
+			targetClass = TaxonRelation.class,
+			columns = {
+				@ColumnResult(name = "id", type = Long.class),
+				@ColumnResult(name = "name", type = String.class),
+				@ColumnResult(name = "rank", type = String.class),
+				@ColumnResult(name = "path", type = String.class),
+				@ColumnResult(name = "classification", type = Long.class),
+				@ColumnResult(name = "parent", type = String.class),
+				@ColumnResult(name = "position", type = String.class)
+			}
+		)
 	)
-)
+})
 public class TaxonomyRegistry implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = -1891934272853024930L;

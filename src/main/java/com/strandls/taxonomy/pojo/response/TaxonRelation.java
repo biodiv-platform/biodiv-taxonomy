@@ -26,6 +26,19 @@ public class TaxonRelation {
 		super();
 	}
 
+	public TaxonRelation(Long id, String text, String rank, String path, Long classification, String parentStr,
+			String position) {
+		super();
+		this.id = id;
+		this.taxonid = id;
+		this.text = text;
+		this.rank = rank;
+		this.path = path;
+		this.classification = classification;
+		this.parent = parentStr != null ? Long.parseLong(parentStr) : null;
+		this.position = position;
+	}
+
 	public TaxonRelation(Long id, String text, String rank, String path, Long classification, Long parent,
 			String position) {
 		super();
