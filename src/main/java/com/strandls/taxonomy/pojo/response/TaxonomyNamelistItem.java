@@ -1,38 +1,5 @@
 package com.strandls.taxonomy.pojo.response;
 
-import jakarta.persistence.ColumnResult;
-import jakarta.persistence.ConstructorResult;
-import jakarta.persistence.SqlResultSetMapping;
-
-@SqlResultSetMapping(
-	name = "TaxonomyNamelistItemMapping",
-	classes = @ConstructorResult(
-		targetClass = TaxonomyNamelistItem.class,
-		columns = {
-			@ColumnResult(name = "id", type = Long.class),
-			@ColumnResult(name = "name", type = String.class),
-			@ColumnResult(name = "rank", type = String.class),
-			@ColumnResult(name = "path", type = String.class),
-			@ColumnResult(name = "classification", type = Long.class),
-			@ColumnResult(name = "parent", type = String.class),
-			@ColumnResult(name = "position", type = String.class)
-		}
-	)
-)
-@SqlResultSetMapping(
-	name = "TaxonomyNamelistItemFullMapping",
-	classes = @ConstructorResult(
-		targetClass = TaxonomyNamelistItem.class,
-		columns = {
-			@ColumnResult(name = "id", type = Long.class),
-			@ColumnResult(name = "rank", type = String.class),
-			@ColumnResult(name = "name", type = String.class),
-			@ColumnResult(name = "status", type = String.class),
-			@ColumnResult(name = "position", type = String.class),
-			@ColumnResult(name = "rankvalue", type = Double.class)
-		}
-	)
-)
 public class TaxonomyNamelistItem {
 
 	private Long id;
