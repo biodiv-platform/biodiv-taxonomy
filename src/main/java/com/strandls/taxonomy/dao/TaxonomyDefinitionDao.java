@@ -312,7 +312,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 		Integer count = countQuery.getSingleResult();
 
-		Query<TaxonomyNamelistItem> query = session.createNativeQuery(qryString, TaxonomyNamelistItem.class);
+		Query<TaxonomyNamelistItem> query = session.createNativeQuery(qryString, "TaxonomyNamelistItemFullMapping");
 
 		query.setParameter(TAXON_ID, taxonId);
 		query.setParameter("classificationId", classificationId);

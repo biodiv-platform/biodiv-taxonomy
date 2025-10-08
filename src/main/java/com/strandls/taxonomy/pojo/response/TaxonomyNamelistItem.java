@@ -19,6 +19,20 @@ import jakarta.persistence.SqlResultSetMapping;
 		}
 	)
 )
+@SqlResultSetMapping(
+	name = "TaxonomyNamelistItemFullMapping",
+	classes = @ConstructorResult(
+		targetClass = TaxonomyNamelistItem.class,
+		columns = {
+			@ColumnResult(name = "id", type = Long.class),
+			@ColumnResult(name = "rank", type = String.class),
+			@ColumnResult(name = "name", type = String.class),
+			@ColumnResult(name = "status", type = String.class),
+			@ColumnResult(name = "position", type = String.class),
+			@ColumnResult(name = "rankvalue", type = Double.class)
+		}
+	)
+)
 public class TaxonomyNamelistItem {
 
 	private Long id;
