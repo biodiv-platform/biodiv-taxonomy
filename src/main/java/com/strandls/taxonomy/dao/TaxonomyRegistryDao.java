@@ -152,7 +152,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
 					+ " nlevel(tR.path) = 2" + " order by nlevel(tR.path), t.name";
-			query = session.createNativeQuery(queryString, "TaxonomyNameList");
+			query = session.createNativeQuery(queryString, TaxonomyNamelistItem.class);
 		} else {
 			String parentCheck = " ";
 			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
@@ -170,7 +170,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
 					+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 " + " order by nlevel(tR.path), t.name";
-			query = session.createNativeQuery(queryString, "TaxonomyNameList");
+			query = session.createNativeQuery(queryString, TaxonomyNamelistItem.class);
 			query.setParameter(PARENT_CHECK, parentCheck);
 		}
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
