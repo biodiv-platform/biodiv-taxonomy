@@ -3,7 +3,10 @@ package com.strandls.taxonomy.pojo;
 import java.io.Serializable;
 import java.sql.Timestamp;
 
+import org.hibernate.annotations.Type;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.strandls.taxonomy.pojo.enumtype.LTreeType;
 import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 
@@ -105,6 +108,7 @@ public class TaxonomyRegistry implements Serializable, Cloneable {
 		this.classificationId = classificationId;
 	}
 
+	@Type(LTreeType.class)
 	@Column(name = "path", columnDefinition = "ltree")
 	public String getPath() {
 		return path;
