@@ -3,9 +3,11 @@ package com.strandls.taxonomy.service.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -122,11 +124,15 @@ public class TaxonomyESOperation {
 			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
 			String type = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
 
-			String taxonomyJsonData = objectMapper.writeValueAsString(taxonomyESDocuments);
-			return esServicesApi.bulkUpload(index, type, taxonomyJsonData);
+			// Convert List<TaxonomyESDocument> to List<Map<String, Object>> for the new API
+			List<Map<String, Object>> bulkEsDoc = taxonomyESDocuments.stream().map(doc -> {
+				@SuppressWarnings("unchecked")
+				Map<String, Object> docMap = objectMapper.convertValue(doc, Map.class);
+				return docMap;
+			}).collect(Collectors.toList());
 
-		} catch (IOException e1) {
-			logger.error(e1.getMessage());
+			return esServicesApi.bulkUpload(index, type, bulkEsDoc);
+
 		} catch (ApiException e) {
 			logger.error(e.getMessage());
 		} finally {
