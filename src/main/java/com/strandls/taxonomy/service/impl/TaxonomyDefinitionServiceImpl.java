@@ -991,8 +991,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Add the hierarchy and the node
 			Map<String, ParsedName> rankToParsedName = new HashMap<>();
 			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
-				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
-				rankToParsedName.put(e.getKey(), parsedName);
+				if (e.getKey() != taxonomyDefinition.getRank()) {
+					ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+					rankToParsedName.put(e.getKey(), parsedName);
+				}
 			}
 			List<Rank> ranks = rankService.getAllRank(request);
 			TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
@@ -1036,6 +1038,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Taxonomy Id to be updated for elastic search
 			taxonIds = taxonomyDao.getAllChildren(taxonId);
+			if (taxonIds.size()>0)
+				throw new IllegalArgumentException("This name cannot be converted to a synonym because it has child taxa");
+			
 			acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
 			for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
 				taxonIds.add(acceptedSynonym.getSynonymId());
