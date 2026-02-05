@@ -1003,8 +1003,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
 
 			// Update the tree and add to the registry
-			// path.append(".");
-			// path.append(taxonId);
+			System.out.println(path);
+			path.append(".");
+			path.append(taxonId);
+			System.out.println(path);
 			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId,
 					null);
 
