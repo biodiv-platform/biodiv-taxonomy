@@ -1038,8 +1038,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Taxonomy Id to be updated for elastic search
 			taxonIds = taxonomyDao.getAllChildren(taxonId);
-			System.out.println(taxonIds);
-			if (taxonIds.size()>0)
+			if (taxonIds.size()>1)
 				throw new IllegalArgumentException("This name cannot be converted to a synonym because it has child taxa");
 			
 			acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
