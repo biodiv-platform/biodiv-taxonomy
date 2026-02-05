@@ -481,7 +481,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		String highestRankName = TaxonomyUtil.getHighestInputRankName(ranks, rankToParsedName.keySet());
 		ParsedName parsedName = rankToParsedName.get(highestRankName);
-		System.out.println(highestRankName);
 
 		TaxonomyDefinition taxonomyDefinition = getHierarchyMatchedNode(parsedName, highestRankName, rankToParsedName);
 
@@ -993,24 +992,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Add the hierarchy and the node
 			Map<String, ParsedName> rankToParsedName = new HashMap<>();
 			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
-				System.out.println(e.getValue());
-				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getKey().equals(taxonomyDefinition.getRank())?"":e.getValue());
+				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
 				rankToParsedName.put(e.getKey(), parsedName);
 			}
 			List<Rank> ranks = rankService.getAllRank(request);
 			TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
 
 			StringBuilder path = new StringBuilder();
-			System.out.println("UpdateAndcreateHierarchy");
-			System.out.println(rankToParsedName.size());
 			updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
 					taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
 
 			// Update the tree and add to the registry
-			System.out.println(path);
 			path.append(".");
 			path.append(taxonId);
-			System.out.println(path);
 			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId,
 					null);
 
