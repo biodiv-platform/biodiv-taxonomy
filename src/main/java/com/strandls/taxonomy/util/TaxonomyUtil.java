@@ -57,6 +57,7 @@ public class TaxonomyUtil {
 	public static String getHighestInputRankName(List<Rank> ranks, Set<String> rankNames) {
 		Double highestRank = -1.0;
 		String highestRankName = "";
+		System.out.println(rankNames);
 		for (Rank rank : ranks)
 			if (rankNames.contains(rank.getName()) && highestRank < rank.getRankValue()) {
 				highestRank = rank.getRankValue();
