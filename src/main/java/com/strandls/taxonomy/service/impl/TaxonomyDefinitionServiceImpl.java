@@ -275,7 +275,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setUploaderId(uploaderId);
 		taxonomyDefinition.setViaDatasource(source);
 		taxonomyDefinition.setNameSourceId(sourceId);
-		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
+		taxonomyDefinition
+				.setAuthorYear(parsedName.getAuthorship() != null ? parsedName.getAuthorship().getVerbatim() : null);
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 		return taxonomyDefinition;
@@ -862,7 +863,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Object details = parsedName.getDetails();
 			if (details != null && details instanceof LinkedHashMap) {
 				Map<String, Object> detailsMap = (Map<String, Object>) details;
-				
+
 				// Handle different detail types based on gnparser swagger specification
 				if (detailsMap.containsKey("species")) {
 					Map<String, Object> speciesDetail = (Map<String, Object>) detailsMap.get("species");
@@ -991,10 +992,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Add the hierarchy and the node
 			Map<String, ParsedName> rankToParsedName = new HashMap<>();
 			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
-				if (!e.getKey().equals(taxonomyDefinition.getRank())) {
-					ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
-					rankToParsedName.put(e.getKey(), parsedName);
-				}
+				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+				rankToParsedName.put(e.getKey(), parsedName);
 			}
 			List<Rank> ranks = rankService.getAllRank(request);
 			TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
@@ -1004,8 +1003,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
 
 			// Update the tree and add to the registry
-			path.append(".");
-			path.append(taxonId);
+			// path.append(".");
+			// path.append(taxonId);
 			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId,
 					null);
 
@@ -1038,9 +1037,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Taxonomy Id to be updated for elastic search
 			taxonIds = taxonomyDao.getAllChildren(taxonId);
-			if (taxonIds.size()>1)
-				throw new IllegalArgumentException("This name cannot be converted to a synonym because it has child taxa");
-			
+			if (taxonIds.size() > 1)
+				throw new IllegalArgumentException(
+						"This name cannot be converted to a synonym because it has child taxa");
+
 			acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
 			for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
 				taxonIds.add(acceptedSynonym.getSynonymId());
