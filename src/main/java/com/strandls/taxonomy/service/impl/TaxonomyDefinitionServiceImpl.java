@@ -992,6 +992,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Add the hierarchy and the node
 			Map<String, ParsedName> rankToParsedName = new HashMap<>();
 			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
+				System.out.println(e.getValue());
 				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
 				rankToParsedName.put(e.getKey(), parsedName);
 			}
