@@ -481,7 +481,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		String highestRankName = TaxonomyUtil.getHighestInputRankName(ranks, rankToParsedName.keySet());
 		ParsedName parsedName = rankToParsedName.get(highestRankName);
-		System.out.println(highestRankName);
 
 		TaxonomyDefinition taxonomyDefinition = getHierarchyMatchedNode(parsedName, highestRankName, rankToParsedName);
 
@@ -994,7 +993,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Map<String, ParsedName> rankToParsedName = new HashMap<>();
 			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
 				System.out.println(e.getValue());
-				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getKey().equals(taxonomyDefinition.getRank())?"":e.getValue());
 				rankToParsedName.put(e.getKey(), parsedName);
 			}
 			List<Rank> ranks = rankService.getAllRank(request);
