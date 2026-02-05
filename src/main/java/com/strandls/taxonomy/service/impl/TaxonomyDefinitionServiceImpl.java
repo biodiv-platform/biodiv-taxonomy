@@ -1000,6 +1000,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
 
 			StringBuilder path = new StringBuilder();
+			System.out.println("UpdateAndcreateHierarchy");
 			updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
 					taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
 
