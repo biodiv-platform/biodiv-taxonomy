@@ -481,6 +481,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		String highestRankName = TaxonomyUtil.getHighestInputRankName(ranks, rankToParsedName.keySet());
 		ParsedName parsedName = rankToParsedName.get(highestRankName);
+		System.out.println(highestRankName);
 
 		TaxonomyDefinition taxonomyDefinition = getHierarchyMatchedNode(parsedName, highestRankName, rankToParsedName);
 
@@ -1001,6 +1002,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			StringBuilder path = new StringBuilder();
 			System.out.println("UpdateAndcreateHierarchy");
+			System.out.println(rankToParsedName.size());
 			updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
 					taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
 
