@@ -26,8 +26,8 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 	private final Logger logger = LoggerFactory.getLogger(AcceptedSynonymDao.class);
 
 	private static final String ACCEPTED_ID = "acceptedId";
-	private static final String SYNONYM_ID= "synonymId";
-	
+	private static final String SYNONYM_ID = "synonymId";
+
 	/**
 	 * @param sessionFactory
 	 */
@@ -49,7 +49,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return result;
 	}
-	
+
 	public AcceptedSynonym createAcceptedSynonym(Long acceptedId, Long synonymId) {
 		AcceptedSynonym acceptedSynonym = findByAccpetedIdSynonymId(acceptedId, synonymId);
 		if (acceptedSynonym == null) {
@@ -98,7 +98,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return result;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<AcceptedSynonym> findByAccepetdId(Long acceptedId) {
 		String qry = "from AcceptedSynonym where acceptedId = :acceptedId";
@@ -119,6 +119,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 
 	/**
 	 * Transfer all the synonym from one accepted name to another
+	 * 
 	 * @param taxonId
 	 * @param newTaxonId
 	 */
@@ -140,5 +141,35 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 			session.close();
 		}
 		return 0;
+	}
+
+	@SuppressWarnings("unchecked")
+	public int bulkSynonymTransfer(List<Long> synonymIds, Long newTaxonId) {
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    
+	    try {
+	        // START TRANSACTION
+	        tx = session.beginTransaction();
+	        
+	        String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where synonym_id IN (:synonymIds)";
+	        Query<AcceptedSynonym> query = session.createQuery(qry);
+	        query.setParameterList("synonymIds", synonymIds);
+	        query.setParameter("newAcceptedId", newTaxonId);
+	        
+	        int rowsUpdated = query.executeUpdate();
+	        
+	        // COMMIT TRANSACTION
+	        tx.commit();
+	        
+	        return rowsUpdated;
+	        
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        logger.error(e.getMessage());
+	    } finally {
+	        session.close();
+	    }
+	    return 0;
 	}
 }

@@ -1135,6 +1135,37 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return null;
 	}
 
+	@Override
+	public TaxonomyDefinition transferSynonyms(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> synonymIds) {
+		try {
+			if (synonymIds == null || synonymIds.isEmpty()) {
+				throw new IllegalArgumentException("No synonyms selected for transfer");
+			}
+
+			if (taxonId == null) {
+				throw new IllegalArgumentException("Target taxon ID is required");
+			}
+			if (prevTaxonId == taxonId) {
+				return findById(prevTaxonId);
+			}
+
+			acceptedSynonymDao.bulkSynonymTransfer(synonymIds, taxonId);
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonIds.add(prevTaxonId);
+			for (Long synonymId: synonymIds) {
+				taxonIds.add(synonymId);
+			}
+			taxonomyESUpdate.pushToElastic(taxonIds);
+			
+			return findById(taxonId);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return findById(prevTaxonId);
+	}
+
 	private static final int BATCH_SIZE = 1000;
 
 	/**
