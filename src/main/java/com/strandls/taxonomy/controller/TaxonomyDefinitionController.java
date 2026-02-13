@@ -483,6 +483,30 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
+	
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.COMMONNAME + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ValidateUser
+
+	@ApiOperation(value = "Fetch the observation based on the filter", notes = "Returns the observation list based on the the filters", response = TaxonomyDefinition.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
+
+	public Response transferCommonNames(@PathParam("taxonId") String taxon,
+			@QueryParam("commonNameIds") String commonNameIdsString, @QueryParam("prevTaxonId") String prevTaxon, @Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> commonNameIds = Arrays.asList(commonNameIdsString.split(",")).stream().map(Long::parseLong)
+					.collect(Collectors.toList());
+			TaxonomyDefinition result = taxonomyService.transferCommonNames(request, taxonId, prevTaxonId, commonNameIds);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
 
 	/**
 	 * Only for migration purpose

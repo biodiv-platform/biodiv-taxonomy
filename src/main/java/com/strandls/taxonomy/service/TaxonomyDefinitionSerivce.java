@@ -79,4 +79,7 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyDefinition transferSynonyms(HttpServletRequest request, Long taxonId, Long prevTaxonId,
 			List<Long> synonymIds);
 
+	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> commonNameIds);
+
 }

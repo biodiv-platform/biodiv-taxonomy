@@ -41,6 +41,7 @@ import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
@@ -108,6 +109,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private AcceptedSynonymDao acceptedSynonymDao;
+
+	@Inject
+	private CommonNameDao commonNameDao;
 
 	@Inject
 	private CommonNameSerivce commonNameSerivce;
@@ -1151,14 +1155,66 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			acceptedSynonymDao.bulkSynonymTransfer(synonymIds, taxonId);
+			TaxonomyDefinition newTaxonDetails = findById(taxonId);
 			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
 			taxonIds.add(prevTaxonId);
-			for (Long synonymId: synonymIds) {
-				taxonIds.add(synonymId);
+			List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(synonymIds);
+			for (TaxonomyDefinition synonym : synonyms) {
+				taxonIds.add(synonym.getId());
+				String desc = "Deleted synonym : " + synonym.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
+						prevTaxonId, "taxonomy", synonym.getId(), "Deleted synonym");
+				desc = "Added synonym : " + synonym.getName();
+
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", synonym.getId(), "Added synonym");
+
+				desc = "Transferred synonym to : " + newTaxonDetails.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, synonym.getId(),
+						synonym.getId(), "taxonomy", newTaxonDetails.getId(), "Transferred synonynm");
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
-			
+
+			return newTaxonDetails;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return findById(prevTaxonId);
+	}
+
+	@Override
+	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> commonNameIds) {
+		try {
+			if (commonNameIds == null || commonNameIds.isEmpty()) {
+				throw new IllegalArgumentException("No synonyms selected for transfer");
+			}
+
+			if (taxonId == null) {
+				throw new IllegalArgumentException("Target taxon ID is required");
+			}
+			if (prevTaxonId == taxonId) {
+				return findById(prevTaxonId);
+			}
+
+			commonNameDao.bulkCommonNameTransfer(commonNameIds, taxonId);
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonIds.add(prevTaxonId);
+			List<CommonName> commonNames = commonNameDao.findByCommonNameIds(commonNameIds);
+			for (CommonName commonName : commonNames) {
+				taxonIds.add(commonName.getId());
+				String desc = "Deleted common name : " + commonName.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
+						prevTaxonId, "taxonomy", commonName.getId(), "Deleted common name");
+				desc = "Added common name : " + commonName.getName();
+
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", commonName.getId(), "Added common name");
+			}
+			taxonomyESUpdate.pushToElastic(taxonIds);
+
 			return findById(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());

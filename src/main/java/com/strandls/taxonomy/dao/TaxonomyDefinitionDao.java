@@ -337,4 +337,22 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 		return response;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyDefinition> findBySynonymIds(List<Long> synonymIds) {
+		String qry = "from TaxonomyDefinition where id IN (:synonymIds)";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyDefinition> result = null;
+		try {
+			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			query.setParameterList("synonymIds", synonymIds);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
 }
