@@ -356,13 +356,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					ParsedName inputParsedName = rankToParsedName.get(rank);
 
-					rPath.append(".");
-					rPath.append(r.getId());
-
 					if (inputParsedName != null && !inputParsedName.getCanonical().getFull().equalsIgnoreCase(name)) {
-						if (rPath.length() > 0 && rPath.charAt(0) == '.') {
-							rPath.deleteCharAt(0);
-						}
 
 						taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rank, status,
 								position, source, sourceId, userId);
@@ -374,8 +368,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
 								taxonomyDefinition.getId(), "Taxon created");
 
+						rPath.append(".");
+						rPath.append(taxonomyDefinition.getId());
+						if (rPath.length() > 0 && rPath.charAt(0) == '.') {
+							rPath.deleteCharAt(0);
+						}
+
 						taxonomyRegistryDao.createRegistry(null, rPath.toString(), rank, taxonomyDefinition.getId(),
 								userId, null);
+					} else {
+						rPath.append(".");
+						rPath.append(r.getId());
 					}
 				}
 			}
