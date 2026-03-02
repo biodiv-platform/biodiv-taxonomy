@@ -12,16 +12,18 @@ public class BreadCrumb {
 	private Long id;
 	private String name;
 	private String rankName;
+	private String position;
 
 	/**
 	 * @param id
 	 * @param name
 	 */
-	public BreadCrumb(Long id, String name, String rankName) {
+	public BreadCrumb(Long id, String name, String rankName, String position) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.rankName = rankName;
+		this.position = position;
 	}
 
 	public Long getId() {
@@ -46,6 +48,14 @@ public class BreadCrumb {
 
 	public void setRankName(String rankName) {
 		this.rankName = rankName;
+	}
+	
+	public String getPosition() {
+		return position;
+	}
+
+	public void setPosition(String position) {
+		this.position = position;
 	}
 
 }

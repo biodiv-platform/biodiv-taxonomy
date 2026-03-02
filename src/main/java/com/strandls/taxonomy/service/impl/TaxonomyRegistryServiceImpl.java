@@ -72,7 +72,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		List<BreadCrumb> breadCrumbs = new ArrayList<>();
 		List<TaxonomyDefinition> breadCrumbLists = taxonomyDefinitionDao.breadCrumbSearch(taxonIds);
 		for (TaxonomyDefinition td : breadCrumbLists) {
-			BreadCrumb breadCrumb = new BreadCrumb(td.getId(), td.getNormalizedForm(), td.getRank());
+			BreadCrumb breadCrumb = new BreadCrumb(td.getId(), td.getNormalizedForm(), td.getRank(), td.getPosition());
 			breadCrumbs.add(breadCrumb);
 		}
 
