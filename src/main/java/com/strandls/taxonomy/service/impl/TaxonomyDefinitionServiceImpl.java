@@ -350,32 +350,42 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonId, null);
 				StringBuilder rPath = new StringBuilder();
+				Map<String, ParsedName> contributedHierarchy = new HashMap<>();
 				for (TaxonomyRegistryResponse r : hierarchy) {
 					String rank = r.getRank();
 					String name = r.getCanonicalForm();
 
 					ParsedName inputParsedName = rankToParsedName.get(rank);
+					if (inputParsedName != null) {
+						contributedHierarchy.put(rank, inputParsedName);
+					}
 
 					if (inputParsedName != null && !inputParsedName.getCanonical().getFull().equalsIgnoreCase(name)) {
 
-						taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rank, status,
-								position, source, sourceId, userId);
-						taxonomyDefinitions.add(taxonomyDefinition);
+						TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName, rank,
+								contributedHierarchy);
+
+						if (checkTaxonomyDefinition == null) {
+
+							taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rank, status,
+									position, source, sourceId, userId);
+							taxonomyDefinitions.add(taxonomyDefinition);
 
 //						taxonomy Creation activity
-						desc = "Taxon created : " + taxonomyDefinition.getName();
-						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
-								taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
-								taxonomyDefinition.getId(), "Taxon created");
+							desc = "Taxon created : " + taxonomyDefinition.getName();
+							logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+									taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+									taxonomyDefinition.getId(), "Taxon created");
 
-						rPath.append(".");
-						rPath.append(taxonomyDefinition.getId());
-						if (rPath.length() > 0 && rPath.charAt(0) == '.') {
-							rPath.deleteCharAt(0);
+							rPath.append(".");
+							rPath.append(taxonomyDefinition.getId());
+							if (rPath.length() > 0 && rPath.charAt(0) == '.') {
+								rPath.deleteCharAt(0);
+							}
+
+							taxonomyRegistryDao.createRegistry(null, rPath.toString(), rank, taxonomyDefinition.getId(),
+									userId, null);
 						}
-
-						taxonomyRegistryDao.createRegistry(null, rPath.toString(), rank, taxonomyDefinition.getId(),
-								userId, null);
 					} else {
 						rPath.append(".");
 						rPath.append(r.getId());
