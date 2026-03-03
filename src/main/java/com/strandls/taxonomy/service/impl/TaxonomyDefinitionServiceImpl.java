@@ -1029,6 +1029,40 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
 			// Status is not changed so no need to update.
+			switch (taxonomyStatus) {
+			case ACCEPTED:
+				if (hierarchy == null)
+					throw new IllegalArgumentException("Hierarchy is required");
+				// Add the hierarchy and the node
+				Map<String, ParsedName> rankToParsedName = new HashMap<>();
+				for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
+					ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+					rankToParsedName.put(e.getKey(), parsedName);
+				}
+				List<Rank> ranks = rankService.getAllRank(request);
+				TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
+
+				StringBuilder path = new StringBuilder();
+				updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
+						taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
+
+				// Update the tree and add to the registry
+				path.append(".");
+				path.append(taxonId);
+
+				TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+				taxoRegistry.setPath(path.toString());
+				taxonomyRegistryDao.update(taxoRegistry);
+				
+
+				// Update the elastic for all the accepted name it was associated and the nodetaxoRegistry
+				List<Long> taxonIds = new ArrayList<>();
+				taxonIds.add(taxonId);
+				taxonomyESUpdate.pushToElastic(taxonIds);
+				break;
+			default:
+				break;
+			}
 			return getTaxonomyDetails(taxonId);
 		}
 
