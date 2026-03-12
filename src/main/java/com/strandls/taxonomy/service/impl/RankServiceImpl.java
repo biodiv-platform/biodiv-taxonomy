@@ -32,6 +32,11 @@ public class RankServiceImpl extends AbstractService<Rank> implements RankSerivc
 	}
 	
 	@Override
+	public List<Rank> getAllBreadcrumbRank(HttpServletRequest request) {
+		return rankDao.getAllRank(true);
+	}
+	
+	@Override
 	public List<String> getAllRankNames() {
 		List<Rank> ranks = rankDao.getAllRank();
 		List<String> rankNames = new ArrayList<>();

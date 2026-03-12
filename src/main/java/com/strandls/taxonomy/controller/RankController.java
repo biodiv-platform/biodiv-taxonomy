@@ -46,6 +46,20 @@ public class RankController {
 		}
 	}
 	
+	@GET
+	@Path("breadcrumb")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Get all the ranks", notes = "Get all the ranks", response = TaxonomyDefinition.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not add the ranks", response = String.class) })
+	public Response getAllBreadcrumbRank(@Context HttpServletRequest request) {
+		try {
+			List<Rank> ranks = rankService.getAllBreadcrumbRank(request);
+			return Response.status(Status.OK).entity(ranks).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+	
 	@POST
 	@Path("/required/{rankName}/{rankValue}")
 	@Produces(MediaType.APPLICATION_JSON)

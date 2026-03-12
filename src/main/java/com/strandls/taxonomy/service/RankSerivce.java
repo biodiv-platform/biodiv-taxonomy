@@ -24,6 +24,8 @@ public interface RankSerivce {
 			String lowRankName);
 
 	public List<Rank> getAllRank(HttpServletRequest request);
+	
+	public List<Rank> getAllBreadcrumbRank(HttpServletRequest request);
 
 	public List<String> getAllRankNames();
 	
