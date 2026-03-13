@@ -1034,15 +1034,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				if (hierarchy == null)
 					throw new IllegalArgumentException("Hierarchy is required");
 				// Add the hierarchy and the node
-				
+
 				Map<String, ParsedName> rankToParsedName = new HashMap<>();
 				for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
 					ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
 					rankToParsedName.put(e.getKey(), parsedName);
 				}
 
-
-				if (taxonomyStatusUpdate.getPosition() != "CLEAN") {
+				if (!taxonomyStatusUpdate.getPosition().equals("CLEAN")) {
 					List<Rank> ranks = rankService.getAllRank(request);
 					TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
 
@@ -1065,11 +1064,56 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxonomyESUpdate.pushToElastic(taxonIds);
 				} else {
 					List<Rank> ranks = rankService.getAllBreadcrumbRank(request);
-					for (Rank rank:ranks) {
-						System.out.print(rank.getName());
-						//TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName, rank,
-								//contributedHierarchy);
+					Map<String, ParsedName> contributedHierarchy = new HashMap<>();
+					StringBuilder path = new StringBuilder();
+					for (Rank rank : ranks) {
+						String rankName = rank.getName();
+						ParsedName inputParsedName = rankToParsedName.get(rankName);
+						System.out.println(rankName);
+						System.out.println(inputParsedName.getNormalized());
+						if (inputParsedName != null) {
+							// TaxonomyDefinition checkTaxonomyDefinition =
+							// getHierarchyMatchedNode(inputParsedName, rank,
+							// contributedHierarchy);
+							TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName,
+									rankName, contributedHierarchy);
+							if (checkTaxonomyDefinition == null) {
+								System.out.println("Need to create");
+								/*taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rankName, taxonomyStatus,
+										taxonomyStatusUpdate.getPosition(), null, null, userId);
+								taxonomyDefinitions.add(taxonomyDefinition);
+
+//							taxonomy Creation activity
+								desc = "Taxon created : " + taxonomyDefinition.getName();
+								logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+										taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+										taxonomyDefinition.getId(), "Taxon created");
+
+								path.append(".");
+								path.append(taxonomyDefinition.getId());
+								if (path.length() > 0 && path.charAt(0) == '.') {
+									path.deleteCharAt(0);
+								}
+
+								taxonomyRegistryDao.createRegistry(null, path.toString(), rankName,
+										taxonomyDefinition.getId(), userId, null);*/
+							} else {
+								String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(taxonomyDefinition.getId(), null).getPath();
+								path.append(".");
+								path.append(taxonomyDefinition.getId());
+								if (path.length() > 0 && path.charAt(0) == '.') {
+									path.deleteCharAt(0);
+								}
+								if(!taxonPath.equals(path.toString())) {
+									System.out.println("Need to update path");
+								} else {
+									System.out.println("Everything is good");
+								}
+							}
+						}
+
 					}
+
 				}
 				break;
 			default:
