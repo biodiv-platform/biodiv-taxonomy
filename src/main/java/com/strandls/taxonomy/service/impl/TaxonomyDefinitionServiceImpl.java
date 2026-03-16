@@ -1070,11 +1070,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						String rankName = rank.getName();
 						ParsedName inputParsedName = rankToParsedName.get(rankName);
 						System.out.println(rankName);
-						System.out.println(inputParsedName.getNormalized());
 						if (inputParsedName != null) {
+							System.out.println(inputParsedName.getNormalized());
 							// TaxonomyDefinition checkTaxonomyDefinition =
 							// getHierarchyMatchedNode(inputParsedName, rank,
 							// contributedHierarchy);
+							contributedHierarchy.put(rankName, inputParsedName);
 							TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName,
 									rankName, contributedHierarchy);
 							if (checkTaxonomyDefinition == null) {
