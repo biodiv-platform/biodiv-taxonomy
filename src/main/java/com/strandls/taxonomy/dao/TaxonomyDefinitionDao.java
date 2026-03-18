@@ -364,13 +364,11 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		try {
 			tx = session.beginTransaction();
 
-			Query query = session.createNamedQuery("updatePath");
-
 			// Attach all the children to new path (Hierarchy update)
 			String qry = "update taxonomy_registry "
 					+ " set path = text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath)))"
 					+ " where path <@ text2ltree(:oldPath)";
-			query = session.createNativeQuery(qry);
+			Query query = session.createNativeQuery(qry);
 			query.setParameter("newPath", newPath);
 			query.setParameter("oldPath", oldPath);
 			int rowsUpdated = query.executeUpdate();
