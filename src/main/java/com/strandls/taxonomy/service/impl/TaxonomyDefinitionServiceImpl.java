@@ -1073,7 +1073,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					Map<String, ParsedName> contributedHierarchy = new HashMap<>();
 					StringBuilder path = new StringBuilder();
 					// Still needs elastic update and decsription
-					Set<Long> taxonIds = new HashSet<>();
+					List<Long> taxonIds = new ArrayList<>();
 					for (Rank rank : ranks) {
 						String rankName = rank.getName();
 						ParsedName inputParsedName = rankToParsedName.get(rankName);
