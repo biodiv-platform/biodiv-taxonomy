@@ -9,10 +9,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import javax.inject.Inject;
@@ -1062,37 +1064,44 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					List<Long> taxonIds = new ArrayList<>();
 					taxonIds.add(taxonId);
 					taxonomyESUpdate.pushToElastic(taxonIds);
+					
+					String desc = "Taxon hierarchy edited : " + taxonomyDefinition.getName();
+					logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonomyDefinition.getId(),
+							taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(), "Taxon hierarchy edited");
 				} else {
 					List<Rank> ranks = rankService.getAllBreadcrumbRank(request);
 					Map<String, ParsedName> contributedHierarchy = new HashMap<>();
 					StringBuilder path = new StringBuilder();
-					//Still needs elastic update and decsription
+					// Still needs elastic update and decsription
+					Set<Long> taxonIds = new HashSet<>();
 					for (Rank rank : ranks) {
 						String rankName = rank.getName();
 						ParsedName inputParsedName = rankToParsedName.get(rankName);
-						System.out.println(rankName);
 						if (inputParsedName != null) {
-							System.out.println(inputParsedName.getNormalized());
 							contributedHierarchy.put(rankName, inputParsedName);
 							TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName,
 									rankName, contributedHierarchy);
 							if (checkTaxonomyDefinition == null) {
 								System.out.println("Need to create");
-								/*taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rankName,
-										taxonomyStatus, TaxonomyPosition.CLEAN , null, null, userId);
-								// taxonomyDefinitions.add(taxonomyDefinition);
+								taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rankName,
+										taxonomyStatus, TaxonomyPosition.CLEAN, null, null, userId);
+								if (!taxonIds.contains(taxonomyDefinition.getId())) {
+									taxonIds.add(taxonomyDefinition.getId());
+								}
 								// taxonomy Creation activity
-								desc = "Taxon created : " + taxonomyDefinition.getName();
-								logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
-										taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
-										taxonomyDefinition.getId(), "Taxon created");
+								/*
+								 * desc = "Taxon created : " + taxonomyDefinition.getName();
+								 * logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION
+								 * ), desc, taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+								 * taxonomyDefinition.getId(), "Taxon created");
+								 */
 								path.append(".");
 								path.append(taxonomyDefinition.getId());
 								if (path.length() > 0 && path.charAt(0) == '.') {
 									path.deleteCharAt(0);
 								}
 								taxonomyRegistryDao.createRegistry(null, path.toString(), rankName,
-										taxonomyDefinition.getId(), userId, null);*/
+										taxonomyDefinition.getId(), userId, null);
 							} else {
 								String taxonPath = taxonomyRegistryDao
 										.findbyTaxonomyId(checkTaxonomyDefinition.getId(), null).getPath();
@@ -1103,7 +1112,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								}
 								if (!taxonPath.equals(path.toString())) {
 									System.out.println("Need to update path");
-									//taxonomyDao.updatePath(path.toString(), taxonPath);
+									taxonIds.addAll(taxonomyDao.getAllChildren(taxonId));
+									taxonomyDao.updatePath(path.toString(), taxonPath);
 								} else {
 									System.out.println("Everything is good");
 								}
@@ -1111,7 +1121,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						}
 
 					}
-
+					path.append(".");
+					path.append(taxonId);
+					if (path.length() > 0 && path.charAt(0) == '.') {
+						path.deleteCharAt(0);
+					}
+					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+					taxoRegistry.setPath(path.toString());
+					taxonomyRegistryDao.update(taxoRegistry);
+					taxonomyESUpdate.pushToElastic(new ArrayList<>(taxonIds));
 				}
 				break;
 			default:
