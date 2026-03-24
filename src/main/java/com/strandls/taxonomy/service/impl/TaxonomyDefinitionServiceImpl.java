@@ -1112,7 +1112,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								}
 								if (!taxonPath.equals(path.toString())) {
 									System.out.println("Need to update path");
-									taxonIds.addAll(taxonomyDao.getAllChildren(taxonId));
+									List<Long> childrenIds = taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId());
+									//taxonIds.addAll(taxonomyDao.getAllChildren(taxonId));
 									taxonomyDao.updatePath(path.toString(), taxonPath);
 								} else {
 									System.out.println("Everything is good");
