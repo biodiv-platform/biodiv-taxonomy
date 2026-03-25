@@ -171,6 +171,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 					StandardBasicTypes.LONG);
 			if (taxonId != null)
 				query.setParameter(TAXON_ID, taxonId);
+				query.setParameter("classificationId", TaxonomyRegistryDao.getDefaultClassificationId());
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
