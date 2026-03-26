@@ -361,6 +361,8 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	public int updatePath(String newPath, String oldPath) {
 
 		Session session = sessionFactory.openSession();
+		System.out.println(newPath);
+		System.out.println(oldPath);
 		Transaction tx = null;
 		try {
 			tx = session.beginTransaction();
