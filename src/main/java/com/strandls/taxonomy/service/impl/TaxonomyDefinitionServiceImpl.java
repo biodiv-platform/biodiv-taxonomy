@@ -1082,19 +1082,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName,
 									rankName, contributedHierarchy);
 							if (checkTaxonomyDefinition == null) {
-								System.out.println("Need to create");
 								taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rankName,
 										taxonomyStatus, TaxonomyPosition.CLEAN, null, null, userId);
 								if (!taxonIds.contains(taxonomyDefinition.getId())) {
 									taxonIds.add(taxonomyDefinition.getId());
 								}
 								// taxonomy Creation activity
-								/*
-								 * desc = "Taxon created : " + taxonomyDefinition.getName();
-								 * logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION
-								 * ), desc, taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
-								 * taxonomyDefinition.getId(), "Taxon created");
-								 */
+								 String desc = "Taxon created : " + taxonomyDefinition.getName();
+								 logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+								 taxonomyDefinition.getId(), "Taxon created");
 								path.append(".");
 								path.append(taxonomyDefinition.getId());
 								if (path.length() > 0 && path.charAt(0) == '.') {
@@ -1111,12 +1107,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 									path.deleteCharAt(0);
 								}
 								if (!taxonPath.equals(path.toString())) {
-									System.out.println("Need to update path");
-									List<Long> childrenIds = taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId());
-									//taxonIds.addAll(taxonomyDao.getAllChildren(taxonId));
+									taxonIds.addAll(taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId()));
 									taxonomyDao.updatePath(path.toString(), taxonPath);
-								} else {
-									System.out.println("Everything is good");
 								}
 							}
 						}
@@ -1130,6 +1122,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
 					taxoRegistry.setPath(path.toString());
 					taxonomyRegistryDao.update(taxoRegistry);
+					taxonIds.add(taxonId);
 					taxonomyESUpdate.pushToElastic(new ArrayList<>(taxonIds));
 				}
 				break;

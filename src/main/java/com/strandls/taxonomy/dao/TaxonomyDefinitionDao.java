@@ -361,8 +361,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	public int updatePath(String newPath, String oldPath) {
 
 		Session session = sessionFactory.openSession();
-		System.out.println(newPath);
-		System.out.println(oldPath);
 		Transaction tx = null;
 		try {
 			tx = session.beginTransaction();
@@ -375,10 +373,11 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
                     "    else text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath))) " +
                     "end " +
                     "where path <@ text2ltree(:oldPath) " +
-                    "and classification_id = 1";
+                    "and classification_id = (:classificationId)";
 			Query query = session.createNativeQuery(qry);
 			query.setParameter("newPath", newPath);
 			query.setParameter("oldPath", oldPath);
+			query.setParameter("classificationId", TaxonomyRegistryDao.getDefaultClassificationId());
 			int rowsUpdated = query.executeUpdate();
 
 			tx.commit();
