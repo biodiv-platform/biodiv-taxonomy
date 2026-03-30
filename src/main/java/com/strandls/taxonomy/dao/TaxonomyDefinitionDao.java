@@ -171,6 +171,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 					StandardBasicTypes.LONG);
 			if (taxonId != null)
 				query.setParameter(TAXON_ID, taxonId);
+				query.setParameter("classificationId", TaxonomyRegistryDao.getDefaultClassificationId());
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -208,7 +209,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			session.delete(oldtaxonomyRegistry);
 
 			// Attach all the children to new accepted name (Hierarchy update)
-			String newPath = newTaxonomyRegistry.getPath();
+			/*String newPath = newTaxonomyRegistry.getPath();
 			String oldPath = oldtaxonomyRegistry.getPath();
 			String qry = "update taxonomy_registry "
 					+ " set path = text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath)))"
@@ -216,7 +217,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			query = session.createNativeQuery(qry);
 			query.setParameter("newPath", newPath);
 			query.setParameter("oldPath", oldPath);
-			rowsUpdated += query.executeUpdate();
+			rowsUpdated += query.executeUpdate();*/
 
 			tx.commit();
 			return rowsUpdated;
@@ -336,5 +337,58 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		session.close();
 
 		return response;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyDefinition> findBySynonymIds(List<Long> synonymIds) {
+		String qry = "from TaxonomyDefinition where id IN (:synonymIds)";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyDefinition> result = null;
+		try {
+			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			query.setParameterList("synonymIds", synonymIds);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public int updatePath(String newPath, String oldPath) {
+
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+
+			// Attach all the children to new path (Hierarchy update)
+			String qry = "update taxonomy_registry " +
+                    "set path = case " +
+                    "    when nlevel(path) = nlevel(text2ltree(:oldPath)) " +
+                    "    then text2ltree(:newPath) " +
+                    "    else text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath))) " +
+                    "end " +
+                    "where path <@ text2ltree(:oldPath) " +
+                    "and classification_id = (:classificationId)";
+			Query query = session.createNativeQuery(qry);
+			query.setParameter("newPath", newPath);
+			query.setParameter("oldPath", oldPath);
+			query.setParameter("classificationId", TaxonomyRegistryDao.getDefaultClassificationId());
+			int rowsUpdated = query.executeUpdate();
+
+			tx.commit();
+			return rowsUpdated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
 	}
 }

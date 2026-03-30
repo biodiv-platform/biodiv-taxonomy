@@ -6,17 +6,19 @@ public class TaxonomyRegistryResponse {
 	private String rank;
 	private String name;
 	private String canonicalForm;
+	private String position;
 
 	public TaxonomyRegistryResponse() {
 		super();
 	}
 
-	public TaxonomyRegistryResponse(String id, String rank, String name, String canonicalForm) {
+	public TaxonomyRegistryResponse(String id, String rank, String name, String canonicalForm, String position) {
 		super();
 		this.id = id;
 		this.rank = rank;
 		this.name = name;
 		this.canonicalForm = canonicalForm;
+		this.position = position;
 	}
 
 	public String getId() {
@@ -49,6 +51,14 @@ public class TaxonomyRegistryResponse {
 
 	public void setCanonicalForm(String canonicalForm) {
 		this.canonicalForm = canonicalForm;
+	}
+	
+	public String getPosition() {
+		return position;
+	}
+
+	public void setPosition(String position) {
+		this.position = position;
 	}
 
 }

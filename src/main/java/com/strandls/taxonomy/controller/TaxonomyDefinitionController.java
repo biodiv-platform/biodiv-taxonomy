@@ -26,6 +26,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -453,6 +454,54 @@ public class TaxonomyDefinitionController {
 			@ApiParam(name = "loggingData") CommentLoggingData loggingData) {
 		try {
 			Activity result = taxonomyService.logComment(request, loggingData);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.SYNONYM + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ValidateUser
+
+	@ApiOperation(value = "Fetch the observation based on the filter", notes = "Returns the observation list based on the the filters", response = TaxonomyDefinition.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
+
+	public Response transferSynonyms(@PathParam("taxonId") String taxon,
+			@QueryParam("synonymIds") String synonymIdsString, @QueryParam("prevTaxonId") String prevTaxon, @Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> synonymIds = Arrays.asList(synonymIdsString.split(",")).stream().map(Long::parseLong)
+					.collect(Collectors.toList());
+			TaxonomyDefinition result = taxonomyService.transferSynonyms(request, taxonId, prevTaxonId, synonymIds);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+	
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.COMMONNAME + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ValidateUser
+
+	@ApiOperation(value = "Fetch the observation based on the filter", notes = "Returns the observation list based on the the filters", response = TaxonomyDefinition.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to fetch the data", response = String.class) })
+
+	public Response transferCommonNames(@PathParam("taxonId") String taxon,
+			@QueryParam("commonNameIds") String commonNameIdsString, @QueryParam("prevTaxonId") String prevTaxon, @Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> commonNameIds = Arrays.asList(commonNameIdsString.split(",")).stream().map(Long::parseLong)
+					.collect(Collectors.toList());
+			TaxonomyDefinition result = taxonomyService.transferCommonNames(request, taxonId, prevTaxonId, commonNameIds);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
