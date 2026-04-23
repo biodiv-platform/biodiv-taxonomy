@@ -124,7 +124,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
 			query.setParameterList("traitTaxonIds", traitTaxonIds);
 			query.setParameter("speciesGroupTaxons", speciesGroupTaxons);
-			query.addScalar("taxon_definition_id", StandardBasicTypes.STRING).list();
+			query.addScalar("taxon_definition_id", StandardBasicTypes.STRING);
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
