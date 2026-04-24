@@ -147,7 +147,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			} else {
 				String parentCheck = " ";
 				if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
-					List<String> allTaxonIds = getPathToRoot(taxonIds, classificationId);
+					List<String> allTaxonIds = getPathToRoot(session, taxonIds, classificationId);
 					parentCheck = String.join("|", allTaxonIds);
 					parentCheck = "*." + parentCheck + ".*{0,1}";
 				} else if (parent != null) {
@@ -179,27 +179,32 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public List<String> getPathToRoot(List<Long> taxonIds, Long classificationId) {
 		try (Session session = sessionFactory.openSession()) {
-			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
-					+ "any(select path from taxonomy_registry where taxon_definition_id in (:taxonIds) and classification_id=:classificationId) and "
-					+ "classification_id=:classificationId";
-			if (taxonIds == null) {
-				sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
-						+ "any(select path from taxonomy_registry where classification_id=:classificationId) and "
-						+ "classification_id=:classificationId";
-			}
-			Query query = session.createNativeQuery(sqlString);
-			if (taxonIds != null) {
-				query.setParameter("taxonIds", taxonIds);
-			}
-
-			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
-
-			query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
-			return query.getResultList();
+			return getPathToRoot(session, taxonIds, classificationId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
 		return new ArrayList<>();
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private List<String> getPathToRoot(Session session, List<Long> taxonIds, Long classificationId) {
+		String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
+				+ "any(select path from taxonomy_registry where taxon_definition_id in (:taxonIds) and classification_id=:classificationId) and "
+				+ "classification_id=:classificationId";
+		if (taxonIds == null) {
+			sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
+					+ "any(select path from taxonomy_registry where classification_id=:classificationId) and "
+					+ "classification_id=:classificationId";
+		}
+		Query query = session.createNativeQuery(sqlString);
+		if (taxonIds != null) {
+			query.setParameter("taxonIds", taxonIds);
+		}
+
+		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
+
+		query.setParameter(CLASSIFICATION_ID_STRING, classificationId);
+		return query.getResultList();
 	}
 
 	@SuppressWarnings("rawtypes")
