@@ -105,14 +105,12 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 			for (String taxon : taxonIds.split(","))
 				taxonID.add(Long.parseLong(taxon));
 		}
-		List<String> ids = taxonomyRegistryDao.getPathToRoot(taxonID, classificationId);
 		try {
 			List<TaxonRelation> inputItems = taxonomyRegistryDao.list(parent, taxonID, expandTaxon, classificationId);
 
-			if (expandTaxon) {
-				if (taxonIds != null && inputItems != null) {
-					return buildHierarchy(inputItems, ids);
-				}
+			if (expandTaxon && taxonIds != null && inputItems != null) {
+				List<String> ids = taxonomyRegistryDao.getPathToRoot(taxonID, classificationId);
+				return buildHierarchy(inputItems, ids);
 			}
 			return inputItems;
 
