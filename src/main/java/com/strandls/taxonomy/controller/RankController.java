@@ -48,6 +48,21 @@ public class RankController {
 		}
 	}
 
+	@GET
+	@Path("breadcrumb")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Operation(summary = "Get all the ranks", responses = {
+			@ApiResponse(responseCode = "200", description = "Get all breadcrumbs", content = @Content(array = @ArraySchema(schema = @Schema(implementation = Rank.class)))),
+			@ApiResponse(responseCode = "404", description = "Ranks not found", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response getAllBreadcrumbRank(@Context HttpServletRequest request) {
+		try {
+			List<Rank> ranks = rankService.getAllBreadcrumbRank(request);
+			return Response.status(Status.OK).entity(ranks).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+
 	@POST
 	@Path("/required/{rankName}/{rankValue}")
 	@ValidateUser

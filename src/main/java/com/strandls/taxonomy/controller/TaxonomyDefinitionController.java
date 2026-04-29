@@ -401,6 +401,58 @@ public class TaxonomyDefinitionController {
 		}
 	}
 
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.SYNONYM + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+	@Operation(summary = "Fetch the observation based on the filter", responses = {
+			@ApiResponse(responseCode = "200", description = "Returns the observation list based on the the filters", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch data", content = @Content(schema = @Schema(implementation = String.class))) })
+
+	public Response transferSynonyms(@PathParam("taxonId") String taxon,
+			@QueryParam("synonymIds") String synonymIdsString, @QueryParam("prevTaxonId") String prevTaxon,
+			@Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> synonymIds = Arrays.asList(synonymIdsString.split(",")).stream().map(Long::parseLong)
+					.collect(Collectors.toList());
+			TaxonomyDefinition result = taxonomyService.transferSynonyms(request, taxonId, prevTaxonId, synonymIds);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.COMMONNAME + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@Operation(summary = "Fetch the observation based on the filter", responses = {
+			@ApiResponse(responseCode = "200", description = "Returns the observation list based on the the filters", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch data", content = @Content(schema = @Schema(implementation = String.class))) })
+
+	public Response transferCommonNames(@PathParam("taxonId") String taxon,
+			@QueryParam("commonNameIds") String commonNameIdsString, @QueryParam("prevTaxonId") String prevTaxon,
+			@Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> commonNameIds = Arrays.asList(commonNameIdsString.split(",")).stream().map(Long::parseLong)
+					.collect(Collectors.toList());
+			TaxonomyDefinition result = taxonomyService.transferCommonNames(request, taxonId, prevTaxonId,
+					commonNameIds);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
 	/**
 	 * Only for migration purpose
 	 *

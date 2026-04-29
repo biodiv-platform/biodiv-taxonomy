@@ -139,4 +139,34 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return 0;
 	}
+
+	@SuppressWarnings("unchecked")
+	public int bulkSynonymTransfer(List<Long> synonymIds, Long newTaxonId) {
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+
+		try {
+			// START TRANSACTION
+			tx = session.beginTransaction();
+
+			String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where synonym_id IN (:synonymIds)";
+			Query<AcceptedSynonym> query = session.createQuery(qry);
+			query.setParameterList("synonymIds", synonymIds);
+			query.setParameter("newAcceptedId", newTaxonId);
+
+			int rowsUpdated = query.executeUpdate();
+
+			// COMMIT TRANSACTION
+			tx.commit();
+
+			return rowsUpdated;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
 }

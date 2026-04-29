@@ -33,6 +33,7 @@ import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
@@ -104,6 +105,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private AcceptedSynonymDao acceptedSynonymDao;
+
+	@Inject
+	private CommonNameDao commonNameDao;
 
 	@Inject
 	private CommonNameSerivce commonNameSerivce;
@@ -329,6 +333,58 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				path.append(".");
 				path.append(taxonId);
 				taxonomyRegistryDao.createRegistry(null, path.toString(), rankName, taxonId, userId, null);
+
+				Map<String, ParsedName> rankToParsedName = new HashMap<>();
+
+				Map<String, String> rankToName = taxonomyData.getRankToName();
+				for (Map.Entry<String, String> e : rankToName.entrySet()) {
+					ParsedName parsedRankName = taxonomyCache.getName(e.getKey(), e.getValue());
+					rankToParsedName.put(e.getKey().toLowerCase(), parsedRankName);
+				}
+
+				List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+				StringBuilder rPath = new StringBuilder();
+				Map<String, ParsedName> contributedHierarchy = new HashMap<>();
+				for (TaxonomyRegistryResponse r : hierarchy) {
+					String rank = r.getRank();
+					String name = r.getCanonicalForm();
+
+					ParsedName inputParsedName = rankToParsedName.get(rank);
+					if (inputParsedName != null) {
+						contributedHierarchy.put(rank, inputParsedName);
+					}
+
+					if (inputParsedName != null && !inputParsedName.getCanonical().getFull().equalsIgnoreCase(name)) {
+
+						TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName, rank,
+								contributedHierarchy);
+
+						if (checkTaxonomyDefinition == null) {
+
+							taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rank, status,
+									position, source, sourceId, userId);
+							taxonomyDefinitions.add(taxonomyDefinition);
+
+//						taxonomy Creation activity
+							desc = "Taxon created : " + taxonomyDefinition.getName();
+							logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+									taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+									taxonomyDefinition.getId(), "Taxon created");
+
+							rPath.append(".");
+							rPath.append(taxonomyDefinition.getId());
+							if (rPath.length() > 0 && rPath.charAt(0) == '.') {
+								rPath.deleteCharAt(0);
+							}
+
+							taxonomyRegistryDao.createRegistry(null, rPath.toString(), rank, taxonomyDefinition.getId(),
+									userId, null);
+						}
+					} else {
+						rPath.append(".");
+						rPath.append(r.getId());
+					}
+				}
 			}
 		}
 
@@ -964,6 +1020,106 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
 			// Status is not changed so no need to update.
+			switch (taxonomyStatus) {
+			case ACCEPTED:
+				if (hierarchy == null)
+					throw new IllegalArgumentException("Hierarchy is required");
+				// Add the hierarchy and the node
+
+				Map<String, ParsedName> rankToParsedName = new HashMap<>();
+				for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
+					ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+					rankToParsedName.put(e.getKey(), parsedName);
+				}
+
+				if (!taxonomyStatusUpdate.getPosition().equals("CLEAN")) {
+					List<Rank> ranks = rankService.getAllRank(request);
+					TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
+
+					StringBuilder path = new StringBuilder();
+					updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
+							taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
+
+					// Update the tree and add to the registry
+					path.append(".");
+					path.append(taxonId);
+
+					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+					taxoRegistry.setPath(path.toString());
+					taxonomyRegistryDao.update(taxoRegistry);
+
+					// Update the elastic for all the accepted name it was associated and the
+					// nodetaxoRegistry
+					List<Long> taxonIds = new ArrayList<>();
+					taxonIds.add(taxonId);
+					taxonomyESUpdate.pushToElastic(taxonIds);
+
+					String desc = "Taxon hierarchy edited : " + taxonomyDefinition.getName();
+					logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+							taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+							taxonomyDefinition.getId(), "Taxon hierarchy edited");
+				} else {
+					List<Rank> ranks = rankService.getAllBreadcrumbRank(request);
+					Map<String, ParsedName> contributedHierarchy = new HashMap<>();
+					StringBuilder path = new StringBuilder();
+					// Still needs elastic update and decsription
+					List<Long> taxonIds = new ArrayList<>();
+					for (Rank rank : ranks) {
+						String rankName = rank.getName();
+						ParsedName inputParsedName = rankToParsedName.get(rankName);
+						if (inputParsedName != null) {
+							contributedHierarchy.put(rankName, inputParsedName);
+							TaxonomyDefinition checkTaxonomyDefinition = getHierarchyMatchedNode(inputParsedName,
+									rankName, contributedHierarchy);
+							if (checkTaxonomyDefinition == null) {
+								taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(inputParsedName, rankName,
+										taxonomyStatus, TaxonomyPosition.CLEAN, null, null, userId);
+								if (!taxonIds.contains(taxonomyDefinition.getId())) {
+									taxonIds.add(taxonomyDefinition.getId());
+								}
+								// taxonomy Creation activity
+								String desc = "Taxon created : " + taxonomyDefinition.getName();
+								logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+										taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+										taxonomyDefinition.getId(), "Taxon created");
+								path.append(".");
+								path.append(taxonomyDefinition.getId());
+								if (path.length() > 0 && path.charAt(0) == '.') {
+									path.deleteCharAt(0);
+								}
+								taxonomyRegistryDao.createRegistry(null, path.toString(), rankName,
+										taxonomyDefinition.getId(), userId, null);
+							} else {
+								String taxonPath = taxonomyRegistryDao
+										.findbyTaxonomyId(checkTaxonomyDefinition.getId(), null).getPath();
+								path.append(".");
+								path.append(checkTaxonomyDefinition.getId());
+								if (path.length() > 0 && path.charAt(0) == '.') {
+									path.deleteCharAt(0);
+								}
+								if (!taxonPath.equals(path.toString())) {
+									taxonIds.addAll(taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId()));
+									taxonomyDao.updatePath(path.toString(), taxonPath);
+								}
+							}
+						}
+
+					}
+					path.append(".");
+					path.append(taxonId);
+					if (path.length() > 0 && path.charAt(0) == '.') {
+						path.deleteCharAt(0);
+					}
+					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+					taxoRegistry.setPath(path.toString());
+					taxonomyRegistryDao.update(taxoRegistry);
+					taxonIds.add(taxonId);
+					taxonomyESUpdate.pushToElastic(new ArrayList<>(taxonIds));
+				}
+				break;
+			default:
+				break;
+			}
 			return getTaxonomyDetails(taxonId);
 		}
 
@@ -1028,6 +1184,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Taxonomy Id to be updated for elastic search
 			taxonIds = taxonomyDao.getAllChildren(taxonId);
+			if (taxonIds.size() > 1)
+				throw new IllegalArgumentException(
+						"This name cannot be converted to a synonym because it has child taxa");
 			acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
 			for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
 				taxonIds.add(acceptedSynonym.getSynonymId());
@@ -1068,21 +1227,26 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyPosition position = taxonomyPositionUpdate.getPosition();
 
 		TaxonomyDefinition taxonomyDefinition = findById(taxonId);
-		if (TaxonomyPosition.CLEAN.equals(position)
-				|| TaxonomyPosition.CLEAN.name().equals(taxonomyDefinition.getPosition())) {
-			// Not changing anything here just keeping as it is.
-			return getTaxonomyDetails(taxonomyDefinition.getId());
-		}
 
 		if (!position.name().equals(taxonomyDefinition.getPosition())) {
+			String oldPosition = taxonomyDefinition.getPosition();
 			taxonomyDefinition.setPosition(position.name());
 			update(taxonomyDefinition);
 
-			String desc = "Taxon position updated  : " + taxonomyDefinition.getPosition() + "-->" + position.name();
+			String desc = "Taxon position updated  : " + oldPosition + "-->" + position.name();
 			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
 					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
 					"Taxon position updated");
 		}
+
+		List<Long> taxonIds = new ArrayList<>();
+		taxonIds.add(taxonId);
+		List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
+		for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
+			taxonIds.add(acceptedSynonym.getSynonymId());
+		}
+
+		taxonomyESUpdate.pushToElastic(taxonIds);
 
 		return getTaxonomyDetails(taxonomyDefinition.getId());
 	}
@@ -1120,6 +1284,89 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logger.error(e.getMessage());
 		}
 		return null;
+	}
+
+	@Override
+	public TaxonomyDefinition transferSynonyms(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> synonymIds) {
+		try {
+			if (synonymIds == null || synonymIds.isEmpty()) {
+				throw new IllegalArgumentException("No synonyms selected for transfer");
+			}
+
+			if (taxonId == null) {
+				throw new IllegalArgumentException("Target taxon ID is required");
+			}
+			if (prevTaxonId == taxonId) {
+				return findById(prevTaxonId);
+			}
+
+			acceptedSynonymDao.bulkSynonymTransfer(synonymIds, taxonId);
+			TaxonomyDefinition newTaxonDetails = findById(taxonId);
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonIds.add(prevTaxonId);
+			List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(synonymIds);
+			for (TaxonomyDefinition synonym : synonyms) {
+				taxonIds.add(synonym.getId());
+				String desc = "Deleted synonym : " + synonym.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
+						prevTaxonId, "taxonomy", synonym.getId(), "Deleted synonym");
+				desc = "Added synonym : " + synonym.getName();
+
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", synonym.getId(), "Added synonym");
+
+				desc = "Transferred synonym to : " + newTaxonDetails.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, synonym.getId(),
+						synonym.getId(), "taxonomy", newTaxonDetails.getId(), "Transferred synonynm");
+			}
+			taxonomyESUpdate.pushToElastic(taxonIds);
+
+			return newTaxonDetails;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return findById(prevTaxonId);
+	}
+
+	@Override
+	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> commonNameIds) {
+		try {
+			if (commonNameIds == null || commonNameIds.isEmpty()) {
+				throw new IllegalArgumentException("No synonyms selected for transfer");
+			}
+
+			if (taxonId == null) {
+				throw new IllegalArgumentException("Target taxon ID is required");
+			}
+			if (prevTaxonId == taxonId) {
+				return findById(prevTaxonId);
+			}
+
+			commonNameDao.bulkCommonNameTransfer(commonNameIds, taxonId);
+			List<Long> taxonIds = new ArrayList<>();
+			taxonIds.add(taxonId);
+			taxonIds.add(prevTaxonId);
+			List<CommonName> commonNames = commonNameDao.findByCommonNameIds(commonNameIds);
+			for (CommonName commonName : commonNames) {
+				taxonIds.add(commonName.getId());
+				String desc = "Deleted common name : " + commonName.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
+						prevTaxonId, "taxonomy", commonName.getId(), "Deleted common name");
+				desc = "Added common name : " + commonName.getName();
+
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+						"taxonomy", commonName.getId(), "Added common name");
+			}
+			taxonomyESUpdate.pushToElastic(taxonIds);
+
+			return findById(taxonId);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return findById(prevTaxonId);
 	}
 
 	private static final int BATCH_SIZE = 1000;
