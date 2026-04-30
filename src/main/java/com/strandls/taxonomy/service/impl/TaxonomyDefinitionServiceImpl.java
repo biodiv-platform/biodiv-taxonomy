@@ -1346,6 +1346,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			commonNameDao.bulkCommonNameTransfer(commonNameIds, taxonId);
+			TaxonomyDefinition newTaxonDetails = findById(taxonId);
 			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
 			taxonIds.add(prevTaxonId);
@@ -1359,6 +1360,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
 						"taxonomy", commonName.getId(), "Added common name");
+				
+				desc = "Transferred synonym to : " + newTaxonDetails.getName();
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, commonName.getId(),
+						commonName.getId(), "taxonomy", newTaxonDetails.getId(), "Transferred common name");
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
 
