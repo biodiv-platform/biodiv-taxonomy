@@ -210,7 +210,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	@SuppressWarnings("rawtypes")
 	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId, Long classificationId) {
 		try (Session session = sessionFactory.openSession()) {
-			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry where path @> "
+			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form, td.position from (select * from taxonomy_registry where path @> "
 					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId and classification_id=:classificationId) and "
 					+ "classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
 					+ "on td.id = tr.taxon_definition_id order by tr.path";

@@ -149,7 +149,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 			// START TRANSACTION
 			tx = session.beginTransaction();
 
-			String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where synonym_id IN (:synonymIds)";
+			String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where synonymId IN (:synonymIds)";
 			Query<AcceptedSynonym> query = session.createQuery(qry);
 			query.setParameterList("synonymIds", synonymIds);
 			query.setParameter("newAcceptedId", newTaxonId);
