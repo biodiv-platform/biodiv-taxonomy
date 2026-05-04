@@ -1019,6 +1019,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 
 		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
+			
+			if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+				String desc = "Taxon rank updated : " + taxonomyDefinition.getRank() + "-->" + taxonomyStatusUpdate.getRank();
+				taxonomyDefinition.setRank(taxonomyStatusUpdate.getRank());
+				
+				taxonomyDao.update(taxonomyDefinition);
+
+				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+						taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
+						"Taxon rank updated");
+			}
 			// Status is not changed so no need to update.
 			switch (taxonomyStatus) {
 			case ACCEPTED:
@@ -1113,6 +1124,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
 					taxoRegistry.setPath(path.toString());
 					taxonomyRegistryDao.update(taxoRegistry);
+					if(taxonomyStatusUpdate.getRank().equalsIgnoreCase(taxonomyDefinition.getRank())) {
+						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
+						taxonomyDao.updatePath(taxoRegistry.getPath(), path.toString());
+					}
 					taxonIds.add(taxonId);
 					taxonomyESUpdate.pushToElastic(new ArrayList<>(taxonIds));
 				}
@@ -1360,10 +1375,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
 						"taxonomy", commonName.getId(), "Added common name");
-				
-				desc = "Transferred synonym to : " + newTaxonDetails.getName();
-				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, commonName.getId(),
-						commonName.getId(), "taxonomy", newTaxonDetails.getId(), "Transferred common name");
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
 

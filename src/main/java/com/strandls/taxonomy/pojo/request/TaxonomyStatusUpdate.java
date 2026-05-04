@@ -22,19 +22,21 @@ public class TaxonomyStatusUpdate {
 	private List<Long> newTaxonId;
 	private Map<String, String> hierarchy;
 	private String position;
+	private String rank;
 
 	public TaxonomyStatusUpdate() {
 		super();
 	}
 
 	public TaxonomyStatusUpdate(Long taxonId, TaxonomyStatus status, List<Long> newTaxonId,
-			Map<String, String> hierarchy, String position) {
+			Map<String, String> hierarchy, String position, String rank) {
 		super();
 		this.taxonId = taxonId;
 		this.status = status;
 		this.newTaxonId = newTaxonId;
 		this.hierarchy = hierarchy;
 		this.position = position;
+		this.rank = rank;
 	}
 
 	public Long getTaxonId() {
@@ -75,6 +77,14 @@ public class TaxonomyStatusUpdate {
 
 	public void setPosition(String position) {
 		this.position = position;
+	}
+
+	public String getRank() {
+		return rank;
+	}
+
+	public void setRank(String rank) {
+		this.rank = rank;
 	}
 
 }

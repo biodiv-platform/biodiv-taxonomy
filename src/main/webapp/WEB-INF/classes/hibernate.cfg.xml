@@ -4,11 +4,9 @@
 	<session-factory>
 		<property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
 		<property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
-		<property name="hibernate.connection.username">postgres</property>
-		<property name="hibernate.connection.password">postgres123</property>
+		<property name="hibernate.connection.username">biodiv</property>
+		<property name="hibernate.connection.password">prharasr</property>
 		<property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/biodiv</property>
-
-		<property name="connection_pool_size">1</property>
 
 		<property name="hbm2ddl.auto">none</property>
 
@@ -17,8 +15,8 @@
 		<property name="hibernate.current_session_context_class">thread</property>
 		<property name="hibernate.connection.provider_class">org.hibernate.hikaricp.internal.HikariCPConnectionProvider</property>
 
-		<!-- Maximum waiting time for a connection from the pool -->
-		<property name="hibernate.hikari.connectionTimeout">1000</property>
+		<!-- Maximum waiting time for a connection from the pool (30 seconds) -->
+		<property name="hibernate.hikari.connectionTimeout">30000</property>
 
 		<!-- Minimum number of ideal connections in the pool -->
 		<property name="hibernate.hikari.minimumIdle">5</property>
@@ -26,8 +24,14 @@
 		<!-- Maximum number of actual connection in the pool -->
 		<property name="hibernate.hikari.maximumPoolSize">30</property>
 
-		<!-- Maximum time that a connection is allowed to sit ideal in the pool -->
-		<property name="hibernate.hikari.idleTimeout">10000</property>
+		<!-- Maximum time that a connection is allowed to sit idle in the pool (10 minutes) -->
+		<property name="hibernate.hikari.idleTimeout">600000</property>
+
+		<!-- Maximum lifetime of a connection in the pool (30 minutes) -->
+		<property name="hibernate.hikari.maxLifetime">1800000</property>
+
+		<!-- Connection leak detection threshold (10 seconds) -->
+		<property name="hibernate.hikari.leakDetectionThreshold">10000</property>
 		<property name="hibernate.jdbc.lob.non_contextual_creation">true</property>
 		<property name="hibernate.id.db_structure_naming_strategy">legacy</property>
 
