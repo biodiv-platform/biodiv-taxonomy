@@ -190,16 +190,16 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 				// Remove old taxonomy from the hierarchy.
 				session.delete(oldtaxonomyRegistry);
 
-			// Attach all the children to new accepted name (Hierarchy update)
-			/*
-			 * String newPath = newTaxonomyRegistry.getPath(); String oldPath =
-			 * oldtaxonomyRegistry.getPath(); String qry = "update taxonomy_registry " +
-			 * " set path = text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath)))"
-			 * + " where path <@ text2ltree(:oldPath) and path != text2ltree(:oldPath)";
-			 * query = session.createNativeQuery(qry); query.setParameter("newPath",
-			 * newPath); query.setParameter("oldPath", oldPath); rowsUpdated +=
-			 * query.executeUpdate();
-			 */
+				// Attach all the children to new accepted name (Hierarchy update)
+				/*
+				 * String newPath = newTaxonomyRegistry.getPath(); String oldPath =
+				 * oldtaxonomyRegistry.getPath(); String qry = "update taxonomy_registry " +
+				 * " set path = text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath)))"
+				 * + " where path <@ text2ltree(:oldPath) and path != text2ltree(:oldPath)";
+				 * query = session.createNativeQuery(qry); query.setParameter("newPath",
+				 * newPath); query.setParameter("oldPath", oldPath); rowsUpdated +=
+				 * query.executeUpdate();
+				 */
 
 				tx.commit();
 				return rowsUpdated;
@@ -315,7 +315,8 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			response.setCount(count);
 			response.setTaxonomyNameListItems(taxonomyNamelistItems);
 
-		return response;
+			return response;
+		}
 	}
 
 	@SuppressWarnings("unchecked")
