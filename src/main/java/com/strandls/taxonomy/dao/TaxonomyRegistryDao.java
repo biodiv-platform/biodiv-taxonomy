@@ -40,6 +40,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	private static final String TAXON_ID = "taxonId";
 
 	public static Long getDefaultClassificationId() {
+		System.out.println(CLASSIFICATION_ID);
 		return CLASSIFICATION_ID;
 	}
 
