@@ -1018,11 +1018,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			throw new NoResultException("Not able to find the given taxon");
 		}
 
-		String oldPosition = taxonomyDefinition.getStatus();
+		String oldRank = taxonomyDefinition.getRank();
 
 		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
 
 			if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+				if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("species")
+						&& !taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
+					throw new IllegalArgumentException("Can only update rank for species and infraspecies rank");
+				}
 				String desc = "Taxon rank updated : " + taxonomyDefinition.getRank() + "-->"
 						+ taxonomyStatusUpdate.getRank();
 				taxonomyDefinition.setRank(taxonomyStatusUpdate.getRank());
@@ -1054,13 +1058,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
 							taxonomyDefinition.getViaDatasource(), taxonomyDefinition.getNameSourceId(), userId);
 
-					// Update the tree and add to the registry
+					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())
+							&& taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
+						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+					}
 					path.append(".");
 					path.append(taxonId);
-
-					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+					if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
+						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+					}
 					taxoRegistry.setPath(path.toString());
-					if (!oldPosition.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
 						taxoRegistry.setRank(taxonomyStatusUpdate.getRank());
 					}
 					taxonomyRegistryDao.update(taxoRegistry);
@@ -1122,13 +1131,23 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						}
 
 					}
-					path.append(".");
-					path.append(taxonId);
 					if (path.length() > 0 && path.charAt(0) == '.') {
 						path.deleteCharAt(0);
 					}
 					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())
+							&& taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
+						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+					}
+					path.append(".");
+					path.append(taxonId);
+					if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
+						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+					}
 					taxoRegistry.setPath(path.toString());
+					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+						taxoRegistry.setRank(taxonomyStatusUpdate.getRank());
+					}
 					taxonomyRegistryDao.update(taxoRegistry);
 					/*
 					 * if(taxonomyStatusUpdate.getRank().equalsIgnoreCase(taxonomyDefinition.getRank
