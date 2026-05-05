@@ -1018,12 +1018,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			throw new NoResultException("Not able to find the given taxon");
 		}
 
+		String oldPosition = taxonomyDefinition.getStatus();
+
 		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
-			
+
 			if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
-				String desc = "Taxon rank updated : " + taxonomyDefinition.getRank() + "-->" + taxonomyStatusUpdate.getRank();
+				String desc = "Taxon rank updated : " + taxonomyDefinition.getRank() + "-->"
+						+ taxonomyStatusUpdate.getRank();
 				taxonomyDefinition.setRank(taxonomyStatusUpdate.getRank());
-				
+
 				taxonomyDao.update(taxonomyDefinition);
 
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
@@ -1057,9 +1060,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
 					taxoRegistry.setPath(path.toString());
-					if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+					if (!oldPosition.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
 						taxoRegistry.setRank(taxonomyStatusUpdate.getRank());
-						System.out.println("Rank need to be updated");
 					}
 					taxonomyRegistryDao.update(taxoRegistry);
 
@@ -1128,10 +1130,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
 					taxoRegistry.setPath(path.toString());
 					taxonomyRegistryDao.update(taxoRegistry);
-					/*if(taxonomyStatusUpdate.getRank().equalsIgnoreCase(taxonomyDefinition.getRank())) {
-						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
-						taxonomyDao.updatePath(taxoRegistry.getPath(), path.toString());
-					}*/
+					/*
+					 * if(taxonomyStatusUpdate.getRank().equalsIgnoreCase(taxonomyDefinition.getRank
+					 * ())) {
+					 * taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
+					 * taxonomyDao.updatePath(taxoRegistry.getPath(), path.toString()); }
+					 */
 					taxonIds.add(taxonId);
 					taxonomyESUpdate.pushToElastic(new ArrayList<>(taxonIds));
 				}
