@@ -1059,6 +1059,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxoRegistry.setPath(path.toString());
 					if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
 						taxoRegistry.setRank(taxonomyStatusUpdate.getRank());
+						System.out.println("Rank need to be updated");
 					}
 					taxonomyRegistryDao.update(taxoRegistry);
 
