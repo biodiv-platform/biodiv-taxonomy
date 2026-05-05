@@ -1057,6 +1057,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
 					taxoRegistry.setPath(path.toString());
+					if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+						taxoRegistry.setRank(taxonomyStatusUpdate.getRank());
+					}
 					taxonomyRegistryDao.update(taxoRegistry);
 
 					// Update the elastic for all the accepted name it was associated and the
