@@ -1020,7 +1020,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
 			
-			/*if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
+			if (!taxonomyDefinition.getRank().equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
 				String desc = "Taxon rank updated : " + taxonomyDefinition.getRank() + "-->" + taxonomyStatusUpdate.getRank();
 				taxonomyDefinition.setRank(taxonomyStatusUpdate.getRank());
 				
@@ -1029,7 +1029,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
 						taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
 						"Taxon rank updated");
-			}*/
+			}
 			// Status is not changed so no need to update.
 			switch (taxonomyStatus) {
 			case ACCEPTED:
