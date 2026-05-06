@@ -1053,6 +1053,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				if (!taxonomyStatusUpdate.getPosition().equals("CLEAN")) {
 					List<Rank> ranks = rankService.getAllRank(request);
 					TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
+					
+					List<Long> taxonIds = new ArrayList<>();
 
 					StringBuilder path = new StringBuilder();
 					updateAndCreateHierarchy(request, path, ranks, rankToParsedName, position,
@@ -1062,11 +1064,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())
 							&& taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
 					}
 					path.append(".");
 					path.append(taxonId);
 					if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
 					}
 					taxoRegistry.setPath(path.toString());
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
@@ -1076,7 +1080,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					// Update the elastic for all the accepted name it was associated and the
 					// nodetaxoRegistry
-					List<Long> taxonIds = new ArrayList<>();
 					taxonIds.add(taxonId);
 					taxonomyESUpdate.pushToElastic(taxonIds);
 
@@ -1138,11 +1141,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())
 							&& taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
 					}
 					path.append(".");
 					path.append(taxonId);
 					if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
+						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
 					}
 					taxoRegistry.setPath(path.toString());
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
