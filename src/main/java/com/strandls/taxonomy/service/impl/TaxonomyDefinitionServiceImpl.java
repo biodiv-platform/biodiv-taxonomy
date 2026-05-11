@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -1053,7 +1054,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				if (!taxonomyStatusUpdate.getPosition().equals("CLEAN")) {
 					List<Rank> ranks = rankService.getAllRank(request);
 					TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
-					
+
 					List<Long> taxonIds = new ArrayList<>();
 
 					StringBuilder path = new StringBuilder();
@@ -1336,17 +1337,45 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Override
 	public TaxonomyDefinition transferSynonyms(HttpServletRequest request, Long taxonId, Long prevTaxonId,
-			List<Long> synonymIds) {
+			List<Long> synonymIds, Boolean selectAll) {
 		try {
-			if (synonymIds == null || synonymIds.isEmpty()) {
-				throw new IllegalArgumentException("No synonyms selected for transfer");
-			}
-
 			if (taxonId == null) {
 				throw new IllegalArgumentException("Target taxon ID is required");
 			}
 			if (prevTaxonId == taxonId) {
 				return findById(prevTaxonId);
+			}
+			if (synonymIds == null || synonymIds.isEmpty()) {
+				if (selectAll) {
+					List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(prevTaxonId);
+					acceptedSynonymDao.allSynonymTransfer(prevTaxonId, taxonId);
+					TaxonomyDefinition newTaxonDetails = findById(taxonId);
+					List<Long> ids = acceptedSynonyms.stream().map(AcceptedSynonym::getId).collect(Collectors.toList());
+
+					List<Long> taxonIds = new ArrayList<>();
+					taxonIds.add(taxonId);
+					taxonIds.add(prevTaxonId);
+					List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(ids);
+					for (TaxonomyDefinition synonym : synonyms) {
+						taxonIds.add(synonym.getId());
+						String desc = "Deleted synonym : " + synonym.getName();
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+								prevTaxonId, prevTaxonId, "taxonomy", synonym.getId(), "Deleted synonym");
+						desc = "Added synonym : " + synonym.getName();
+
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId,
+								taxonId, "taxonomy", synonym.getId(), "Added synonym");
+
+						desc = "Transferred synonym to : " + newTaxonDetails.getName();
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+								synonym.getId(), synonym.getId(), "taxonomy", newTaxonDetails.getId(),
+								"Transferred synonynm");
+					}
+					taxonomyESUpdate.pushToElastic(taxonIds);
+
+					return newTaxonDetails;
+				}
+				throw new IllegalArgumentException("No synonyms selected for transfer");
 			}
 
 			acceptedSynonymDao.bulkSynonymTransfer(synonymIds, taxonId);
@@ -1380,17 +1409,40 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Override
 	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
-			List<Long> commonNameIds) {
+			List<Long> commonNameIds, Boolean selectAll) {
 		try {
-			if (commonNameIds == null || commonNameIds.isEmpty()) {
-				throw new IllegalArgumentException("No synonyms selected for transfer");
-			}
 
 			if (taxonId == null) {
 				throw new IllegalArgumentException("Target taxon ID is required");
 			}
 			if (prevTaxonId == taxonId) {
 				return findById(prevTaxonId);
+			}
+
+			if (commonNameIds == null || commonNameIds.isEmpty()) {
+				if (selectAll) {
+					List<CommonName> commonNames = commonNameDao.fetchByTaxonId(prevTaxonId);
+					commonNameDao.allCommonNameTransfer(prevTaxonId, taxonId);
+					TaxonomyDefinition newTaxonDetails = findById(taxonId);
+
+					List<Long> taxonIds = new ArrayList<>();
+					taxonIds.add(taxonId);
+					taxonIds.add(prevTaxonId);
+					for (CommonName commonName : commonNames) {
+						taxonIds.add(commonName.getId());
+						String desc = "Deleted common name : " + commonName.getName();
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
+								prevTaxonId, "taxonomy", commonName.getId(), "Deleted common name");
+						desc = "Added common name : " + commonName.getName();
+
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
+								"taxonomy", commonName.getId(), "Added common name");
+					}
+					taxonomyESUpdate.pushToElastic(taxonIds);
+
+					return newTaxonDetails;
+				}
+				throw new IllegalArgumentException("No common names selected for transfer");
 			}
 
 			commonNameDao.bulkCommonNameTransfer(commonNameIds, taxonId);
@@ -1411,7 +1463,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
 
-			return findById(taxonId);
+			return newTaxonDetails;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}

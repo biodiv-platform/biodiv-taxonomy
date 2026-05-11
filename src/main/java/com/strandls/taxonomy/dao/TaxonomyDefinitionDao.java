@@ -62,6 +62,24 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 		return entity;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyDefinition> fetchByListOfIds(List<Long> taxonIds) {
+		String qry = "from TaxonomyDefinition where id IN (:taxonIds)";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyDefinition> result = null;
+		try {
+			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			query.setParameterList("taxonIds", taxonIds);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
 
 	public List<Long> getAllIds(int limit, int offset) {
 		try (Session session = sessionFactory.openSession()) {

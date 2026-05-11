@@ -127,6 +127,36 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 		}
 		return 0;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public int allCommonNameTransfer(Long prevTaxonId, Long newTaxonId) {
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+
+		try {
+			// START TRANSACTION
+			tx = session.beginTransaction();
+
+			String qry = "update CommonName set taxonConceptId = :newAcceptedId, isPreffered = false where taxonConceptId = :prevTaxonId";
+			Query<AcceptedSynonym> query = session.createQuery(qry);
+			query.setParameter("prevTaxonId", prevTaxonId);
+			query.setParameter("newAcceptedId", newTaxonId);
+
+			int rowsUpdated = query.executeUpdate();
+
+			// COMMIT TRANSACTION
+			tx.commit();
+
+			return rowsUpdated;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
 
 	@SuppressWarnings("unchecked")
 	public List<CommonName> findByCommonNameIds(List<Long> commonNameIds) {

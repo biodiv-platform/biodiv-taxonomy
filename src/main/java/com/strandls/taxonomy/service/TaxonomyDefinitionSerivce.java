@@ -73,8 +73,8 @@ public interface TaxonomyDefinitionSerivce {
 	public Map<String, TaxonomyDefinition> updateItalicisedForm();
 
 	public TaxonomyDefinition transferSynonyms(HttpServletRequest request, Long taxonId, Long prevTaxonId,
-			List<Long> synonymIds);
+			List<Long> synonymIds, Boolean selectAll);
 
 	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
-			List<Long> commonNameIds);
+			List<Long> commonNameIds, Boolean selectAll);
 }
