@@ -32,6 +32,12 @@ import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.esmodule.controllers.EsServicesApi;
+import com.strandls.esmodule.pojo.MapAndBoolQuery;
+import com.strandls.esmodule.pojo.MapExistQuery;
+import com.strandls.esmodule.pojo.MapResponse;
+import com.strandls.esmodule.pojo.MapSearchParams;
+import com.strandls.esmodule.pojo.MapSearchQuery;
+import com.strandls.esmodule.pojo.MapSearchParams.SortTypeEnum;
 import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.CommonNameDao;
@@ -1431,12 +1437,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					for (CommonName commonName : commonNames) {
 						taxonIds.add(commonName.getId());
 						String desc = "Deleted common name : " + commonName.getName();
-						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
-								prevTaxonId, "taxonomy", commonName.getId(), "Deleted common name");
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
+								prevTaxonId, prevTaxonId, "taxonomy", commonName.getId(), "Deleted common name");
 						desc = "Added common name : " + commonName.getName();
 
-						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId, taxonId,
-								"taxonomy", commonName.getId(), "Added common name");
+						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, taxonId,
+								taxonId, "taxonomy", commonName.getId(), "Added common name");
 					}
 					taxonomyESUpdate.pushToElastic(taxonIds);
 
@@ -1468,6 +1474,45 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logger.error(e.getMessage());
 		}
 		return findById(prevTaxonId);
+	}
+
+	@Override
+	public TaxonomyDefinition getEsTaxonList() {
+		try {
+
+			MapSearchParams mapSearchParams = new MapSearchParams();
+			mapSearchParams.setFrom(0);
+			mapSearchParams.setLimit(100);
+			mapSearchParams.setSortOn("path");
+			mapSearchParams.setSortType(SortTypeEnum.ASC);
+			
+			MapSearchQuery mapSearchQuery = new MapSearchQuery();
+			List<MapAndBoolQuery> boolAndLists = new ArrayList<>();
+		    List<MapExistQuery> andMapExistQueries = new ArrayList<>();
+
+		    // status = ACCEPTED
+		    boolAndLists.add(assignBoolAndQuery("status.keyword", List.of("ACCEPTED"), null));
+
+		    // path exists
+		    //andMapExistQueries.add(assignExistQuery("path"));
+
+		    mapSearchQuery.setAndBoolQueries(boolAndLists);
+		    mapSearchQuery.setAndExistQueries(andMapExistQueries);
+		    mapSearchQuery.setSearchParams(mapSearchParams);
+			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
+					mapSearchQuery);
+		} catch (ApiException e) {
+			logger.error(e.getMessage());
+		}
+	}
+	
+	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values, String path) {
+		MapAndBoolQuery andBool = new MapAndBoolQuery();
+		andBool.setKey(key);
+		andBool.setValues(values);
+		andBool.setPath(path);
+		return andBool;
+
 	}
 
 	private static final int BATCH_SIZE = 1000;

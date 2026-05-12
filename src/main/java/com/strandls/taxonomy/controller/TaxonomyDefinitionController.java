@@ -505,7 +505,7 @@ public class TaxonomyDefinitionController {
 		}
 	}
 
-	/*@GET
+	@GET
 	@Path("esList")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -514,29 +514,13 @@ public class TaxonomyDefinitionController {
 			@ApiResponse(responseCode = "400", description = "Unable to search", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response getEsList(@Context HttpServletRequest request) {
 		try {
-
-			MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
-
-			if ((Boolean.FALSE.equals(selectAll) && bulkTaxonIds != null && !bulkAction.isEmpty()
-					&& !bulkTaxonIds.isEmpty()) || (Boolean.TRUE.equals(selectAll) && !bulkAction.isEmpty())) {
-
-				if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
-					return Response.status(Status.BAD_REQUEST).build();
-				}
-
-				TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(selectAll, bulkAction,
-						bulkTaxonIds);
-
-				Thread thread = new Thread(bulkMappingThread);
-				thread.start();
-				return Response.status(Status.OK).build();
-			}
-
+			
+			taxonomyService.getEsTaxonList();
 			return Response.status(Status.OK).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
-	}*/
+	}
 
 	/**
 	 * Only for migration purpose

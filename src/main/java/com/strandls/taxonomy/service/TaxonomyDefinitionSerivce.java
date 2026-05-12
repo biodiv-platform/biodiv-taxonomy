@@ -77,4 +77,6 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
 			List<Long> commonNameIds, Boolean selectAll);
+
+	public TaxonomyDefinition getEsTaxonList();
 }
