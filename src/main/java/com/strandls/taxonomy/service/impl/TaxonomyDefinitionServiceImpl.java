@@ -1485,27 +1485,29 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchParams.setLimit(100);
 			mapSearchParams.setSortOn("path");
 			mapSearchParams.setSortType(SortTypeEnum.ASC);
-			
+
 			MapSearchQuery mapSearchQuery = new MapSearchQuery();
 			List<MapAndBoolQuery> boolAndLists = new ArrayList<>();
-		    List<MapExistQuery> andMapExistQueries = new ArrayList<>();
+			List<MapExistQuery> andMapExistQueries = new ArrayList<>();
 
-		    // status = ACCEPTED
-		    boolAndLists.add(assignBoolAndQuery("status.keyword", List.of("ACCEPTED"), null));
+			// status = ACCEPTED
+			boolAndLists.add(assignBoolAndQuery("status.keyword", List.of("ACCEPTED"), null));
 
-		    // path exists
-		    //andMapExistQueries.add(assignExistQuery("path"));
+			// path exists
+			// andMapExistQueries.add(assignExistQuery("path"));
 
-		    mapSearchQuery.setAndBoolQueries(boolAndLists);
-		    mapSearchQuery.setAndExistQueries(andMapExistQueries);
-		    mapSearchQuery.setSearchParams(mapSearchParams);
-			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
-					mapSearchQuery);
-		} catch (ApiException e) {
+			mapSearchQuery.setAndBoolQueries(boolAndLists);
+			mapSearchQuery.setAndExistQueries(andMapExistQueries);
+			mapSearchQuery.setSearchParams(mapSearchParams);
+			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
+					null, mapSearchQuery);
+			System.out.println(result.toString());
+		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error(e.getMessage());
 		}
+		return null;
 	}
-	
+
 	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values, String path) {
 		MapAndBoolQuery andBool = new MapAndBoolQuery();
 		andBool.setKey(key);
