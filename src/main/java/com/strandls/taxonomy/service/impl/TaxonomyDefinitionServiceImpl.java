@@ -1514,6 +1514,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchQuery.setAndMatchPhraseQueries(andMatchPhraseQueries);
 			mapSearchQuery.setOrMatchPhraseQueries(orMatchPhraseQueriesnew);
 			mapSearchQuery.setSearchParams(mapSearchParams);
+			System.out.println(mapSearchQuery.toString());
 			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
 					null, mapSearchQuery);
 			System.out.println(result.toString());
