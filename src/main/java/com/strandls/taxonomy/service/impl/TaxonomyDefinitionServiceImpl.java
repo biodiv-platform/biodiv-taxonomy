@@ -1507,6 +1507,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// status = ACCEPTED
 			boolAndLists.add(assignBoolAndQuery("status.keyword", List.of("ACCEPTED"), null));
+			
+			List<Object> acceptedIds = new ArrayList<>();
 
 			// path exists
 			// andMapExistQueries.add(assignExistQuery("path"));
@@ -1526,12 +1528,46 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				try {
 					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
 					objectMapper.setDateFormat(df);
-					observationListMinimal.add(objectMapper.readValue(String.valueOf(document.getDocument()),
-							TaxonomyListMinimalData.class));
+					TaxonomyListMinimalData acceptedTaxon = objectMapper.readValue(String.valueOf(document.getDocument()),
+							TaxonomyListMinimalData.class);
+					if (acceptedTaxon.getRank().equalsIgnoreCase("species")) {
+						acceptedIds.add(acceptedTaxon.getId());
+					}
+					observationListMinimal.add(acceptedTaxon);
 				} catch (IOException e) {
 					logger.error(e.getMessage());
 				}
 			}
+			
+			MapSearchParams synonymSearchParams = new MapSearchParams();
+			synonymSearchParams.setFrom(0);
+			synonymSearchParams.setLimit(10000);
+
+			MapSearchQuery synonymSearchQuery = new MapSearchQuery();
+			List<MapAndBoolQuery> synonymBoolAndLists = new ArrayList<>();
+
+			// status = ACCEPTED
+			synonymBoolAndLists.add(assignBoolAndQuery("status.keyword", List.of("SYNONYM"), null));
+			synonymBoolAndLists.add(assignBoolAndQuery("accepted_ids", acceptedIds, null));
+			
+			mapSearchQuery.setAndBoolQueries(synonymBoolAndLists);
+			mapSearchQuery.setSearchParams(synonymSearchParams);
+			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
+					null, mapSearchQuery);
+			documents = result.getDocuments();
+			for (MapDocument document : documents) {
+				try {
+					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
+					objectMapper.setDateFormat(df);
+					TaxonomyListMinimalData acceptedTaxon = objectMapper.readValue(String.valueOf(document.getDocument()),
+							TaxonomyListMinimalData.class);
+					observationListMinimal.add(acceptedTaxon);
+				} catch (IOException e) {
+					logger.error(e.getMessage());
+				}
+			}
+			
+			
 		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error(e.getMessage());
 		}
