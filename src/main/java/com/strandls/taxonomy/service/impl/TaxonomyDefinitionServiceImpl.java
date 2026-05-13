@@ -66,6 +66,7 @@ import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.BreadCrumb;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
+import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
@@ -1487,8 +1488,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public List<TaxonomyListMinimalData> getEsTaxonList() {
+	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request) {
 		List<TaxonomyListMinimalData> taxonomyListMinimal = new ArrayList<TaxonomyListMinimalData>();
+		List<Rank> ranks = rankService.getAllRank(request);
+		Map<String, Double> rankValueMapping = new HashMap<>();
+		for(Rank rank: ranks) {
+			rankValueMapping.put(rank.getName(), rank.getRankValue());
+		}
 		try {
 			MapSearchParams mapSearchParams = new MapSearchParams();
 			mapSearchParams.setFrom(0);
@@ -1531,6 +1537,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					objectMapper.setDateFormat(df);
 					TaxonomyListMinimalData acceptedTaxon = objectMapper.readValue(String.valueOf(document.getDocument()),
 							TaxonomyListMinimalData.class);
+					acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
 					if (acceptedTaxon.getRank().equalsIgnoreCase("species") || acceptedTaxon.getRank().equalsIgnoreCase("infraspecies")) {
 						acceptedIds.add(acceptedTaxon.getId());
 					}
@@ -1539,6 +1546,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					logger.error(e.getMessage());
 				}
 			}
+			
+			acceptedIds.add(64612L);
 			
 			MapSearchParams synonymSearchParams = new MapSearchParams();
 			synonymSearchParams.setFrom(0);
@@ -1555,6 +1564,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchQuery.setSearchParams(synonymSearchParams);
 			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
 					null, mapSearchQuery);
+			System.out.println(mapSearchQuery.toString());
 			System.out.println(result.toString());
 			documents = result.getDocuments();
 			List<TaxonomyListMinimalData> synonymListMinimal = new ArrayList<>();
@@ -1567,6 +1577,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					TaxonomyListMinimalData acceptedTaxon = objectMapper.readValue(String.valueOf(document.getDocument()),
 							TaxonomyListMinimalData.class);
 					Long acceptedId = acceptedTaxon.getAcceptedIds().get(0);
+					acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
 					synonymMapping.put(acceptedId, synonymMapping.getOrDefault(acceptedId, "")+","+s);
 					synonymListMinimal.add(acceptedTaxon);
 					s= s+1;
@@ -1598,7 +1609,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error(e.getMessage());
 		}
-		return taxonomyListMinimal;
+		
+		TaxonomyElasticNameListResponse result = new TaxonomyElasticNameListResponse();
+		result.setCount(0);
+		result.setTaxonomyNameListItems(taxonomyListMinimal);
+		return result;
 	}
 
 	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values, String path) {

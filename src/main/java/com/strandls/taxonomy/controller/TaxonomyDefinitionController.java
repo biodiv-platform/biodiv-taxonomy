@@ -29,6 +29,7 @@ import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
+import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
@@ -510,10 +511,12 @@ public class TaxonomyDefinitionController {
 	@Path("esList")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	@Operation(summary = "Save the taxonomy list", responses = @ApiResponse(responseCode = "200", description = "Saved list", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TaxonomyListMinimalData.class)))))
+	@Operation(summary = "Get taxonomy name list", responses = {
+			@ApiResponse(responseCode = "200", description = "Taxonomy Name List", content = @Content(schema = @Schema(implementation = TaxonomyElasticNameListResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Taxonomy list not found", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response getEsList(@Context HttpServletRequest request) {
 	    try {
-	        List<TaxonomyListMinimalData> result = taxonomyService.getEsTaxonList();
+	        TaxonomyElasticNameListResponse result = taxonomyService.getEsTaxonList(request);
 	        return Response.status(Status.OK).entity(result).build();
 	    } catch (Exception e) {
 	        return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

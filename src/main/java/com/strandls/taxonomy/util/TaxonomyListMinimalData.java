@@ -30,17 +30,20 @@ public class TaxonomyListMinimalData {
 	
 	@JsonAlias("accepted_ids")
 	private List<Long> acceptedIds;
+	
+	private Double rankValue;
 
 	public TaxonomyListMinimalData() {
 	}
 
-	public TaxonomyListMinimalData(String position, Long id, String name, String rank, String status, List<Long> acceptedIds) {
+	public TaxonomyListMinimalData(String position, Long id, String name, String rank, String status, List<Long> acceptedIds, Double rankValue) {
 		this.position = position;
 		this.id = id;
 		this.name = name;
 		this.rank = rank;
 		this.status = status;
 		this.acceptedIds = acceptedIds;
+		this.rankValue = rankValue;
 	}
 	
 	public Long getId() {
@@ -89,6 +92,14 @@ public class TaxonomyListMinimalData {
 	
 	public void setAcceptedIds(List<Long> acceptedIds) {
 		this.acceptedIds = acceptedIds;
+	}
+	
+	public Double getRankValue() {
+		return rankValue;
+	}
+	
+	public void setRankValue(Double rankValue) {
+		this.rankValue = rankValue;
 	}
 
 }

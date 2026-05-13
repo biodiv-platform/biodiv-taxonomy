@@ -18,6 +18,7 @@ import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
+import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
@@ -79,5 +80,5 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
 			List<Long> commonNameIds, Boolean selectAll);
 
-	public List<TaxonomyListMinimalData> getEsTaxonList();
+	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request);
 }
