@@ -1,6 +1,7 @@
 package com.strandls.taxonomy.util;
 
 import java.util.Date;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -26,16 +27,20 @@ public class TaxonomyListMinimalData {
 	
 	@JsonAlias("status")
 	private String status;
+	
+	@JsonAlias("accepted_ids")
+	private List<Long> acceptedIds;
 
 	public TaxonomyListMinimalData() {
 	}
 
-	public TaxonomyListMinimalData(String position, Long id, String name, String rank, String status) {
+	public TaxonomyListMinimalData(String position, Long id, String name, String rank, String status, List<Long> acceptedIds) {
 		this.position = position;
 		this.id = id;
 		this.name = name;
 		this.rank = rank;
 		this.status = status;
+		this.acceptedIds = acceptedIds;
 	}
 	
 	public Long getId() {
@@ -76,6 +81,14 @@ public class TaxonomyListMinimalData {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	
+	public List<Long> getAcceptedIds(){
+		return acceptedIds;
+	}
+	
+	public void setAcceptedIds(List<Long> acceptedIds) {
+		this.acceptedIds = acceptedIds;
 	}
 
 }

@@ -1488,7 +1488,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Override
 	public List<TaxonomyListMinimalData> getEsTaxonList() {
-		List<TaxonomyListMinimalData> observationListMinimal = new ArrayList<TaxonomyListMinimalData>();
+		List<TaxonomyListMinimalData> taxonomyListMinimal = new ArrayList<TaxonomyListMinimalData>();
 		try {
 			MapSearchParams mapSearchParams = new MapSearchParams();
 			mapSearchParams.setFrom(0);
@@ -1524,16 +1524,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
 					null, mapSearchQuery);
 			List<MapDocument> documents = result.getDocuments();
+			List<TaxonomyListMinimalData> acceptedListMinimal = new ArrayList<TaxonomyListMinimalData>();
 			for (MapDocument document : documents) {
 				try {
 					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
 					objectMapper.setDateFormat(df);
 					TaxonomyListMinimalData acceptedTaxon = objectMapper.readValue(String.valueOf(document.getDocument()),
 							TaxonomyListMinimalData.class);
-					if (acceptedTaxon.getRank().equalsIgnoreCase("species")) {
+					if (acceptedTaxon.getRank().equalsIgnoreCase("species") || acceptedTaxon.getRank().equalsIgnoreCase("infraspecies")) {
 						acceptedIds.add(acceptedTaxon.getId());
 					}
-					observationListMinimal.add(acceptedTaxon);
+					acceptedListMinimal.add(acceptedTaxon);
 				} catch (IOException e) {
 					logger.error(e.getMessage());
 				}
@@ -1554,24 +1555,50 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchQuery.setSearchParams(synonymSearchParams);
 			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
 					null, mapSearchQuery);
+			System.out.println(result.toString());
 			documents = result.getDocuments();
+			List<TaxonomyListMinimalData> synonymListMinimal = new ArrayList<>();
+			Map<Long, String> synonymMapping = new HashMap<>();
+			int s =0;
 			for (MapDocument document : documents) {
 				try {
 					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
 					objectMapper.setDateFormat(df);
 					TaxonomyListMinimalData acceptedTaxon = objectMapper.readValue(String.valueOf(document.getDocument()),
 							TaxonomyListMinimalData.class);
-					observationListMinimal.add(acceptedTaxon);
+					Long acceptedId = acceptedTaxon.getAcceptedIds().get(0);
+					synonymMapping.put(acceptedId, synonymMapping.getOrDefault(acceptedId, "")+","+s);
+					synonymListMinimal.add(acceptedTaxon);
+					s= s+1;
 				} catch (IOException e) {
 					logger.error(e.getMessage());
 				}
 			}
 			
+			int i = 0;
+			for (TaxonomyListMinimalData acceptedTaxon: acceptedListMinimal) {
+				i = i+1;
+				if (i>100) {
+					break;
+				}
+				taxonomyListMinimal.add(acceptedTaxon);
+				if (synonymMapping.containsKey(acceptedTaxon.getId())) {
+					String withoutFirstChar = synonymMapping.get(acceptedTaxon.getId()).substring(1); // "value1,value2,value3"
+					String[] synonymIndex = withoutFirstChar.split(",");
+					for (String index: synonymIndex) {
+						i = i+1;
+						if (i>100) {
+							break;
+						}
+						taxonomyListMinimal.add(synonymListMinimal.get(Integer.parseInt(index)));
+					}
+				}
+			}
 			
 		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error(e.getMessage());
 		}
-		return observationListMinimal;
+		return taxonomyListMinimal;
 	}
 
 	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values, String path) {
