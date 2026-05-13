@@ -34,6 +34,7 @@ import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
 import com.strandls.taxonomy.util.TaxonomyBulkMappingThread;
+import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -509,17 +510,14 @@ public class TaxonomyDefinitionController {
 	@Path("esList")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	@Operation(summary = "Executes bulk actions", description = "Return species list data", responses = {
-			@ApiResponse(responseCode = "200", description = "Species list search results", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
-			@ApiResponse(responseCode = "400", description = "Unable to search", content = @Content(schema = @Schema(implementation = String.class))) })
+	@Operation(summary = "Save the taxonomy list", responses = @ApiResponse(responseCode = "200", description = "Saved list", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TaxonomyListMinimalData.class)))))
 	public Response getEsList(@Context HttpServletRequest request) {
-		try {
-			
-			taxonomyService.getEsTaxonList();
-			return Response.status(Status.OK).build();
-		} catch (Exception e) {
-			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
-		}
+	    try {
+	        List<TaxonomyListMinimalData> result = taxonomyService.getEsTaxonList();
+	        return Response.status(Status.OK).entity(result).build();
+	    } catch (Exception e) {
+	        return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+	    }
 	}
 
 	/**

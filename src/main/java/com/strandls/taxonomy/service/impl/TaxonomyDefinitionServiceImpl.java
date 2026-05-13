@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,6 +36,7 @@ import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapAndBoolQuery;
 import com.strandls.esmodule.pojo.MapAndMatchPhraseQuery;
 import com.strandls.esmodule.pojo.MapAndRangeQuery;
+import com.strandls.esmodule.pojo.MapDocument;
 import com.strandls.esmodule.pojo.MapExistQuery;
 import com.strandls.esmodule.pojo.MapOrBoolQuery;
 import com.strandls.esmodule.pojo.MapOrMatchPhraseQuery;
@@ -76,6 +78,7 @@ import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.taxonomy.util.AbstractService;
 import com.strandls.taxonomy.util.TaxonomyCache;
+import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
@@ -145,6 +148,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionServiceImpl.class);
 
 	static final Long UPLOADER_ID = 1L;
+	
+	private final String simpleFormatForDate = "yyyy-MM-dd'T'HH:mm:ss";
 
 	@Inject
 	public TaxonomyDefinitionServiceImpl(TaxonomyDefinitionDao dao) {
@@ -1482,9 +1487,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public TaxonomyDefinition getEsTaxonList() {
+	public List<TaxonomyListMinimalData> getEsTaxonList() {
+		List<TaxonomyListMinimalData> observationListMinimal = new ArrayList<TaxonomyListMinimalData>();
 		try {
-
 			MapSearchParams mapSearchParams = new MapSearchParams();
 			mapSearchParams.setFrom(0);
 			mapSearchParams.setLimit(100);
@@ -1514,14 +1519,23 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchQuery.setAndMatchPhraseQueries(andMatchPhraseQueries);
 			mapSearchQuery.setOrMatchPhraseQueries(orMatchPhraseQueriesnew);
 			mapSearchQuery.setSearchParams(mapSearchParams);
-			System.out.println(mapSearchQuery.toString());
 			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
 					null, mapSearchQuery);
-			System.out.println(result.toString());
+			List<MapDocument> documents = result.getDocuments();
+			for (MapDocument document : documents) {
+				try {
+					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
+					objectMapper.setDateFormat(df);
+					observationListMinimal.add(objectMapper.readValue(String.valueOf(document.getDocument()),
+							TaxonomyListMinimalData.class));
+				} catch (IOException e) {
+					logger.error(e.getMessage());
+				}
+			}
 		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error(e.getMessage());
 		}
-		return null;
+		return observationListMinimal;
 	}
 
 	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values, String path) {
