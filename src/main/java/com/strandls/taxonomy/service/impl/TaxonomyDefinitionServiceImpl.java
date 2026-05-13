@@ -33,7 +33,12 @@ import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapAndBoolQuery;
+import com.strandls.esmodule.pojo.MapAndMatchPhraseQuery;
+import com.strandls.esmodule.pojo.MapAndRangeQuery;
 import com.strandls.esmodule.pojo.MapExistQuery;
+import com.strandls.esmodule.pojo.MapOrBoolQuery;
+import com.strandls.esmodule.pojo.MapOrMatchPhraseQuery;
+import com.strandls.esmodule.pojo.MapOrRangeQuery;
 import com.strandls.esmodule.pojo.MapResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchQuery;
@@ -1489,6 +1494,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			MapSearchQuery mapSearchQuery = new MapSearchQuery();
 			List<MapAndBoolQuery> boolAndLists = new ArrayList<>();
 			List<MapExistQuery> andMapExistQueries = new ArrayList<>();
+			List<MapOrBoolQuery> boolOrLists = new ArrayList<MapOrBoolQuery>();
+			List<MapOrRangeQuery> rangeOrLists = new ArrayList<MapOrRangeQuery>();
+			List<MapAndRangeQuery> rangeAndLists = new ArrayList<MapAndRangeQuery>();
+			List<MapAndMatchPhraseQuery> andMatchPhraseQueries = new ArrayList<MapAndMatchPhraseQuery>();
+			List<MapOrMatchPhraseQuery> orMatchPhraseQueriesnew = new ArrayList<MapOrMatchPhraseQuery>();
 
 			// status = ACCEPTED
 			boolAndLists.add(assignBoolAndQuery("status.keyword", List.of("ACCEPTED"), null));
@@ -1497,7 +1507,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// andMapExistQueries.add(assignExistQuery("path"));
 
 			mapSearchQuery.setAndBoolQueries(boolAndLists);
+			mapSearchQuery.setOrBoolQueries(boolOrLists);
+			mapSearchQuery.setAndRangeQueries(rangeAndLists);
+			mapSearchQuery.setOrRangeQueries(rangeOrLists);
 			mapSearchQuery.setAndExistQueries(andMapExistQueries);
+			mapSearchQuery.setAndMatchPhraseQueries(andMatchPhraseQueries);
+			mapSearchQuery.setOrMatchPhraseQueries(orMatchPhraseQueriesnew);
 			mapSearchQuery.setSearchParams(mapSearchParams);
 			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
 					null, mapSearchQuery);
