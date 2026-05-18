@@ -1027,7 +1027,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 			taxonomyData.setTargetId(taxonId);
 			taxonomyData.setCanonicalForm(canonicalName);
-			taxonomyData.setItalicisedForm(italicisedForm);
+			taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
 			taxonomyData.setName(taxonomyDefinition.getName());
 			taxonomyData.setNormalizedName(normalizedName);
 			taxonomyData.setOldName(oldName);
