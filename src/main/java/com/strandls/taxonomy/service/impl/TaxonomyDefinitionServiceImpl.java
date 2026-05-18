@@ -1048,6 +1048,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			esServicesApi.updateAsync(taxonomyData);
 		} catch (com.strandls.esmodule.ApiException e) {
 			e.printStackTrace();
+		}catch (Exception e) {
+		    logger.error("Exception in async update: {}", e.getMessage(), e);
 		}
 
 		return getTaxonomyDetails(taxonomyDefinition.getId());
