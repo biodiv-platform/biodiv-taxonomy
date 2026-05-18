@@ -514,13 +514,21 @@ public class TaxonomyDefinitionController {
 	@Operation(summary = "Get taxonomy name list", responses = {
 			@ApiResponse(responseCode = "200", description = "Taxonomy Name List", content = @Content(schema = @Schema(implementation = TaxonomyElasticNameListResponse.class))),
 			@ApiResponse(responseCode = "404", description = "Taxonomy list not found", content = @Content(schema = @Schema(implementation = String.class))) })
-	public Response getEsList(@Context HttpServletRequest request) {
-	    try {
-	        TaxonomyElasticNameListResponse result = taxonomyService.getEsTaxonList(request);
-	        return Response.status(Status.OK).entity(result).build();
-	    } catch (Exception e) {
-	        return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
-	    }
+	public Response getEsList(@Context HttpServletRequest request,
+			@Parameter(description = "Taxon ID") @QueryParam("taxonId") Long taxonId,
+			@Parameter(description = "Comma separated rank list") @QueryParam("rankList") String rankList,
+			@Parameter(description = "Status list") @QueryParam("statusList") String statusList,
+			@Parameter(description = "Position list") @QueryParam("positionList") String positionList,
+			@Parameter(description = "Limit", example = "-1") @DefaultValue("-1") @QueryParam("limit") Integer limit,
+			@Parameter(description = "Offset id", example = "-1") @DefaultValue("-1") @QueryParam("offsetId") Long offsetId,
+			@Parameter(description = "Offset path") @QueryParam("offsetPath") String offsetPath
+			) {
+		try {
+			TaxonomyElasticNameListResponse result = taxonomyService.getEsTaxonList(request, taxonId, rankList, statusList, positionList, limit, offsetId, offsetPath);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 	}
 
 	/**

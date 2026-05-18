@@ -35,6 +35,7 @@ import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.esmodule.controllers.EsServicesApi;
+import com.strandls.esmodule.pojo.Breadcrumb;
 import com.strandls.esmodule.pojo.MapAndBoolQuery;
 import com.strandls.esmodule.pojo.MapAndMatchPhraseQuery;
 import com.strandls.esmodule.pojo.MapAndRangeQuery;
@@ -46,6 +47,7 @@ import com.strandls.esmodule.pojo.MapOrRangeQuery;
 import com.strandls.esmodule.pojo.MapResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchQuery;
+import com.strandls.esmodule.pojo.TaxonomyUpdateData;
 import com.strandls.esmodule.pojo.MapSearchParams.SortTypeEnum;
 import com.strandls.taxonomy.Headers;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
@@ -988,7 +990,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 
 		ParsedName parsedName = utilityServiceApi.getNameParsed(taxonName);
-		
+
 		String oldName = taxonomyDefinition.getNormalizedForm();
 
 		String name = parsedName.getVerbatim().trim();
@@ -1020,18 +1022,36 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		String timestamp = sdf.format(new Date());
-		
+
 		try {
-			esServicesApi.updateAsync(taxonId, taxonomyDefinition.getName(), taxonomyDefinition.getNormalizedForm(),
-					oldName, taxonomyDefinition.getItalicisedForm(),
-					taxonomyDefinition.getCanonicalForm(), taxonomyDefinition.getPosition(), timestamp);
+			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+			taxonomyData.setTargetId(taxonId);
+			taxonomyData.setCanonicalForm(canonicalName);
+			taxonomyData.setItalicisedForm(italicisedForm);
+			taxonomyData.setName(taxonomyDefinition.getName());
+			taxonomyData.setNormalizedName(normalizedName);
+			taxonomyData.setOldName(oldName);
+			taxonomyData.setPosition(taxonomyDefinition.getPosition());
+			taxonomyData.setRank(taxonomyDefinition.getRank());
+			taxonomyData.setStatus(taxonomyDefinition.getStatus());
+			taxonomyData.setTimestamp(timestamp);
+			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+			List<Breadcrumb> breadCrumbs = new ArrayList<>();
+			for (TaxonomyRegistryResponse crumb: hierarchy) {
+				Breadcrumb breadCrumb= new Breadcrumb();
+				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+				breadCrumb.setTaxonName(crumb.getName());
+				breadCrumb.setTaxonRank(crumb.getRank());
+				breadCrumbs.add(breadCrumb);
+			}
+			taxonomyData.setBreadCrumbs(breadCrumbs);
+			esServicesApi.updateAsync(taxonomyData);
 		} catch (com.strandls.esmodule.ApiException e) {
 			e.printStackTrace();
 		}
-		
-		
+
 		return getTaxonomyDetails(taxonomyDefinition.getId());
-		
+
 	}
 
 	@Override
@@ -1321,7 +1341,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
 					taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
 					"Taxon position updated");
-			
+
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 			String timestamp = sdf.format(new Date());
@@ -1334,11 +1354,30 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			taxonomyESUpdate.pushToElastic(taxonIds);
-			
+
 			try {
-				esServicesApi.updateAsync(taxonId, taxonomyDefinition.getName(), taxonomyDefinition.getNormalizedForm(),
-						taxonomyDefinition.getNormalizedForm(), taxonomyDefinition.getItalicisedForm(),
-						taxonomyDefinition.getCanonicalForm(), position.toString(), timestamp);
+				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+				taxonomyData.setTargetId(taxonId);
+				taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
+				taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
+				taxonomyData.setName(taxonomyDefinition.getName());
+				taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
+				taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
+				taxonomyData.setPosition(position.toString());
+				taxonomyData.setRank(taxonomyDefinition.getRank());
+				taxonomyData.setStatus(taxonomyDefinition.getStatus());
+				taxonomyData.setTimestamp(timestamp);
+				List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+				List<Breadcrumb> breadCrumbs = new ArrayList<>();
+				for (TaxonomyRegistryResponse crumb: hierarchy) {
+					Breadcrumb breadCrumb= new Breadcrumb();
+					breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+					breadCrumb.setTaxonName(crumb.getName());
+					breadCrumb.setTaxonRank(crumb.getRank());
+					breadCrumbs.add(breadCrumb);
+				}
+				taxonomyData.setBreadCrumbs(breadCrumbs);
+				esServicesApi.updateAsync(taxonomyData);
 			} catch (com.strandls.esmodule.ApiException e) {
 				e.printStackTrace();
 			}
@@ -1518,20 +1557,44 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request) {
+	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request, Long taxonId,
+			String rankListString, String statusListString, String positionListString, Integer limit, Long offsetId,
+			String offsetPath) {
 		List<TaxonomyListMinimalData> taxonomyListMinimal = new ArrayList<TaxonomyListMinimalData>();
 		List<Rank> ranks = rankService.getAllRank(request);
 		Map<String, Double> rankValueMapping = new HashMap<>();
+		String acceptedPath = null;
+		Long synonymId = -1L;
 		for (Rank rank : ranks) {
 			rankValueMapping.put(rank.getName(), rank.getRankValue());
 		}
-		int limit = 100;
+
+		List<Object> rankList = new ArrayList<>();
+
+		if (rankListString == null || "".equals(rankListString)) {
+			rankList = new ArrayList<>(rankService.getAllRankNames());
+		} else {
+			for (String rank : rankListString.split(",")) {
+				rankList.add(rank.toLowerCase().trim());
+			}
+		}
+
+		List<String> statusList = TaxonomyStatus.getAllOrSpecified(statusListString);
+
+		// verify and construct list of position
+		List<String> positionList = TaxonomyPosition.getAllOrSpecified(positionListString);
+
+		List<Object> objectPosition = positionList.stream().map(pos -> (Object) pos).collect(Collectors.toList());
+
 		try {
 			MapSearchParams mapSearchParams = new MapSearchParams();
 			mapSearchParams.setFrom(0);
 			mapSearchParams.setLimit(limit + 1);
 			mapSearchParams.setSortOn("path.keyword");
 			mapSearchParams.setSortType(SortTypeEnum.ASC);
+			if (offsetPath != null || !"".equalsIgnoreCase(offsetPath)) {
+				mapSearchParams.setSearchAfter(offsetPath);
+			}
 
 			MapSearchQuery mapSearchQuery = new MapSearchQuery();
 			List<MapAndBoolQuery> boolAndLists = new ArrayList<>();
@@ -1544,6 +1607,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// status = ACCEPTED
 			boolAndLists.add(assignBoolAndQuery("status.keyword", List.of("ACCEPTED"), null));
+			boolAndLists.add(assignBoolAndQuery("hierarchy.taxon_id", List.of(taxonId), null));
+			if (!objectPosition.isEmpty()) {
+				boolAndLists.add(assignBoolAndQuery("position.keyword", objectPosition, null));
+			}
+			if (!rankList.isEmpty()) {
+				boolAndLists.add(assignBoolAndQuery("rank.keyword", rankList, null));
+			}
 
 			List<Object> acceptedIds = new ArrayList<>();
 
@@ -1558,64 +1628,88 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchQuery.setAndMatchPhraseQueries(andMatchPhraseQueries);
 			mapSearchQuery.setOrMatchPhraseQueries(orMatchPhraseQueriesnew);
 			mapSearchQuery.setSearchParams(mapSearchParams);
-			MapResponse result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null,
-					null, mapSearchQuery);
-			List<MapDocument> documents = result.getDocuments();
+
+			MapResponse result = new MapResponse();
+			List<MapDocument> documents = new ArrayList<>();
 			List<TaxonomyListMinimalData> acceptedListMinimal = new ArrayList<TaxonomyListMinimalData>();
-			for (MapDocument document : documents) {
-				try {
-					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
-					objectMapper.setDateFormat(df);
-					TaxonomyListMinimalData acceptedTaxon = objectMapper
-							.readValue(String.valueOf(document.getDocument()), TaxonomyListMinimalData.class);
-					acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
-					if (acceptedTaxon.getRank().equalsIgnoreCase("species")
-							|| acceptedTaxon.getRank().equalsIgnoreCase("infraspecies")) {
-						acceptedIds.add(acceptedTaxon.getId());
+
+			if (statusList.contains("ACCEPTED")) {
+				result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
+						mapSearchQuery);
+				documents = result.getDocuments();
+				for (MapDocument document : documents) {
+					try {
+						SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
+						objectMapper.setDateFormat(df);
+						TaxonomyListMinimalData acceptedTaxon = objectMapper
+								.readValue(String.valueOf(document.getDocument()), TaxonomyListMinimalData.class);
+						acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
+						if (acceptedTaxon.getRank().equalsIgnoreCase("species")
+								|| acceptedTaxon.getRank().equalsIgnoreCase("infraspecies")) {
+							acceptedIds.add(acceptedTaxon.getId());
+						}
+						acceptedListMinimal.add(acceptedTaxon);
+					} catch (IOException e) {
+						logger.error(e.getMessage());
 					}
-					acceptedListMinimal.add(acceptedTaxon);
-				} catch (IOException e) {
-					logger.error(e.getMessage());
 				}
 			}
 
 			MapSearchParams synonymSearchParams = new MapSearchParams();
 			synonymSearchParams.setFrom(0);
 			synonymSearchParams.setLimit(10000);
+			synonymSearchParams.setSortOn("id");
+			synonymSearchParams.setSortType(SortTypeEnum.ASC);
+			if (offsetId != -1) {
+				synonymSearchParams.setSearchAfter(offsetId.toString());
+			}
 
 			List<MapAndBoolQuery> synonymBoolAndLists = new ArrayList<>();
 
 			// status = ACCEPTED
 			synonymBoolAndLists.add(assignBoolAndQuery("status.keyword", List.of("SYNONYM"), null));
-			synonymBoolAndLists.add(assignBoolAndQuery("accepted_ids", acceptedIds, null));
+			if (!acceptedIds.isEmpty()) {
+				synonymBoolAndLists.add(assignBoolAndQuery("accepted_ids", acceptedIds, null));
+			}
+			if (!objectPosition.isEmpty()) {
+				synonymBoolAndLists.add(assignBoolAndQuery("position.keyword", objectPosition, null));
+			}
+			if (!rankList.isEmpty()) {
+				synonymBoolAndLists.add(assignBoolAndQuery("rank.keyword", rankList, null));
+			}
 
 			mapSearchQuery.setAndBoolQueries(synonymBoolAndLists);
 			mapSearchQuery.setSearchParams(synonymSearchParams);
-			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
-					mapSearchQuery);
-			documents = result.getDocuments();
 			List<TaxonomyListMinimalData> synonymListMinimal = new ArrayList<>();
 			Map<Long, String> synonymMapping = new HashMap<>();
-			int s = 0;
-			for (MapDocument document : documents) {
-				try {
-					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
-					objectMapper.setDateFormat(df);
-					TaxonomyListMinimalData acceptedTaxon = objectMapper
-							.readValue(String.valueOf(document.getDocument()), TaxonomyListMinimalData.class);
-					Long acceptedId = acceptedTaxon.getAcceptedIds().get(0);
-					acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
-					synonymMapping.put(acceptedId, synonymMapping.getOrDefault(acceptedId, "") + "," + s);
-					synonymListMinimal.add(acceptedTaxon);
-					s = s + 1;
-				} catch (IOException e) {
-					logger.error(e.getMessage());
+			if (statusList.contains("SYNONYM")) {
+				result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
+						mapSearchQuery);
+				documents = result.getDocuments();
+				int s = 0;
+				for (MapDocument document : documents) {
+					try {
+						SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
+						objectMapper.setDateFormat(df);
+						TaxonomyListMinimalData acceptedTaxon = objectMapper
+								.readValue(String.valueOf(document.getDocument()), TaxonomyListMinimalData.class);
+						if (acceptedTaxon.getAcceptedIds() != null && !acceptedTaxon.getAcceptedIds().isEmpty()) {
+							Long acceptedId = acceptedTaxon.getAcceptedIds().get(0);
+							acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
+							synonymMapping.put(acceptedId, synonymMapping.getOrDefault(acceptedId, "") + "," + s);
+						}
+						synonymListMinimal.add(acceptedTaxon);
+						s = s + 1;
+					} catch (IOException e) {
+						logger.error(e.getMessage());
+					}
 				}
 			}
 
 			int i = 0;
 			for (TaxonomyListMinimalData acceptedTaxon : acceptedListMinimal) {
 				i = i + 1;
+				acceptedPath = acceptedTaxon.getPath();
 				if (i > (limit + 1)) {
 					break;
 				}
@@ -1625,11 +1719,22 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					String[] synonymIndex = withoutFirstChar.split(",");
 					for (String index : synonymIndex) {
 						i = i + 1;
+						synonymId = synonymListMinimal.get(Integer.parseInt(index)).getId();
 						if (i > (limit + 1)) {
 							break;
 						}
 						taxonomyListMinimal.add(synonymListMinimal.get(Integer.parseInt(index)));
 					}
+				}
+			}
+			if (acceptedIds.isEmpty()) {
+				for (TaxonomyListMinimalData synonymTaxon : synonymListMinimal) {
+					i = i + 1;
+					synonymId = synonymTaxon.getId();
+					if (i > (limit + 1)) {
+						break;
+					}
+					taxonomyListMinimal.add(synonymTaxon);
 				}
 			}
 
@@ -1640,6 +1745,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyElasticNameListResponse result = new TaxonomyElasticNameListResponse();
 		result.setCount(0);
 		result.setTaxonomyNameListItems(taxonomyListMinimal);
+		result.setAcceptedPath(acceptedPath);
+		result.setSynonymId(synonymId);
 		return result;
 	}
 

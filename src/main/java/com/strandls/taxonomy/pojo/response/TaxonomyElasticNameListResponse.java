@@ -7,15 +7,19 @@ public class TaxonomyElasticNameListResponse {
 
 	private Integer count;
 	private List<TaxonomyListMinimalData> taxonomyNameListItems;
+	private String acceptedPath;
+	private Long synonymId;
 
 	public TaxonomyElasticNameListResponse() {
 		super();
 	}
 
-	public TaxonomyElasticNameListResponse(Integer count, List<TaxonomyListMinimalData> taxonomyNameListItems) {
+	public TaxonomyElasticNameListResponse(Integer count, List<TaxonomyListMinimalData> taxonomyNameListItems, String acceptedPath, Long synonymId) {
 		super();
 		this.count = count;
 		this.taxonomyNameListItems = taxonomyNameListItems;
+		this.acceptedPath = acceptedPath;
+		this.synonymId = synonymId;
 	}
 
 	public Integer getCount() {
@@ -32,5 +36,21 @@ public class TaxonomyElasticNameListResponse {
 
 	public void setTaxonomyNameListItems(List<TaxonomyListMinimalData> taxonomyNameListItems) {
 		this.taxonomyNameListItems = taxonomyNameListItems;
+	}
+	
+	public String getAcceptedPath() {
+		return acceptedPath;
+	}
+	
+	public void setAcceptedPath(String acceptedPath) {
+		this.acceptedPath = acceptedPath;
+	}
+	
+	public Long getSynonymId() {
+		return synonymId;
+	}
+	
+	public void setSynonymId(Long synonymId) {
+		this.synonymId = synonymId;
 	}
 }
