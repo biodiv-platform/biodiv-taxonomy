@@ -1035,17 +1035,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyData.setRank(taxonomyDefinition.getRank());
 			taxonomyData.setStatus(taxonomyDefinition.getStatus());
 			taxonomyData.setTimestamp(timestamp);
-			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonId, null);
-			List<Breadcrumb> breadCrumbs = new ArrayList<>();
-			for (TaxonomyRegistryResponse crumb: hierarchy) {
-				Breadcrumb breadCrumb= new Breadcrumb();
-				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
-				breadCrumb.setTaxonName(crumb.getName());
-				breadCrumb.setTaxonRank(crumb.getRank());
-				breadCrumbs.add(breadCrumb);
-			}
-			taxonomyData.setBreadCrumbs(breadCrumbs);
+			taxonomyData.setBreadCrumbs(null);
+			logger.info("Calling esServicesApi.updateAsync with taxonomyData: {}", taxonomyData);
 			esServicesApi.updateAsync(taxonomyData);
+			logger.info("esServicesApi.updateAsync called successfully");
 		} catch (com.strandls.esmodule.ApiException e) {
 			e.printStackTrace();
 		}catch (Exception e) {
@@ -1221,6 +1214,36 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxonIds.add(taxonId);
 					taxonomyESUpdate.pushToElastic(new ArrayList<>(taxonIds));
 				}
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+				String timestamp = sdf.format(new Date());
+
+				try {
+				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+				taxonomyData.setTargetId(taxonId);
+				taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
+				taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
+				taxonomyData.setName(taxonomyDefinition.getName());
+				taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
+				taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
+				taxonomyData.setPosition(taxonomyDefinition.getPosition());
+				taxonomyData.setRank(taxonomyStatusUpdate.getRank());
+				taxonomyData.setStatus(taxonomyDefinition.getStatus());
+				taxonomyData.setTimestamp(timestamp);
+				List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+				List<Breadcrumb> breadCrumbs = new ArrayList<>();
+				for (TaxonomyRegistryResponse crumb: hierar) {
+					Breadcrumb breadCrumb= new Breadcrumb();
+					breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+					breadCrumb.setTaxonName(crumb.getName());
+					breadCrumb.setTaxonRank(crumb.getRank());
+					breadCrumbs.add(breadCrumb);
+				}
+				taxonomyData.setBreadCrumbs(breadCrumbs);
+				esServicesApi.updateAsync(taxonomyData);
+				} catch (com.strandls.esmodule.ApiException e) {
+					e.printStackTrace();
+				}
 				break;
 			default:
 				break;
@@ -1369,16 +1392,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				taxonomyData.setRank(taxonomyDefinition.getRank());
 				taxonomyData.setStatus(taxonomyDefinition.getStatus());
 				taxonomyData.setTimestamp(timestamp);
-				List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonId, null);
-				List<Breadcrumb> breadCrumbs = new ArrayList<>();
-				for (TaxonomyRegistryResponse crumb: hierarchy) {
-					Breadcrumb breadCrumb= new Breadcrumb();
-					breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
-					breadCrumb.setTaxonName(crumb.getName());
-					breadCrumb.setTaxonRank(crumb.getRank());
-					breadCrumbs.add(breadCrumb);
-				}
-				taxonomyData.setBreadCrumbs(breadCrumbs);
+				taxonomyData.setBreadCrumbs(null);
 				esServicesApi.updateAsync(taxonomyData);
 			} catch (com.strandls.esmodule.ApiException e) {
 				e.printStackTrace();
