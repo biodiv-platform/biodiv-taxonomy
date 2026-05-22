@@ -1637,7 +1637,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			MapSearchParams mapSearchParams = new MapSearchParams();
 			mapSearchParams.setFrom(0);
 			mapSearchParams.setLimit(limit + 1);
-			mapSearchParams.setSortOn("sort_path.keyword");
+			mapSearchParams.setSortOn("sort_path");
 			mapSearchParams.setSortType(SortTypeEnum.ASC);
 			if (offsetPath != null || !"".equalsIgnoreCase(offsetPath)) {
 				mapSearchParams.setSearchAfter(offsetPath);
