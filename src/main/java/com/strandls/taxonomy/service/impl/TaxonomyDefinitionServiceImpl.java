@@ -1294,6 +1294,37 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
 			taxonomyESUpdate.pushToElastic(taxonIds);
+			
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			String timestamp = sdf.format(new Date());
+
+			try {
+			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+			taxonomyData.setTargetId(taxonId);
+			taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
+			taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
+			taxonomyData.setName(taxonomyDefinition.getName());
+			taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
+			taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
+			taxonomyData.setPosition(taxonomyDefinition.getPosition());
+			taxonomyData.setRank(taxonomyDefinition.getRank());
+			taxonomyData.setStatus(TaxonomyStatus.ACCEPTED.name());
+			taxonomyData.setTimestamp(timestamp);
+			List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+			List<Breadcrumb> breadCrumbs = new ArrayList<>();
+			for (TaxonomyRegistryResponse crumb: hierar) {
+				Breadcrumb breadCrumb= new Breadcrumb();
+				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+				breadCrumb.setTaxonName(crumb.getName());
+				breadCrumb.setTaxonRank(crumb.getRank());
+				breadCrumbs.add(breadCrumb);
+			}
+			taxonomyData.setBreadCrumbs(breadCrumbs);
+			esServicesApi.updateAsync(taxonomyData);
+			} catch (com.strandls.esmodule.ApiException e) {
+				e.printStackTrace();
+			}
 
 			break;
 		// status is changing from accepted to synonym
@@ -1606,7 +1637,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			MapSearchParams mapSearchParams = new MapSearchParams();
 			mapSearchParams.setFrom(0);
 			mapSearchParams.setLimit(limit + 1);
-			mapSearchParams.setSortOn("path.keyword");
+			mapSearchParams.setSortOn("sort_path.keyword");
 			mapSearchParams.setSortType(SortTypeEnum.ASC);
 			if (offsetPath != null || !"".equalsIgnoreCase(offsetPath)) {
 				mapSearchParams.setSearchAfter(offsetPath);
