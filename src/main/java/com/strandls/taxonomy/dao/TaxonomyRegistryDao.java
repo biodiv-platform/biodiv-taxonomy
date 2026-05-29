@@ -83,6 +83,26 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		return result;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyRegistry> fetchByListOfTaxonomyIds(List<Long> taxonIds) {
+		String qry = "from TaxonomyRegistry tr where tr.taxonomyDefinationId IN (:taxonIds)"
+				+ "and tr.classificationId = :classificationId";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyRegistry> result = null;
+		try {
+			Query<TaxonomyRegistry> query = session.createQuery(qry);
+			query.setParameterList("taxonIds", taxonIds);
+			query.setParameter(CLASSIFICATION_ID_STRING, CLASSIFICATION_ID);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
 
 	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId,
 			Long uploaderId, Timestamp uploadTime) {

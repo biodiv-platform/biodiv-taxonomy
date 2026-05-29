@@ -20,6 +20,8 @@ import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchQuery;
 import com.strandls.esmodule.pojo.MapSearchParams.SortTypeEnum;
 import com.strandls.taxonomy.ApiConstants;
+import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
@@ -81,6 +83,12 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyESOperation taxonomyESOperation;
+	
+	@Inject
+	private AcceptedSynonymDao acceptedSynonymDao;
+	
+	@Inject
+	private CommonNameDao commonNameDao;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -494,7 +502,7 @@ public class TaxonomyDefinitionController {
 				}
 
 				TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(selectAll, bulkAction,
-						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao);
+						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao);
 
 				Thread thread = new Thread(bulkMappingThread);
 				thread.start();

@@ -31,7 +31,7 @@ public class TaxonomyListMinimalData {
 	@JsonAlias("accepted_ids")
 	private List<Long> acceptedIds;
 	
-	@JsonAlias("sort_path")
+	@JsonAlias("path")
 	private String path;
 	
 	private Double rankValue;

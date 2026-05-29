@@ -5,28 +5,38 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
+import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
+import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 
 public class TaxonomyBulkMappingThread implements Runnable {
 
-	//private final Logger logger = LoggerFactory.getLogger(TaxonomyBulkMappingThread.class);
+	// private final Logger logger =
+	// LoggerFactory.getLogger(TaxonomyBulkMappingThread.class);
 
 	private Boolean selectAll;
 	private String bulkAction;
 	private String bulkTaxonIds;
 	private String bulkPosition;
 	private TaxonomyDefinitionDao taxonomyDefinitionDao;
+	private TaxonomyRegistryDao taxonomyRegistryDao;
+	private AcceptedSynonymDao acceptedSynonymDao;
+	private CommonNameDao commonNameDao;
 
 	public TaxonomyBulkMappingThread(Boolean selectAll, String bulkAction, String bulkTaxonIds, String bulkPosition,
-			TaxonomyDefinitionDao taxonomyDefinitionDao) {
+			TaxonomyDefinitionDao taxonomyDefinitionDao, AcceptedSynonymDao acceptedSynonymDao, CommonNameDao commonNameDao) {
 		super();
 		this.selectAll = selectAll;
 		this.bulkAction = bulkAction;
 		this.bulkTaxonIds = bulkTaxonIds;
 		this.bulkPosition = bulkPosition;
 		this.taxonomyDefinitionDao = taxonomyDefinitionDao;
+		this.acceptedSynonymDao = acceptedSynonymDao;
+		this.commonNameDao = commonNameDao;
 	}
 
 	@Override
@@ -118,6 +128,52 @@ public class TaxonomyBulkMappingThread implements Runnable {
 			}
 		}
 
+		if (!bulkAction.isEmpty() && (bulkAction.contains("merge"))) {
+			List<TaxonomyRegistry> taxonDataList = new ArrayList<>();
+			List<Long> taxIds = new ArrayList<Long>();
+			Long taxonId = taxonIds.remove(0); 
+			if (!taxonIds.isEmpty()) {
+				taxonDataList = taxonomyRegistryDao.fetchByListOfTaxonomyIds(taxonIds);
+
+			}
+			TaxonomyRegistry mergeRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+			/*
+			 * if (Boolean.TRUE.equals(selectAll)) { MapResponse result =
+			 * esService.search(index, type, geoAggregationField, geoAggegationPrecision,
+			 * onlyFilteredAggregation, termsAggregationField, geoShapeFilterField,
+			 * mapSearchQuery); List<MapDocument> documents = result.getDocuments(); for
+			 * (MapDocument document : documents) { ObservationListMinimalData data =
+			 * objectMapper.readValue( String.valueOf(document.getDocument()),
+			 * ObservationListMinimalData.class); obIds.add(data.getObservationId()); } }
+			 */
+			List<TaxonomyRegistry> TaxonList = new ArrayList<TaxonomyRegistry>();
+			List<Long> TaxonIdList = new ArrayList<Long>();
+			;
+			Integer count = 0;
+
+			if (Boolean.FALSE.equals(selectAll)) {
+				while (count < taxonDataList.size()) {
+					TaxonList.add(taxonDataList.get(count));
+
+					if (TaxonList.size() >= 200) {
+						bulkMergeAction(TaxonList, mergeRegistry.getPath(), taxonId);
+						TaxonList.clear();
+					}
+					count++;
+				}
+
+				bulkMergeAction(TaxonList, mergeRegistry.getPath(), taxonId);
+				TaxonList.clear();
+			} /*
+				 * else { while (count < obIds.size()) { ObsIdList.add(obIds.get(count)); if
+				 * (ObsIdList.size() >= 200) {
+				 * bulkSpeciesGroupAction(observationDao.fecthByListOfIds(ObsIdList), sGroupId);
+				 * ObsIdList.clear(); } count++; }
+				 * bulkSpeciesGroupAction(observationDao.fecthByListOfIds(ObsIdList), sGroupId);
+				 * ObsIdList.clear(); }
+				 */
+		}
+
 	}
 
 	private void bulkPositionAction(List<TaxonomyDefinition> taxonList, TaxonomyPosition taxonomyPosition) {
@@ -135,6 +191,41 @@ public class TaxonomyBulkMappingThread implements Runnable {
 				 * taxonomyDefinition.getId(), "Taxon position updated");
 				 */
 			}
+
+			/*
+			 * List<Long> taxonIds = new ArrayList<>(); taxonIds.add(taxonId);
+			 * List<AcceptedSynonym> acceptedSynonyms =
+			 * acceptedSynonymDao.findByAccepetdId(taxonId); for (AcceptedSynonym
+			 * acceptedSynonym : acceptedSynonyms) {
+			 * taxonIds.add(acceptedSynonym.getSynonymId()); }
+			 * 
+			 * taxonomyESUpdate.pushToElastic(taxonIds);
+			 */
+		}
+		/*
+		 * List<Long> obsIds = obsList.stream().map(item ->
+		 * item.getId()).collect(Collectors.toList()); String observationList =
+		 * StringUtils.join(obsIds, ','); ESBulkUploadThread updateThread = new
+		 * ESBulkUploadThread(esUpdate, observationList); Thread esThreadUpdate = new
+		 * Thread(updateThread); esThreadUpdate.start();
+		 */
+	}
+	
+	private void bulkMergeAction(List<TaxonomyRegistry> taxonList, String path, Long taxonId) {
+		for (TaxonomyRegistry taxon : taxonList) {
+			taxonomyDefinitionDao.updatePath(path.toString(), taxon.getPath());
+			acceptedSynonymDao.allSynonymTransfer(taxon.getTaxonomyDefinationId(), taxonId);
+			commonNameDao.allCommonNameTransfer(taxon.getTaxonomyDefinationId(), taxonId);
+			//taxonIds.addAll(taxonomyDefinitionDao.getAllChildren(taxon.getTaxonomyDefinationId()));
+				
+				
+				/*
+				 * String desc = "Taxon position updated  : " + oldPosition + "-->" +
+				 * position.name();
+				 * logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION
+				 * ), desc, taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+				 * taxonomyDefinition.getId(), "Taxon position updated");
+				 */
 
 			/*
 			 * List<Long> taxonIds = new ArrayList<>(); taxonIds.add(taxonId);
