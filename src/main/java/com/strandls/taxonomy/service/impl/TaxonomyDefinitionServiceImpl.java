@@ -1765,6 +1765,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			documents = new ArrayList<>();
 			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
 					mapSearchQuery);
+			System.out.println(result.toString());
 			documents = result.getDocuments();
 			for (MapDocument document : documents) {
 				try {
