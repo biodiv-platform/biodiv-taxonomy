@@ -1722,12 +1722,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			mapSearchParams.setSortType(SortTypeEnum.ASC);
 			if (offset_tree != null && !"".equalsIgnoreCase(offset_tree)) {
 				List<String> searchAfterList = new ArrayList<>();
-				if (offset_tree != null) searchAfterList.add(offset_tree);
-				if (offsetPath != null) searchAfterList.add(offsetPath);
+				if (offset_tree != null)
+					searchAfterList.add(offset_tree);
+				if (offsetPath != null)
+					searchAfterList.add(offsetPath);
 				searchAfterList.add(offsetName != null ? offsetName.toLowerCase() : null);
 
 				if (!searchAfterList.isEmpty()) {
-				    mapSearchParams.setSearchAfterList(searchAfterList);
+					mapSearchParams.setSearchAfterList(searchAfterList);
 				}
 			}
 
@@ -1751,6 +1753,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			mapSearchQuery.setPathHierarchy(path.get(0).toString());
+			mapSearchQuery.setTreeSortPrefix(treePrefix);
 
 			mapSearchQuery.setAndBoolQueries(boolAndLists);
 			mapSearchQuery.setOrBoolQueries(boolOrLists);
@@ -1765,7 +1768,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			documents = new ArrayList<>();
 			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
 					mapSearchQuery);
-			System.out.println(result.toString());
 			documents = result.getDocuments();
 			for (MapDocument document : documents) {
 				try {
@@ -1773,17 +1775,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					objectMapper.setDateFormat(df);
 					TaxonomyListMinimalData acceptedTaxon = objectMapper
 							.readValue(String.valueOf(document.getDocument()), TaxonomyListMinimalData.class);
-					if (acceptedTaxon.getStatus().equals("ACCEPTED")) {
-						acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
-						taxonomyListMinimal.add(acceptedTaxon);
-					} else {
-						JsonNode rootNode = objectMapper.readTree(String.valueOf(document.getDocument()));
-						String treeField = rootNode.has("tree_sort") ? rootNode.get("tree_sort").asText() : null;
-						if (treeField.startsWith(treePrefix)) {
-							acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
-							taxonomyListMinimal.add(acceptedTaxon);
-						}
-					}
+					acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
+					System.out.println(acceptedTaxon.getName());
+					taxonomyListMinimal.add(acceptedTaxon);
 				} catch (IOException e) {
 					logger.error(e.getMessage());
 				}
