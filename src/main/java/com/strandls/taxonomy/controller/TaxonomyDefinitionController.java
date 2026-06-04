@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
+import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapBoundParams;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
@@ -23,6 +24,7 @@ import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
+import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
@@ -83,12 +85,18 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyESOperation taxonomyESOperation;
-	
+
 	@Inject
 	private AcceptedSynonymDao acceptedSynonymDao;
-	
+
 	@Inject
 	private CommonNameDao commonNameDao;
+	
+	@Inject
+	private TaxonomyRegistryDao taxonomyRegistryDao;
+	
+	@Inject
+	private EsServicesApi esServicesApi;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -502,7 +510,8 @@ public class TaxonomyDefinitionController {
 				}
 
 				TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(selectAll, bulkAction,
-						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao);
+						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao,
+						taxonomyESOperation, taxonomyRegistryDao, esServicesApi);
 
 				Thread thread = new Thread(bulkMappingThread);
 				thread.start();
@@ -529,10 +538,10 @@ public class TaxonomyDefinitionController {
 			@Parameter(description = "Position list") @QueryParam("positionList") String positionList,
 			@Parameter(description = "Limit", example = "-1") @DefaultValue("-1") @QueryParam("limit") Integer limit,
 			@Parameter(description = "Offset id", example = "-1") @DefaultValue("-1") @QueryParam("offsetId") Long offsetId,
-			@Parameter(description = "Offset path") @QueryParam("offsetPath") String offsetPath
-			) {
+			@Parameter(description = "Offset path") @QueryParam("offsetPath") String offsetPath) {
 		try {
-			TaxonomyElasticNameListResponse result = taxonomyService.getEsTaxonList(request, taxonId, rankList, statusList, positionList, limit, offsetId, offsetPath);
+			TaxonomyElasticNameListResponse result = taxonomyService.getEsTaxonList(request, taxonId, rankList,
+					statusList, positionList, limit, offsetId, offsetPath);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

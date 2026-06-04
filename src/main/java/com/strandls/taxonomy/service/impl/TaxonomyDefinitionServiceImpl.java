@@ -1027,16 +1027,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		try {
 			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 			taxonomyData.setTargetId(taxonId);
-			taxonomyData.setCanonicalForm(canonicalName);
+			taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
 			taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
 			taxonomyData.setName(taxonomyDefinition.getName());
-			taxonomyData.setNormalizedName(normalizedName);
+			taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
 			taxonomyData.setOldName(oldName);
-			taxonomyData.setPosition(taxonomyDefinition.getPosition());
-			taxonomyData.setRank(taxonomyDefinition.getRank());
-			taxonomyData.setStatus(taxonomyDefinition.getStatus());
 			taxonomyData.setTimestamp(timestamp);
-			taxonomyData.setBreadCrumbs(null);
 			logger.info("Calling esServicesApi.updateAsync with taxonomyData: {}", taxonomyData);
 			esServicesApi.updateAsync(taxonomyData);
 			logger.info("esServicesApi.updateAsync called successfully");
@@ -1083,7 +1079,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						+ taxonomyStatusUpdate.getRank();
 				taxonomyDefinition.setRank(taxonomyStatusUpdate.getRank());
 
-				taxonomyDao.update(taxonomyDefinition);
+				taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
 						taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy", taxonomyDefinition.getId(),
@@ -1222,14 +1218,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				try {
 					TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 					taxonomyData.setTargetId(taxonId);
-					taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
-					taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
-					taxonomyData.setName(taxonomyDefinition.getName());
-					taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
-					taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
-					taxonomyData.setPosition(taxonomyDefinition.getPosition());
-					taxonomyData.setRank(taxonomyStatusUpdate.getRank());
-					taxonomyData.setStatus(taxonomyDefinition.getStatus());
+					taxonomyData.setRank(taxonomyDefinition.getRank());
 					taxonomyData.setTimestamp(timestamp);
 					List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
 					List<Breadcrumb> breadCrumbs = new ArrayList<>();
@@ -1303,14 +1292,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			try {
 				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 				taxonomyData.setTargetId(taxonId);
-				taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
-				taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
-				taxonomyData.setName(taxonomyDefinition.getName());
-				taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
-				taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
-				taxonomyData.setPosition(taxonomyDefinition.getPosition());
-				taxonomyData.setRank(taxonomyDefinition.getRank());
-				taxonomyData.setStatus(TaxonomyStatus.ACCEPTED.name());
+				taxonomyData.setStatus(taxonomyDefinition.getStatus());
 				taxonomyData.setTimestamp(timestamp);
 				List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
 				List<Breadcrumb> breadCrumbs = new ArrayList<>();
@@ -1344,7 +1326,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Taxonomy Id to be updated for elastic search
 			taxonIds = taxonomyDao.getAllChildren(taxonId);
-			System.out.println(taxonIds.toString());
 			if (taxonIds.size() > 1)
 				throw new IllegalArgumentException(
 						"This name cannot be converted to a synonym because it has child taxa");
@@ -1377,14 +1358,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			try {
 				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 				taxonomyData.setTargetId(taxonId);
-				taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
-				taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
-				taxonomyData.setName(taxonomyDefinition.getName());
-				taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
-				taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
-				taxonomyData.setPosition(taxonomyDefinition.getPosition());
-				taxonomyData.setRank(taxonomyDefinition.getRank());
-				taxonomyData.setStatus(TaxonomyStatus.SYNONYM.name());
+				taxonomyData.setStatus(taxonomyDefinition.getStatus());
 				taxonomyData.setTimestamp(timestamp);
 				taxonomyData.setTransferSynonymIds(synonymIds);
 				taxonomyData.setNewId(newTaxonId);
@@ -1417,7 +1391,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (!position.name().equals(taxonomyDefinition.getPosition())) {
 			String oldPosition = taxonomyDefinition.getPosition();
 			taxonomyDefinition.setPosition(position.name());
-			update(taxonomyDefinition);
+			taxonomyDefinition = update(taxonomyDefinition);
 
 			String desc = "Taxon position updated  : " + oldPosition + "-->" + position.name();
 			logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
@@ -1430,24 +1404,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
-			List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
-			for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
-				taxonIds.add(acceptedSynonym.getSynonymId());
-			}
 
 			taxonomyESUpdate.pushToElastic(taxonIds);
 
 			try {
 				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 				taxonomyData.setTargetId(taxonId);
-				taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
-				taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
-				taxonomyData.setName(taxonomyDefinition.getName());
-				taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
-				taxonomyData.setOldName(taxonomyDefinition.getNormalizedForm());
-				taxonomyData.setPosition(position.toString());
-				taxonomyData.setRank(taxonomyDefinition.getRank());
-				taxonomyData.setStatus(taxonomyDefinition.getStatus());
+				taxonomyData.setPosition(taxonomyDefinition.getPosition());
 				taxonomyData.setTimestamp(timestamp);
 				taxonomyData.setBreadCrumbs(null);
 				esServicesApi.updateAsync(taxonomyData);
@@ -1515,6 +1478,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxonIds.add(taxonId);
 					taxonIds.add(prevTaxonId);
 					List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(ids);
+					System.out.println(synonyms);
 					for (TaxonomyDefinition synonym : synonyms) {
 						taxonIds.add(synonym.getId());
 						String desc = "Deleted synonym : " + synonym.getName();
@@ -1531,6 +1495,21 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								"Transferred synonynm");
 					}
 					taxonomyESUpdate.pushToElastic(taxonIds);
+					
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+					sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+					String timestamp = sdf.format(new Date());
+
+					try {
+						TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+						taxonomyData.setTargetId(prevTaxonId);
+						taxonomyData.setTimestamp(timestamp);
+						taxonomyData.setTransferSynonymIds(synonymIds);
+						taxonomyData.setNewId(taxonId);
+						esServicesApi.updateAsync(taxonomyData);
+					} catch (com.strandls.esmodule.ApiException e) {
+						e.printStackTrace();
+					}
 
 					return newTaxonDetails;
 				}
@@ -1558,6 +1537,21 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						synonym.getId(), "taxonomy", newTaxonDetails.getId(), "Transferred synonynm");
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
+			
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			String timestamp = sdf.format(new Date());
+
+			try {
+				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+				taxonomyData.setTargetId(prevTaxonId);
+				taxonomyData.setTimestamp(timestamp);
+				taxonomyData.setTransferSynonymIds(synonymIds);
+				taxonomyData.setNewId(taxonId);
+				esServicesApi.updateAsync(taxonomyData);
+			} catch (com.strandls.esmodule.ApiException e) {
+				e.printStackTrace();
+			}
 
 			return newTaxonDetails;
 		} catch (Exception e) {
@@ -1621,6 +1615,21 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						"taxonomy", commonName.getId(), "Added common name");
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			String timestamp = sdf.format(new Date());
+			
+			List<Object> objectList = new ArrayList<>(commonNames);
+
+			try {
+				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+				taxonomyData.setTargetId(taxonId);
+				taxonomyData.setTimestamp(timestamp);
+				taxonomyData.setCommonNames(objectList);
+				esServicesApi.updateAsync(taxonomyData);
+			} catch (com.strandls.esmodule.ApiException e) {
+				e.printStackTrace();
+			}
 
 			return newTaxonDetails;
 		} catch (Exception e) {

@@ -385,4 +385,28 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 		return 0;
 	}
+	
+	@SuppressWarnings("rawtypes")
+	public int deleteByIds(List<Long> ids) {
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+
+	        String qry = "update taxonomy_definition set is_deleted = true where id in (:ids)";
+	        Query query = session.createNativeQuery(qry);
+	        query.setParameter("ids", ids);
+	        int rowsUpdated = query.executeUpdate();
+
+	        tx.commit();
+	        return rowsUpdated;
+	    } catch (Exception e) {
+	        if (tx != null)
+	            tx.rollback();
+	        logger.error(e.getMessage());
+	    } finally {
+	        session.close();
+	    }
+	    return 0;
+	}
 }
