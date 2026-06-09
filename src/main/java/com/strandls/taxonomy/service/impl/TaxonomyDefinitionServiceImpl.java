@@ -899,11 +899,40 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
 			if (!isContributor.booleanValue())
 				return new ArrayList<>();
+			List<Long> taxonIds = new ArrayList<>();
 			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 			acceptedSynonymDao.delete(acceptedSynonym);
 			TaxonomyDefinition synonym = taxonomyDao.findById(synonymId);
 			synonym.setIsDeleted(true);
 			taxonomyDao.update(synonym);
+			taxonomyESUpdate.pushToElastic(taxonIds);
+
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			String timestamp = sdf.format(new Date());
+
+			List<Object[]> recoDetails = taxonomyDao.deleteRecoNameByTaxonId(synonymId, true);
+
+			Long recoId = null;
+			if (!recoDetails.isEmpty()) {
+				if (recoDetails.get(0)[2] == null && recoDetails.get(0)[3] == null) {
+					recoId = (Long) recoDetails.get(0)[0];
+				}
+			}
+
+			try {
+				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+				taxonomyData.setTargetId(synonymId);
+				if (recoId != null) {
+					taxonomyData.setDeleteRecoIds(List.of(recoId));
+				}
+				taxonomyData.setTimestamp(timestamp);
+				esServicesApi.updateAsync(taxonomyData);
+			} catch (com.strandls.esmodule.ApiException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				logger.error("Exception in async update: {}", e.getMessage(), e);
+			}
 
 			String desc = "Deleted synonym : " + synonym.getName();
 
@@ -1018,6 +1047,25 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
 
+		taxonomyDao.updateRecoNameByTaxonId(taxonId, true, name, canonicalName);
+		taxonomyDao.updateSpeciesNameByTaxonId(taxonId, italicisedForm);
+
+		List<Object[]> recoDetails = taxonomyDao.getRecoDetailsById(taxonId, true);
+		Long recoId = null;
+		String scientificName = null;
+		if (!recoDetails.isEmpty()) {
+			recoId = (Long) recoDetails.get(0)[0];
+			scientificName = (String) recoDetails.get(0)[1];
+		}
+
+		Long speciesId = null;
+		String title = null;
+		List<Object[]> speciesDetails = taxonomyDao.getSpeciesDetailsById(taxonId);
+		if (!speciesDetails.isEmpty()) {
+			speciesId = (Long) speciesDetails.get(0)[0];
+			title = (String) speciesDetails.get(0)[1];
+		}
+
 		taxonomyESUpdate.pushToElastic(taxonIds);
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -1027,15 +1075,26 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		try {
 			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 			taxonomyData.setTargetId(taxonId);
+			if (recoId != null) {
+				taxonomyData.setRecoId(recoId);
+			}
+			if (scientificName != null) {
+				taxonomyData.setScientificName(scientificName);
+			}
+			if (speciesId != null) {
+				taxonomyData.setSpeciesId(speciesId);
+			}
+			if (title != null) {
+				taxonomyData.setTitle(title);
+			}
+			taxonomyData.setBinomialForm(binomialForm);
 			taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
 			taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
 			taxonomyData.setName(taxonomyDefinition.getName());
 			taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
 			taxonomyData.setOldName(oldName);
 			taxonomyData.setTimestamp(timestamp);
-			logger.info("Calling esServicesApi.updateAsync with taxonomyData: {}", taxonomyData);
 			esServicesApi.updateAsync(taxonomyData);
-			logger.info("esServicesApi.updateAsync called successfully");
 		} catch (com.strandls.esmodule.ApiException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
@@ -1470,16 +1529,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (synonymIds == null || synonymIds.isEmpty()) {
 				if (selectAll) {
 					List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(prevTaxonId);
+					List<Long> ids = acceptedSynonyms.stream().map(AcceptedSynonym::getId).collect(Collectors.toList());
+					List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(ids);
 					acceptedSynonymDao.allSynonymTransfer(prevTaxonId, taxonId);
 					TaxonomyDefinition newTaxonDetails = findById(taxonId);
-					List<Long> ids = acceptedSynonyms.stream().map(AcceptedSynonym::getId).collect(Collectors.toList());
 
 					List<Long> taxonIds = new ArrayList<>();
 					taxonIds.add(taxonId);
 					taxonIds.add(prevTaxonId);
-					List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(ids);
+					List<Object> synonymDetails = new ArrayList<>();
 					System.out.println(synonyms);
 					for (TaxonomyDefinition synonym : synonyms) {
+						synonymDetails.add(synonym);
 						taxonIds.add(synonym.getId());
 						String desc = "Deleted synonym : " + synonym.getName();
 						logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc,
@@ -1495,22 +1556,34 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								"Transferred synonynm");
 					}
 					taxonomyESUpdate.pushToElastic(taxonIds);
-					
+
 					SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 					sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 					String timestamp = sdf.format(new Date());
+
+					List<Object[]> recoDetails = taxonomyDao.updateRecoNameByTaxonIds(synonymIds, taxonId, true);
+
+					List<Long> transferRecoIds = new ArrayList<>();
+					if (!recoDetails.isEmpty()) {
+					    for (Object[] reco : recoDetails) {
+					        if (reco[3] != null && taxonId.equals(reco[3])) {
+					            transferRecoIds.add((Long) reco[0]);
+					        }
+					    }
+					}
 
 					try {
 						TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 						taxonomyData.setTargetId(prevTaxonId);
 						taxonomyData.setTimestamp(timestamp);
 						taxonomyData.setTransferSynonymIds(synonymIds);
+						taxonomyData.setSynonyms(synonymDetails);
+						taxonomyData.setTransferRecoIds(transferRecoIds);
 						taxonomyData.setNewId(taxonId);
 						esServicesApi.updateAsync(taxonomyData);
 					} catch (com.strandls.esmodule.ApiException e) {
 						e.printStackTrace();
 					}
-
 					return newTaxonDetails;
 				}
 				throw new IllegalArgumentException("No synonyms selected for transfer");
@@ -1521,8 +1594,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
 			taxonIds.add(prevTaxonId);
+			List<Object> synonymDetails = new ArrayList<>();
 			List<TaxonomyDefinition> synonyms = taxonomyDao.findBySynonymIds(synonymIds);
 			for (TaxonomyDefinition synonym : synonyms) {
+				synonymDetails.add(synonym);
 				taxonIds.add(synonym.getId());
 				String desc = "Deleted synonym : " + synonym.getName();
 				logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION), desc, prevTaxonId,
@@ -1537,16 +1612,29 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						synonym.getId(), "taxonomy", newTaxonDetails.getId(), "Transferred synonynm");
 			}
 			taxonomyESUpdate.pushToElastic(taxonIds);
-			
+
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 			String timestamp = sdf.format(new Date());
+
+			List<Object[]> recoDetails = taxonomyDao.updateRecoNameByTaxonIds(synonymIds, taxonId, true);
+
+			List<Long> transferRecoIds = new ArrayList<>();
+			if (!recoDetails.isEmpty()) {
+			    for (Object[] reco : recoDetails) {
+			        if (reco[3] != null && taxonId.equals(reco[3])) {
+			            transferRecoIds.add((Long) reco[0]);
+			        }
+			    }
+			}
 
 			try {
 				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
 				taxonomyData.setTargetId(prevTaxonId);
 				taxonomyData.setTimestamp(timestamp);
 				taxonomyData.setTransferSynonymIds(synonymIds);
+				taxonomyData.setSynonyms(synonymDetails);
+				taxonomyData.setTransferRecoIds(transferRecoIds);
 				taxonomyData.setNewId(taxonId);
 				esServicesApi.updateAsync(taxonomyData);
 			} catch (com.strandls.esmodule.ApiException e) {
@@ -1554,10 +1642,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			return newTaxonDetails;
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		}
-		return findById(prevTaxonId);
+		}catch(
+
+	Exception e)
+	{
+		logger.error(e.getMessage());
+	}return
+
+	findById(prevTaxonId);
 	}
 
 	@Override
@@ -1618,7 +1710,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 			String timestamp = sdf.format(new Date());
-			
+
 			List<Object> objectList = new ArrayList<>(commonNames);
 
 			try {

@@ -152,8 +152,6 @@ public class TaxonomyBulkMappingThread implements Runnable {
 
 			}
 			TaxonomyRegistry mergeRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
-			System.out.println(mergeRegistry.toString());
-			System.out.println(taxonId);
 			/*
 			 * if (Boolean.TRUE.equals(selectAll)) { MapResponse result =
 			 * esService.search(index, type, geoAggregationField, geoAggegationPrecision,
@@ -234,9 +232,6 @@ public class TaxonomyBulkMappingThread implements Runnable {
 		List<Long> taxonIds = new ArrayList<>();
 		List<Long> deleteTaxonIds = new ArrayList<>();
 		for (TaxonomyRegistry taxon : taxonList) {
-			System.out.println(path);
-			System.out.println(taxon.getPath());
-			System.out.println(taxon.getTaxonomyDefinationId());
 			taxonomyDefinitionDao.updatePath(path, taxon.getPath());
 			acceptedSynonymDao.allSynonymTransfer(taxon.getTaxonomyDefinationId(), taxonId);
 			commonNameDao.allCommonNameTransfer(taxon.getTaxonomyDefinationId(), taxonId);

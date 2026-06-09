@@ -4,12 +4,14 @@ package com.strandls.taxonomy.dao;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.Logger;
@@ -408,5 +410,141 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	        session.close();
 	    }
 	    return 0;
+	}
+	
+	public void updateRecoNameByTaxonId(Long taxonId, Boolean isScientific, String name, String canonicalName) {
+	    String qry = "UPDATE recommendation SET name = :name, lowercase_name = :lowercaseName, " +
+	                 "canonical_name = :canonicalName WHERE taxon_concept_id = :taxonId " +
+	                 "AND is_scientific_name = :isScientific";
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+	        NativeQuery query = session.createNativeQuery(qry);
+	        query.setParameter("name", name);
+	        query.setParameter("lowercaseName", name.toLowerCase());
+	        query.setParameter("taxonId", taxonId);
+	        query.setParameter("isScientific", isScientific);
+	        query.setParameter("canonicalName", canonicalName);
+	        query.executeUpdate();
+	        tx.commit();
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        logger.error(e.getMessage());
+	    } finally {
+	        session.close();
+	    }
+	}
+	
+	public List<Object[]> deleteRecoNameByTaxonId(Long taxonId, Boolean isScientific) {
+	    String qry = "UPDATE recommendation SET taxon_concept_id = null, accepted_name_id = null " +
+	                 "WHERE taxon_concept_id = :taxonId " +
+	                 "AND is_scientific_name = :isScientific " +
+	                 "RETURNING id, name, taxon_concept_id, accepted_name_id";
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+	        NativeQuery query = session.createNativeQuery(qry);
+	        query.setParameter("taxonId", taxonId);
+	        query.setParameter("isScientific", isScientific);
+	        List<Object[]> updated = query.getResultList();
+	        tx.commit();
+	        return updated;
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        logger.error(e.getMessage());
+	        return Collections.emptyList();
+	    } finally {
+	        session.close();
+	    }
+	}
+	
+	public List<Object[]> updateRecoNameByTaxonIds(List<Long> taxonIds, Long newAcceptedId, Boolean isScientific) {
+	    String qry = "UPDATE recommendation SET accepted_name_id = :newAcceptedId " +
+	                 "WHERE taxon_concept_id IN (:taxonIds) " +
+	                 "AND is_scientific_name = :isScientific " +
+	                 "RETURNING id, name, taxon_concept_id, accepted_name_id";
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+	        NativeQuery query = session.createNativeQuery(qry);
+	        query.setParameter("newAcceptedId", newAcceptedId);
+	        query.setParameterList("taxonIds", taxonIds);
+	        query.setParameter("isScientific", isScientific);
+	        List<Object[]> updated = query.getResultList();
+	        tx.commit();
+	        return updated;
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        logger.error("Error updating reco names for taxonIds={}, newAcceptedId={}", taxonIds, newAcceptedId, e);
+	        return Collections.emptyList();
+	    } finally {
+	        session.close();
+	    }
+	}
+
+	public void updateSpeciesNameByTaxonId(Long taxonId, String name) {
+	    String qry = "UPDATE species SET title = :name WHERE taxon_concept_id = :taxonId";
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+	        NativeQuery query = session.createNativeQuery(qry);
+	        query.setParameter("name", name);
+	        query.setParameter("taxonId", taxonId);
+	        query.executeUpdate();
+	        tx.commit();
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        logger.error(e.getMessage());
+	    } finally {
+	        session.close();
+	    }
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Object[]> getRecoDetailsById(Long taxonId, Boolean isScientific) {
+	    String qry = "SELECT id, name, taxon_concept_id, accepted_name_id FROM recommendation " +
+	                 "WHERE taxon_concept_id = :taxonId AND is_scientific_name = :isScientific";
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+	        NativeQuery query = session.createNativeQuery(qry);
+	        query.setParameter("taxonId", taxonId);
+	        query.setParameter("isScientific", isScientific);
+	        List<Object[]> results = query.list();
+	        tx.commit();
+	        return results;
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        logger.error(e.getMessage());
+	        return Collections.emptyList();
+	    } finally {
+	        session.close();
+	    }
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Object[]> getSpeciesDetailsById(Long taxonId) {
+	    String qry = "SELECT id, title, taxon_concept_id FROM species WHERE taxon_concept_id = :taxonId";
+	    Session session = sessionFactory.openSession();
+	    Transaction tx = null;
+	    try {
+	        tx = session.beginTransaction();
+	        NativeQuery query = session.createNativeQuery(qry);
+	        query.setParameter("taxonId", taxonId);
+	        List<Object[]> results = query.list();
+	        tx.commit();
+	        return results;
+	    } catch (Exception e) {
+	        if (tx != null) tx.rollback();
+	        logger.error(e.getMessage());
+	        return Collections.emptyList();
+	    } finally {
+	        session.close();
+	    }
 	}
 }
