@@ -61,6 +61,7 @@ public class TaxonomyESOperation {
 	 * @return - MapQueryResponse
 	 */
 	public List<MapQueryResponse> pushToElastic(List<Long> taxonIds) {
+		System.out.println(taxonIds);
 		ExecutorService executor = Executors.newFixedThreadPool(FIXED_THREAD_SIZE);
 		try {
 			qryString = TaxonomyConfig.fetchFileAsString(SQL_FILE);

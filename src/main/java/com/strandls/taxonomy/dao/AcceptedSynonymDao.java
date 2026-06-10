@@ -1,6 +1,7 @@
 /** */
 package com.strandls.taxonomy.dao;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -112,6 +113,29 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 			session.close();
 		}
 		return result;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Long> findSynonymIdsByAcceptedIds(List<Long> acceptedIds) {
+	    if (acceptedIds == null || acceptedIds.isEmpty()) {
+	        return Collections.emptyList();
+	    }
+
+	    String qry = "select a.synonymId from AcceptedSynonym a where a.acceptedId in :acceptedIds";
+	    Session session = sessionFactory.openSession();
+	    List<Long> result = Collections.emptyList();
+
+	    try {
+	        Query<Long> query = session.createQuery(qry, Long.class);
+	        query.setParameter("acceptedIds", acceptedIds);
+	        result = query.getResultList();
+
+	    } catch (Exception e) {
+	        logger.error(e.getMessage());
+	    } finally {
+	        session.close();
+	    }
+	    return result;
 	}
 
 	/**

@@ -904,8 +904,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			acceptedSynonymDao.delete(acceptedSynonym);
 			TaxonomyDefinition synonym = taxonomyDao.findById(synonymId);
 			synonym.setIsDeleted(true);
-			taxonomyDao.update(synonym);
-			taxonomyESUpdate.pushToElastic(taxonIds);
+			taxonIds.add(synonymId);
+			synonym = taxonomyDao.update(synonym);
+			if (Boolean.TRUE.equals(synonym.getIsDeleted())) {
+				esServicesApi.delete("extended_taxon_definition", "_doc",
+						synonym.toString());
+			}
 
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -1046,6 +1050,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				"Taxon name updated");
 
 		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
+		taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(taxonIds));
 
 		taxonomyDao.updateRecoNameByTaxonId(taxonId, true, name, canonicalName);
 		taxonomyDao.updateSpeciesNameByTaxonId(taxonId, italicisedForm);
@@ -1171,13 +1176,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())
 							&& taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
-						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
+						List<Long> acceptedIds = taxonomyDao.getAllChildren(taxonomyDefinition.getId());
+						taxonIds.addAll(acceptedIds);
+						taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 					}
 					path.append(".");
 					path.append(taxonId);
 					if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
-						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
+						List<Long> acceptedIds = taxonomyDao.getAllChildren(taxonomyDefinition.getId());
+						taxonIds.addAll(acceptedIds);
+						taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 					}
 					taxoRegistry.setPath(path.toString());
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
@@ -1234,7 +1243,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 									path.deleteCharAt(0);
 								}
 								if (!taxonPath.equals(path.toString())) {
-									taxonIds.addAll(taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId()));
+									List<Long> acceptedIds = taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId());
+									taxonIds.addAll(acceptedIds);
+									taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 									taxonomyDao.updatePath(path.toString(), taxonPath);
 								}
 							}
@@ -1248,13 +1259,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())
 							&& taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
-						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
+						List<Long> acceptedIds = taxonomyDao.getAllChildren(taxonomyDefinition.getId());
+						taxonIds.addAll(acceptedIds);
+						taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 					}
 					path.append(".");
 					path.append(taxonId);
 					if (!taxonomyStatusUpdate.getRank().equalsIgnoreCase("infraspecies")) {
 						taxonomyDao.updatePath(path.toString(), taxoRegistry.getPath());
-						taxonIds.addAll(taxonomyDao.getAllChildren(taxonomyDefinition.getId()));
+						List<Long> acceptedIds = taxonomyDao.getAllChildren(taxonomyDefinition.getId());
+						taxonIds.addAll(acceptedIds);
+						taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 					}
 					taxoRegistry.setPath(path.toString());
 					if (!oldRank.equalsIgnoreCase(taxonomyStatusUpdate.getRank())) {
