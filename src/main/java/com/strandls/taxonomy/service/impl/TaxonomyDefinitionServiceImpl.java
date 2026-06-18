@@ -84,6 +84,7 @@ import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.taxonomy.util.AbstractService;
 import com.strandls.taxonomy.util.TaxonomyCache;
+import com.strandls.taxonomy.util.TaxonomyEventProducer;
 import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
@@ -105,6 +106,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private TaxonomyDefinitionDao taxonomyDao;
+
+	@Inject
+	private TaxonomyEventProducer taxonomyEventProducer;
 
 	@Inject
 	private TaxonomyESOperation taxonomyESUpdate;
@@ -907,8 +911,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonIds.add(synonymId);
 			synonym = taxonomyDao.update(synonym);
 			if (Boolean.TRUE.equals(synonym.getIsDeleted())) {
-				esServicesApi.delete("extended_taxon_definition", "_doc",
-						synonym.toString());
+				esServicesApi.delete("extended_taxon_definition", "_doc", synonym.toString());
 			}
 
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -1052,60 +1055,22 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
 		taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(taxonIds));
 
-		taxonomyDao.updateRecoNameByTaxonId(taxonId, true, name, canonicalName);
-		taxonomyDao.updateSpeciesNameByTaxonId(taxonId, italicisedForm);
-
-		List<Object[]> recoDetails = taxonomyDao.getRecoDetailsById(taxonId, true);
-		Long recoId = null;
-		String scientificName = null;
-		if (!recoDetails.isEmpty()) {
-			recoId = (Long) recoDetails.get(0)[0];
-			scientificName = (String) recoDetails.get(0)[1];
-		}
-
-		Long speciesId = null;
-		String title = null;
-		List<Object[]> speciesDetails = taxonomyDao.getSpeciesDetailsById(taxonId);
-		if (!speciesDetails.isEmpty()) {
-			speciesId = (Long) speciesDetails.get(0)[0];
-			title = (String) speciesDetails.get(0)[1];
-		}
-
 		taxonomyESUpdate.pushToElastic(taxonIds);
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		String timestamp = sdf.format(new Date());
+		TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+		taxonomyData.setTargetId(taxonId);
+		taxonomyData.setBinomialForm(binomialForm);
+		taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
+		taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
+		taxonomyData.setName(taxonomyDefinition.getName());
+		taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
+		taxonomyData.setOldName(oldName);
+		taxonomyData.setTimestamp(timestamp);
 
-		try {
-			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
-			taxonomyData.setTargetId(taxonId);
-			if (recoId != null) {
-				taxonomyData.setRecoId(recoId);
-			}
-			if (scientificName != null) {
-				taxonomyData.setScientificName(scientificName);
-			}
-			if (speciesId != null) {
-				taxonomyData.setSpeciesId(speciesId);
-			}
-			if (title != null) {
-				taxonomyData.setTitle(title);
-			}
-			taxonomyData.setBinomialForm(binomialForm);
-			taxonomyData.setCanonicalForm(taxonomyDefinition.getCanonicalForm());
-			taxonomyData.setItalicisedForm(taxonomyDefinition.getItalicisedForm());
-			taxonomyData.setName(taxonomyDefinition.getName());
-			taxonomyData.setNormalizedName(taxonomyDefinition.getNormalizedForm());
-			taxonomyData.setOldName(oldName);
-			taxonomyData.setTimestamp(timestamp);
-			esServicesApi.updateAsync(taxonomyData);
-		} catch (com.strandls.esmodule.ApiException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			logger.error("Exception in async update: {}", e.getMessage(), e);
-		}
-
+		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData);
 		return getTaxonomyDetails(taxonomyDefinition.getId());
 
 	}
@@ -1243,7 +1208,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 									path.deleteCharAt(0);
 								}
 								if (!taxonPath.equals(path.toString())) {
-									List<Long> acceptedIds = taxonomyDao.getAllChildren(checkTaxonomyDefinition.getId());
+									List<Long> acceptedIds = taxonomyDao
+											.getAllChildren(checkTaxonomyDefinition.getId());
 									taxonIds.addAll(acceptedIds);
 									taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 									taxonomyDao.updatePath(path.toString(), taxonPath);
@@ -1580,11 +1546,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					List<Long> transferRecoIds = new ArrayList<>();
 					if (!recoDetails.isEmpty()) {
-					    for (Object[] reco : recoDetails) {
-					        if (reco[3] != null && taxonId.equals(reco[3])) {
-					            transferRecoIds.add((Long) reco[0]);
-					        }
-					    }
+						for (Object[] reco : recoDetails) {
+							if (reco[3] != null && taxonId.equals(reco[3])) {
+								transferRecoIds.add((Long) reco[0]);
+							}
+						}
 					}
 
 					try {
@@ -1636,11 +1602,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			List<Long> transferRecoIds = new ArrayList<>();
 			if (!recoDetails.isEmpty()) {
-			    for (Object[] reco : recoDetails) {
-			        if (reco[3] != null && taxonId.equals(reco[3])) {
-			            transferRecoIds.add((Long) reco[0]);
-			        }
-			    }
+				for (Object[] reco : recoDetails) {
+					if (reco[3] != null && taxonId.equals(reco[3])) {
+						transferRecoIds.add((Long) reco[0]);
+					}
+				}
 			}
 
 			try {
@@ -1657,14 +1623,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			return newTaxonDetails;
-		}catch(
+		} catch (
 
-	Exception e)
-	{
-		logger.error(e.getMessage());
-	}return
+		Exception e) {
+			logger.error(e.getMessage());
+		}
+		return
 
-	findById(prevTaxonId);
+		findById(prevTaxonId);
 	}
 
 	@Override
