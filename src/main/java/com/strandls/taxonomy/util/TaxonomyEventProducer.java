@@ -33,6 +33,15 @@ public class TaxonomyEventProducer {
             );
 
             logger.info("Taxonomy event published: {}", message);
+            
+            channel.basicPublish(
+                    RabbitMqConnection.EXCHANGE_BIODIV,
+                    "speciesQueue",
+                    MessageProperties.PERSISTENT_TEXT_PLAIN,
+                    message.getBytes("UTF-8")
+                );
+                logger.info("Taxonomy event published to species: {}", message);
+
 
         } catch (Exception e) {
             logger.error("Failed to publish taxonomy event: {}", e.getMessage());
