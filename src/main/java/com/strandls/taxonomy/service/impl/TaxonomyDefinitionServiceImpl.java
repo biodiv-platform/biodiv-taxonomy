@@ -901,6 +901,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public List<TaxonomyDefinition> deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
 			Long synonymId) {
 		try {
+			System.out.println("Inside delete synonym");
 			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
 			if (!isContributor.booleanValue())
 				return new ArrayList<>();
@@ -938,6 +939,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
+			e.printStackTrace();
 		}
 		return new ArrayList<>();
 	}
