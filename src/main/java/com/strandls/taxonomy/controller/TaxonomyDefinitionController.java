@@ -358,7 +358,6 @@ public class TaxonomyDefinitionController {
 
 	@DELETE
 	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM + "/{taxonId}/{synonymId}")
-	@Consumes(MediaType.TEXT_PLAIN)
 	@ValidateUser
 	@Operation(summary = "Delete synonym for a taxonomy", responses = @ApiResponse(responseCode = "200", description = "List of available synonyms", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TaxonomyDefinition.class)))))
 	public Response removeSynonyms(@Context HttpServletRequest request,
