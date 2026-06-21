@@ -892,6 +892,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
+			e.printStackTrace();
 		}
 		return new ArrayList<>();
 	}
@@ -923,7 +924,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				taxonomyData.setDeleteRecoIds(List.of(synonymId));
 			}
 			taxonomyData.setTimestamp(timestamp);
-			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, false);
 
 			String desc = "Deleted synonym : " + synonym.getName();
 
@@ -1054,7 +1055,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyData.setOldName(oldName);
 		taxonomyData.setTimestamp(timestamp);
 
-		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData);
+		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
 		return getTaxonomyDetails(taxonomyDefinition.getId());
 
 	}
@@ -1313,25 +1314,21 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 			String timestamp = sdf.format(new Date());
 
-			try {
-				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
-				taxonomyData.setTargetId(taxonId);
-				taxonomyData.setStatus(taxonomyDefinition.getStatus());
-				taxonomyData.setTimestamp(timestamp);
-				List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
-				List<Breadcrumb> breadCrumbs = new ArrayList<>();
-				for (TaxonomyRegistryResponse crumb : hierar) {
-					Breadcrumb breadCrumb = new Breadcrumb();
-					breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
-					breadCrumb.setTaxonName(crumb.getName());
-					breadCrumb.setTaxonRank(crumb.getRank());
-					breadCrumbs.add(breadCrumb);
-				}
-				taxonomyData.setBreadCrumbs(breadCrumbs);
-				esServicesApi.updateAsync(taxonomyData);
-			} catch (com.strandls.esmodule.ApiException e) {
-				e.printStackTrace();
+			TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+			taxonomyData.setTargetId(taxonId);
+			taxonomyData.setStatus(taxonomyDefinition.getStatus());
+			taxonomyData.setTimestamp(timestamp);
+			List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+			List<Breadcrumb> breadCrumbs = new ArrayList<>();
+			for (TaxonomyRegistryResponse crumb : hierar) {
+				Breadcrumb breadCrumb = new Breadcrumb();
+				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+				breadCrumb.setTaxonName(crumb.getName());
+				breadCrumb.setTaxonRank(crumb.getRank());
+				breadCrumbs.add(breadCrumb);
 			}
+			taxonomyData.setBreadCrumbs(breadCrumbs);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
 
 			break;
 		// status is changing from accepted to synonym
@@ -1379,17 +1376,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 			timestamp = sdf.format(new Date());
 
-			try {
-				TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
-				taxonomyData.setTargetId(taxonId);
-				taxonomyData.setStatus(taxonomyDefinition.getStatus());
-				taxonomyData.setTimestamp(timestamp);
-				taxonomyData.setTransferSynonymIds(synonymIds);
-				taxonomyData.setNewId(newTaxonId);
-				esServicesApi.updateAsync(taxonomyData);
-			} catch (com.strandls.esmodule.ApiException e) {
-				e.printStackTrace();
-			}
+			taxonomyData = new TaxonomyUpdateData();
+			taxonomyData.setTargetId(taxonId);
+			taxonomyData.setStatus(taxonomyDefinition.getStatus());
+			taxonomyData.setTimestamp(timestamp);
+			taxonomyData.setTransferSynonymIds(synonymIds);
+			taxonomyData.setNewId(newTaxonId);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
 
 			break;
 
@@ -1524,7 +1517,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyData.setTransferSynonymIds(synonymIds);
 			taxonomyData.setSynonyms(synonymDetails);
 			taxonomyData.setNewId(taxonId);
-			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
+
 		} catch (
 
 		Exception e) {

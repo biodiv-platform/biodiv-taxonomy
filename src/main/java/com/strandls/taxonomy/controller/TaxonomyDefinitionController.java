@@ -39,6 +39,7 @@ import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
 import com.strandls.taxonomy.util.TaxonomyBulkMappingThread;
+import com.strandls.taxonomy.util.TaxonomyEventProducer;
 import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
@@ -97,6 +98,9 @@ public class TaxonomyDefinitionController {
 	
 	@Inject
 	private EsServicesApi esServicesApi;
+	
+	@Inject
+	private TaxonomyEventProducer taxonomyEventProducer;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -511,7 +515,7 @@ public class TaxonomyDefinitionController {
 
 				TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(selectAll, bulkAction,
 						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao,
-						taxonomyESOperation, taxonomyRegistryDao, esServicesApi);
+						taxonomyESOperation, taxonomyRegistryDao, esServicesApi, taxonomyEventProducer);
 
 				Thread thread = new Thread(bulkMappingThread);
 				thread.start();

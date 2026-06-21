@@ -10,41 +10,33 @@ import org.slf4j.LoggerFactory;
 
 public class TaxonomyEventProducer {
 
-    private static final Logger logger = LoggerFactory.getLogger(TaxonomyEventProducer.class);
+	private static final Logger logger = LoggerFactory.getLogger(TaxonomyEventProducer.class);
 
-    private final Channel channel;
-    private final ObjectMapper objectMapper;
+	private final Channel channel;
+	private final ObjectMapper objectMapper;
 
-    @Inject
-    public TaxonomyEventProducer(Channel channel, ObjectMapper objectMapper) {
-        this.channel = channel;
-        this.objectMapper = objectMapper;
-    }
+	@Inject
+	public TaxonomyEventProducer(Channel channel, ObjectMapper objectMapper) {
+		this.channel = channel;
+		this.objectMapper = objectMapper;
+	}
 
-    public void sendTaxonomyUpdate(Object taxonomyObject) {
-        try {
-            String message = objectMapper.writeValueAsString(taxonomyObject);
+	public void sendTaxonomyUpdate(Object taxonomyObject, Boolean both) {
+		try {
+			String message = objectMapper.writeValueAsString(taxonomyObject);
 
-            channel.basicPublish(
-                RabbitMqConnection.EXCHANGE_BIODIV,
-                RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY,
-                MessageProperties.PERSISTENT_TEXT_PLAIN,
-                message.getBytes("UTF-8")
-            );
+			// Always publish to taxonomy/observation
+			channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY, 
+			        MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
 
-            logger.info("Taxonomy event published: {}", message);
-            
-            channel.basicPublish(
-                    RabbitMqConnection.EXCHANGE_BIODIV,
-                    "speciesQueue",
-                    MessageProperties.PERSISTENT_TEXT_PLAIN,
-                    message.getBytes("UTF-8")
-                );
-                logger.info("Taxonomy event published to species: {}", message);
+			// Only publish to species when both=true
+			if (Boolean.TRUE.equals(both)) {
+			    channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.SPECIES_EVENT_ROUTING_KEY,
+			            MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+			}
 
-
-        } catch (Exception e) {
-            logger.error("Failed to publish taxonomy event: {}", e.getMessage());
-        }
-    }
+		} catch (Exception e) {
+			logger.error("Failed to publish taxonomy event: {}", e.getMessage());
+		}
+	}
 }

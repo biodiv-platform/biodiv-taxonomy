@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
+import com.strandls.esmodule.pojo.Breadcrumb;
 import com.strandls.esmodule.pojo.TaxonomyUpdateData;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.CommonNameDao;
@@ -18,6 +20,7 @@ import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
+import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
 
 import jakarta.inject.Inject;
@@ -37,10 +40,12 @@ public class TaxonomyBulkMappingThread implements Runnable {
 	private CommonNameDao commonNameDao;
 	private TaxonomyESOperation taxonomyESUpdate;
 	private EsServicesApi esServicesApi;
+	private TaxonomyEventProducer taxonomyEventProducer;
 
 	public TaxonomyBulkMappingThread(Boolean selectAll, String bulkAction, String bulkTaxonIds, String bulkPosition,
-			TaxonomyDefinitionDao taxonomyDefinitionDao, AcceptedSynonymDao acceptedSynonymDao, CommonNameDao commonNameDao,
-			TaxonomyESOperation taxonomyESUpdate, TaxonomyRegistryDao taxonomyRegistryDao, EsServicesApi esServicesApi) {
+			TaxonomyDefinitionDao taxonomyDefinitionDao, AcceptedSynonymDao acceptedSynonymDao,
+			CommonNameDao commonNameDao, TaxonomyESOperation taxonomyESUpdate, TaxonomyRegistryDao taxonomyRegistryDao,
+			EsServicesApi esServicesApi, TaxonomyEventProducer taxonomyEventProducer) {
 		super();
 		this.selectAll = selectAll;
 		this.bulkAction = bulkAction;
@@ -52,6 +57,7 @@ public class TaxonomyBulkMappingThread implements Runnable {
 		this.taxonomyESUpdate = taxonomyESUpdate;
 		this.taxonomyRegistryDao = taxonomyRegistryDao;
 		this.esServicesApi = esServicesApi;
+		this.taxonomyEventProducer = taxonomyEventProducer;
 	}
 
 	@Override
@@ -146,12 +152,21 @@ public class TaxonomyBulkMappingThread implements Runnable {
 		if (!bulkAction.isEmpty() && (bulkAction.contains("merge"))) {
 			List<TaxonomyRegistry> taxonDataList = new ArrayList<>();
 			List<Long> taxIds = new ArrayList<Long>();
-			Long taxonId = taxonIds.remove(0); 
+			Long taxonId = taxonIds.remove(0);
 			if (!taxonIds.isEmpty()) {
 				taxonDataList = taxonomyRegistryDao.fetchByListOfTaxonomyIds(taxonIds);
 
 			}
 			TaxonomyRegistry mergeRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+			List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+			List<Breadcrumb> breadCrumbs = new ArrayList<>();
+			for (TaxonomyRegistryResponse crumb : hierar) {
+				Breadcrumb breadCrumb = new Breadcrumb();
+				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+				breadCrumb.setTaxonName(crumb.getName());
+				breadCrumb.setTaxonRank(crumb.getRank());
+				breadCrumbs.add(breadCrumb);
+			}
 			/*
 			 * if (Boolean.TRUE.equals(selectAll)) { MapResponse result =
 			 * esService.search(index, type, geoAggregationField, geoAggegationPrecision,
@@ -171,13 +186,13 @@ public class TaxonomyBulkMappingThread implements Runnable {
 					TaxonList.add(taxonDataList.get(count));
 
 					if (TaxonList.size() >= 200) {
-						bulkMergeAction(TaxonList, mergeRegistry.getPath(), taxonId);
+						bulkMergeAction(TaxonList, mergeRegistry.getPath(), taxonId, breadCrumbs);
 						TaxonList.clear();
 					}
 					count++;
 				}
 
-				bulkMergeAction(TaxonList, mergeRegistry.getPath(), taxonId);
+				bulkMergeAction(TaxonList, mergeRegistry.getPath(), taxonId, breadCrumbs);
 				TaxonList.clear();
 			} /*
 				 * else { while (count < obIds.size()) { ObsIdList.add(obIds.get(count)); if
@@ -227,8 +242,8 @@ public class TaxonomyBulkMappingThread implements Runnable {
 			e.printStackTrace();
 		}
 	}
-	
-	private void bulkMergeAction(List<TaxonomyRegistry> taxonList, String path, Long taxonId) {
+
+	private void bulkMergeAction(List<TaxonomyRegistry> taxonList, String path, Long taxonId, List<Breadcrumb> breadCrumbs) {
 		List<Long> taxonIds = new ArrayList<>();
 		List<Long> deleteTaxonIds = new ArrayList<>();
 		for (TaxonomyRegistry taxon : taxonList) {
@@ -243,16 +258,15 @@ public class TaxonomyBulkMappingThread implements Runnable {
 			}
 			deleteTaxonIds.add(taxon.getTaxonomyDefinationId());
 			taxonomyRegistryDao.delete(taxon);
-			//taxonIds.addAll(taxonomyDefinitionDao.getAllChildren(taxon.getTaxonomyDefinationId()));
-				
-				
-				/*
-				 * String desc = "Taxon position updated  : " + oldPosition + "-->" +
-				 * position.name();
-				 * logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION
-				 * ), desc, taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
-				 * taxonomyDefinition.getId(), "Taxon position updated");
-				 */
+			// taxonIds.addAll(taxonomyDefinitionDao.getAllChildren(taxon.getTaxonomyDefinationId()));
+
+			/*
+			 * String desc = "Taxon position updated  : " + oldPosition + "-->" +
+			 * position.name();
+			 * logActivity.logTaxonomyActivities(request.getHeader(HttpHeaders.AUTHORIZATION
+			 * ), desc, taxonomyDefinition.getId(), taxonomyDefinition.getId(), "taxonomy",
+			 * taxonomyDefinition.getId(), "Taxon position updated");
+			 */
 
 			/*
 			 * List<Long> taxonIds = new ArrayList<>(); taxonIds.add(taxonId);
@@ -266,6 +280,24 @@ public class TaxonomyBulkMappingThread implements Runnable {
 		}
 		taxonomyDefinitionDao.deleteByIds(deleteTaxonIds);
 		taxonomyESUpdate.pushToElastic(taxonIds);
+		List<String> deleteIds = deleteTaxonIds.stream()
+		        .map(String::valueOf)
+		        .collect(Collectors.toList());
+		try {
+			esServicesApi.bulkDelete("extended_taxon_definition", "_doc", deleteIds);
+		} catch (ApiException e) {
+			e.printStackTrace();
+		}
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		String timestamp = sdf.format(new Date());
+		TaxonomyUpdateData taxonomyData = new TaxonomyUpdateData();
+		taxonomyData.setTargetId(taxonId);
+		taxonomyData.setBulkIds(deleteTaxonIds);
+		taxonomyData.setNewId(taxonId);
+		taxonomyData.setTimestamp(timestamp);
+		taxonomyData.setBreadCrumbs(breadCrumbs);
+		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, false);
 		/*
 		 * List<Long> obsIds = obsList.stream().map(item ->
 		 * item.getId()).collect(Collectors.toList()); String observationList =
