@@ -21,7 +21,7 @@ public class TaxonomyEventProducer {
 		this.objectMapper = objectMapper;
 	}
 
-	public void sendTaxonomyUpdate(Object taxonomyObject, Boolean both) {
+	public void sendTaxonomyUpdate(Object taxonomyObject, Boolean both, Boolean doc) {
 		try {
 			String message = objectMapper.writeValueAsString(taxonomyObject);
 
@@ -32,6 +32,11 @@ public class TaxonomyEventProducer {
 			// Only publish to species when both=true
 			if (Boolean.TRUE.equals(both)) {
 			    channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.SPECIES_EVENT_ROUTING_KEY,
+			            MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+			}
+			
+			if (Boolean.TRUE.equals(doc)) {
+				channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.DOCSCI_ROUTING_KEY,
 			            MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
 			}
 

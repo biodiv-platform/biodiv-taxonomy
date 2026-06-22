@@ -169,7 +169,6 @@ public class CommonNameController {
 
 	@DELETE
 	@Path(ApiConstants.REMOVE + ApiConstants.COMMONNAME + "/{commonNameId}")
-	@Consumes(MediaType.TEXT_PLAIN)
 	@ValidateUser
 	@Operation(summary = "Remove a common name", description = "Remove a common name for a given species, by ID", responses = {
 			@ApiResponse(responseCode = "200", description = "Deleted (remaining) common names", content = @Content(array = @ArraySchema(schema = @Schema(implementation = CommonName.class)))),

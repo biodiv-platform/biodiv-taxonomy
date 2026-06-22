@@ -297,7 +297,7 @@ public class TaxonomyBulkMappingThread implements Runnable {
 		taxonomyData.setNewId(taxonId);
 		taxonomyData.setTimestamp(timestamp);
 		taxonomyData.setBreadCrumbs(breadCrumbs);
-		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, false);
+		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true, true);
 		/*
 		 * List<Long> obsIds = obsList.stream().map(item ->
 		 * item.getId()).collect(Collectors.toList()); String observationList =

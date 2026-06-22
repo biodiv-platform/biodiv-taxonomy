@@ -28,6 +28,8 @@ public class RabbitMqConnection {
 	public static final String TAXONOMY_EVENT_ROUTING_KEY;
 	public static final String SPECIES_EVENT_QUEUE        = "speciesQueue";
 	public static final String SPECIES_EVENT_ROUTING_KEY  = "species.updated";
+	public static final String DOCSCI_QUEUE       = "docSciQueue";
+	public static final String DOCSCI_ROUTING_KEY = "docSci.updated";
 
 	static {
 		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
@@ -70,6 +72,8 @@ public class RabbitMqConnection {
 		channel.queueBind(TAXONOMY_EVENT_QUEUE, EXCHANGE_BIODIV, TAXONOMY_EVENT_ROUTING_KEY);
 		channel.queueDeclare(SPECIES_EVENT_QUEUE, false, false, false, null);
 		channel.queueBind(SPECIES_EVENT_QUEUE, EXCHANGE_BIODIV, SPECIES_EVENT_ROUTING_KEY);
+		channel.queueDeclare(DOCSCI_QUEUE, false, false, false, null);
+		channel.queueBind(DOCSCI_QUEUE, EXCHANGE_BIODIV, DOCSCI_ROUTING_KEY);
 
 		return channel;
 	}

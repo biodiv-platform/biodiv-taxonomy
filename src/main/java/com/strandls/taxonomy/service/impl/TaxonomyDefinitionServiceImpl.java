@@ -913,7 +913,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonIds.add(synonymId);
 			synonym = taxonomyDao.update(synonym);
 			if (Boolean.TRUE.equals(synonym.getIsDeleted())) {
-				esServicesApi.delete("extended_taxon_definition", "_doc", synonym.toString());
+				esServicesApi.delete("extended_taxon_definition", "_doc", synonym.getId().toString());
 			}
 
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -925,7 +925,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				taxonomyData.setDeleteRecoIds(List.of(synonymId));
 			}
 			taxonomyData.setTimestamp(timestamp);
-			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, false);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, false, true);
 
 			String desc = "Deleted synonym : " + synonym.getName();
 
@@ -1057,7 +1057,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyData.setOldName(oldName);
 		taxonomyData.setTimestamp(timestamp);
 
-		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
+		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true, true);
 		return getTaxonomyDetails(taxonomyDefinition.getId());
 
 	}
@@ -1330,7 +1330,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				breadCrumbs.add(breadCrumb);
 			}
 			taxonomyData.setBreadCrumbs(breadCrumbs);
-			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true, false);
 
 			break;
 		// status is changing from accepted to synonym
@@ -1384,7 +1384,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyData.setTimestamp(timestamp);
 			taxonomyData.setTransferSynonymIds(synonymIds);
 			taxonomyData.setNewId(newTaxonId);
-			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
+			hierar = taxonomyRegistryDao.getPathToRoot(newTaxonId, null);
+			breadCrumbs = new ArrayList<>();
+			for (TaxonomyRegistryResponse crumb : hierar) {
+				Breadcrumb breadCrumb = new Breadcrumb();
+				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+				breadCrumb.setTaxonName(crumb.getName());
+				breadCrumb.setTaxonRank(crumb.getRank());
+				breadCrumbs.add(breadCrumb);
+			}
+			taxonomyData.setAcceptedBreadCrumbs(breadCrumbs);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true, false);
 
 			break;
 
@@ -1519,7 +1529,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonomyData.setTransferSynonymIds(synonymIds);
 			taxonomyData.setSynonyms(synonymDetails);
 			taxonomyData.setNewId(taxonId);
-			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true);
+			List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
+			ArrayList<Breadcrumb> breadCrumbs = new ArrayList<>();
+			for (TaxonomyRegistryResponse crumb : hierar) {
+				Breadcrumb breadCrumb = new Breadcrumb();
+				breadCrumb.setTaxonId(Long.parseLong(crumb.getId()));
+				breadCrumb.setTaxonName(crumb.getName());
+				breadCrumb.setTaxonRank(crumb.getRank());
+				breadCrumbs.add(breadCrumb);
+			}
+			taxonomyData.setAcceptedBreadCrumbs(breadCrumbs);
+			taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true, false);
 
 		} catch (
 
