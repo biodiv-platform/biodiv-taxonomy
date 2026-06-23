@@ -169,7 +169,6 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		Session session = sessionFactory.openSession();
 		Transaction tx = null;
 		try {
-			// START TRANSACTION
 			tx = session.beginTransaction();
 
 			Query query = session.createNamedQuery("synonymTransfer");
@@ -178,7 +177,6 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 			int rowsUpdated = query.executeUpdate();
 			logger.debug(rowsUpdated + " Synonyms updated their accepted id");
 
-			// COMMIT TRANSACTION
 			tx.commit();
 
 			return rowsUpdated;
@@ -198,7 +196,6 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		Transaction tx = null;
 
 		try {
-			// START TRANSACTION
 			tx = session.beginTransaction();
 
 			String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where synonymId IN (:synonymIds)";
@@ -208,7 +205,6 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 
 			int rowsUpdated = query.executeUpdate();
 
-			// COMMIT TRANSACTION
 			tx.commit();
 
 			return rowsUpdated;

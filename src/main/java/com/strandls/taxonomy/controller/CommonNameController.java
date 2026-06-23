@@ -5,6 +5,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.TaxonomyUpdateData;
@@ -12,6 +15,7 @@ import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.CommonNamesData;
 import com.strandls.taxonomy.service.CommonNameSerivce;
+import com.strandls.taxonomy.service.impl.TaxonomyDefinitionServiceImpl;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -48,6 +52,8 @@ public class CommonNameController {
 
 	@Inject
 	private EsServicesApi esServicesApi;
+
+	private final Logger logger = LoggerFactory.getLogger(CommonNameController.class);
 
 	@GET
 	@Path("{id}")
@@ -103,7 +109,7 @@ public class CommonNameController {
 				taxonomyData.setCommonNames((List<Object>) commonName);
 				esServicesApi.updateAsync(taxonomyData);
 			} catch (com.strandls.esmodule.ApiException e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 			}
 			return Response.ok().entity(commonName).build();
 		} catch (Exception e) {

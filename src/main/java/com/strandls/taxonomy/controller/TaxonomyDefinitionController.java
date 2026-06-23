@@ -10,16 +10,11 @@ import java.util.stream.Collectors;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.esmodule.controllers.EsServicesApi;
-import com.strandls.esmodule.pojo.MapBoundParams;
 import com.strandls.esmodule.pojo.MapQueryResponse;
-import com.strandls.esmodule.pojo.MapSearchParams;
-import com.strandls.esmodule.pojo.MapSearchQuery;
-import com.strandls.esmodule.pojo.MapSearchParams.SortTypeEnum;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.CommonNameDao;
@@ -40,7 +35,6 @@ import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
 import com.strandls.taxonomy.util.TaxonomyBulkMappingThread;
 import com.strandls.taxonomy.util.TaxonomyEventProducer;
-import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -438,9 +432,9 @@ public class TaxonomyDefinitionController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ValidateUser
-	@Operation(summary = "Fetch the observation based on the filter", responses = {
-			@ApiResponse(responseCode = "200", description = "Returns the observation list based on the the filters", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
-			@ApiResponse(responseCode = "400", description = "Unable to fetch data", content = @Content(schema = @Schema(implementation = String.class))) })
+	@Operation(summary = "Transfer synonyms to new taxonId", responses = {
+			@ApiResponse(responseCode = "200", description = "Returns source taxon details", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to transfer synonyms", content = @Content(schema = @Schema(implementation = String.class))) })
 
 	public Response transferSynonyms(@PathParam("taxonId") String taxon,
 			@QueryParam("synonymIds") String synonymIdsString, @QueryParam("prevTaxonId") String prevTaxon,
@@ -468,9 +462,9 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@Operation(summary = "Fetch the observation based on the filter", responses = {
-			@ApiResponse(responseCode = "200", description = "Returns the observation list based on the the filters", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
-			@ApiResponse(responseCode = "400", description = "Unable to fetch data", content = @Content(schema = @Schema(implementation = String.class))) })
+	@Operation(summary = "Transfer common names", responses = {
+			@ApiResponse(responseCode = "200", description = "Returns source taxon details", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to transfer common names", content = @Content(schema = @Schema(implementation = String.class))) })
 
 	public Response transferCommonNames(@PathParam("taxonId") String taxon,
 			@QueryParam("commonNameIds") String commonNameIdsString, @QueryParam("prevTaxonId") String prevTaxon,
@@ -502,8 +496,6 @@ public class TaxonomyDefinitionController {
 			@QueryParam("bulkTaxonIds") String bulkTaxonIds, @QueryParam("bulkPosition") String bulkPosition,
 			@Context HttpServletRequest request, @Context UriInfo uriInfo) {
 		try {
-
-			MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
 
 			if ((Boolean.FALSE.equals(selectAll) && bulkTaxonIds != null && !bulkAction.isEmpty()
 					&& !bulkTaxonIds.isEmpty()) || (Boolean.TRUE.equals(selectAll) && !bulkAction.isEmpty())) {
