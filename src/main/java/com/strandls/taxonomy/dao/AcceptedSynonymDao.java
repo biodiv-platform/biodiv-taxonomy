@@ -114,28 +114,28 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return result;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<Long> findSynonymIdsByAcceptedIds(List<Long> acceptedIds) {
-	    if (acceptedIds == null || acceptedIds.isEmpty()) {
-	        return Collections.emptyList();
-	    }
+		if (acceptedIds == null || acceptedIds.isEmpty()) {
+			return Collections.emptyList();
+		}
 
-	    String qry = "select a.synonymId from AcceptedSynonym a where a.acceptedId in :acceptedIds";
-	    Session session = sessionFactory.openSession();
-	    List<Long> result = Collections.emptyList();
+		String qry = "select a.synonymId from AcceptedSynonym a where a.acceptedId in :acceptedIds";
+		Session session = sessionFactory.openSession();
+		List<Long> result = Collections.emptyList();
 
-	    try {
-	        Query<Long> query = session.createQuery(qry, Long.class);
-	        query.setParameter("acceptedIds", acceptedIds);
-	        result = query.getResultList();
+		try {
+			Query<Long> query = session.createQuery(qry, Long.class);
+			query.setParameter("acceptedIds", acceptedIds);
+			result = query.getResultList();
 
-	    } catch (Exception e) {
-	        logger.error(e.getMessage());
-	    } finally {
-	        session.close();
-	    }
-	    return result;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
 	}
 
 	/**
@@ -191,7 +191,7 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return 0;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public int bulkSynonymTransfer(List<Long> synonymIds, Long newTaxonId) {
 		Session session = sessionFactory.openSession();

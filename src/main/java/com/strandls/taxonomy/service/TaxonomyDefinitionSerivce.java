@@ -80,5 +80,6 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
 			List<Long> commonNameIds, Boolean selectAll);
 
-	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request, Long taxonId, String rankList, String statusList, String positionList, Integer limit, Long offsetId, String offsetPath);
+	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request, Long taxonId, String rankList,
+			String statusList, String positionList, Integer limit, Long offsetId, String offsetPath);
 }

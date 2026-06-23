@@ -901,7 +901,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public List<TaxonomyDefinition> deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
 			Long synonymId) {
 		try {
-			System.out.println("Inside delete synonym");
 			Boolean isContributor = permissionService.checkIsContributor(request, taxonId);
 			if (!isContributor.booleanValue())
 				return new ArrayList<>();
@@ -1776,7 +1775,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					TaxonomyListMinimalData acceptedTaxon = objectMapper
 							.readValue(String.valueOf(document.getDocument()), TaxonomyListMinimalData.class);
 					acceptedTaxon.setRankValue(rankValueMapping.get(acceptedTaxon.getRank()));
-					System.out.println(acceptedTaxon.getName());
 					taxonomyListMinimal.add(acceptedTaxon);
 				} catch (IOException e) {
 					logger.error(e.getMessage());

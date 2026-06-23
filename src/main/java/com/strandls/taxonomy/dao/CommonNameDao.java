@@ -127,7 +127,7 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 		}
 		return 0;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public int allCommonNameTransfer(Long prevTaxonId, Long newTaxonId) {
 		Session session = sessionFactory.openSession();

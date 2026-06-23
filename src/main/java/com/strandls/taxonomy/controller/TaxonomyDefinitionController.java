@@ -92,13 +92,13 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private CommonNameDao commonNameDao;
-	
+
 	@Inject
 	private TaxonomyRegistryDao taxonomyRegistryDao;
-	
+
 	@Inject
 	private EsServicesApi esServicesApi;
-	
+
 	@Inject
 	private TaxonomyEventProducer taxonomyEventProducer;
 

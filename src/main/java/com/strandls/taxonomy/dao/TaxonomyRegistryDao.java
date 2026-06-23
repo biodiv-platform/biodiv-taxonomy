@@ -40,7 +40,6 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	private static final String TAXON_ID = "taxonId";
 
 	public static Long getDefaultClassificationId() {
-		System.out.println(CLASSIFICATION_ID);
 		return CLASSIFICATION_ID;
 	}
 
@@ -83,7 +82,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		return result;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<TaxonomyRegistry> fetchByListOfTaxonomyIds(List<Long> taxonIds) {
 		String qry = "from TaxonomyRegistry tr where tr.taxonomyDefinationId IN (:taxonIds)"
@@ -180,7 +179,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 						+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
 						+ " from taxonomy_definition as t, taxonomy_registry as tR"
 						+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
-						+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 " + " order by nlevel(tR.path), t.name";
+						+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 "
+						+ " order by nlevel(tR.path), t.name";
 				query = session.createNativeQuery(queryString, "TaxonRelationMapping");
 				query.setParameter(PARENT_CHECK, parentCheck);
 			}

@@ -45,7 +45,7 @@ public class CommonNameController {
 
 	@Inject
 	private CommonNameSerivce commonNameService;
-	
+
 	@Inject
 	private EsServicesApi esServicesApi;
 

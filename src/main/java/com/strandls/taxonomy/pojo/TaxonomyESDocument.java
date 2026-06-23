@@ -34,7 +34,7 @@ import jakarta.persistence.SqlResultSetMapping;
 				@FieldResult(name = "common_names", column = "common_names"),
 				@FieldResult(name = "group_id", column = "group_id"),
 				@FieldResult(name = "group_name", column = "group_name"),
-				@FieldResult(name = "tree_sort", column = "tree_sort")}) })
+				@FieldResult(name = "tree_sort", column = "tree_sort") }) })
 @SqlResultSetMapping(name = "TaxonomyRelation", classes = {
 		@ConstructorResult(targetClass = TaxonRelation.class, columns = { @ColumnResult(name = "id", type = Long.class),
 				@ColumnResult(name = "name", type = String.class), @ColumnResult(name = "rank", type = String.class),
@@ -89,7 +89,8 @@ public class TaxonomyESDocument {
 	// All-args constructor omitted for brevity (your code keeps it)
 	public TaxonomyESDocument(Long id, String name, String canonical_form, String italicised_form, String rank,
 			String status, String position, String path, List<JsonNode> hierarchy, List<Long> accepted_ids,
-			List<String> accepted_names, List<JsonNode> common_names, Long group_id, String group_name, String tree_sort) {
+			List<String> accepted_names, List<JsonNode> common_names, Long group_id, String group_name,
+			String tree_sort) {
 		this.id = id;
 		this.name = name;
 		this.canonical_form = canonical_form;
@@ -220,7 +221,12 @@ public class TaxonomyESDocument {
 	public void setGroup_name(String group_name) {
 		this.group_name = group_name;
 	}
-	
-	public String getTree_sort() { return tree_sort; }
-	public void setTree_sort(String tree_sort) { this.tree_sort = tree_sort; }
+
+	public String getTree_sort() {
+		return tree_sort;
+	}
+
+	public void setTree_sort(String tree_sort) {
+		this.tree_sort = tree_sort;
+	}
 }

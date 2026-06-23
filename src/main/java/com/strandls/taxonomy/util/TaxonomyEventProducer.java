@@ -26,18 +26,18 @@ public class TaxonomyEventProducer {
 			String message = objectMapper.writeValueAsString(taxonomyObject);
 
 			// Always publish to taxonomy/observation
-			channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY, 
-			        MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+			channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY,
+					MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
 
 			// Only publish to species when both=true
 			if (Boolean.TRUE.equals(both)) {
-			    channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.SPECIES_EVENT_ROUTING_KEY,
-			            MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+				channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.SPECIES_EVENT_ROUTING_KEY,
+						MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
 			}
-			
+
 			if (Boolean.TRUE.equals(doc)) {
 				channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.DOCSCI_ROUTING_KEY,
-			            MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+						MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
 			}
 
 		} catch (Exception e) {

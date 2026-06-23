@@ -1,4 +1,5 @@
 package com.strandls.taxonomy.pojo.response;
+
 import java.util.List;
 
 import com.strandls.taxonomy.util.TaxonomyListMinimalData;
@@ -14,7 +15,8 @@ public class TaxonomyElasticNameListResponse {
 		super();
 	}
 
-	public TaxonomyElasticNameListResponse(Integer count, List<TaxonomyListMinimalData> taxonomyNameListItems, String acceptedPath, Long synonymId) {
+	public TaxonomyElasticNameListResponse(Integer count, List<TaxonomyListMinimalData> taxonomyNameListItems,
+			String acceptedPath, Long synonymId) {
 		super();
 		this.count = count;
 		this.taxonomyNameListItems = taxonomyNameListItems;
@@ -37,19 +39,19 @@ public class TaxonomyElasticNameListResponse {
 	public void setTaxonomyNameListItems(List<TaxonomyListMinimalData> taxonomyNameListItems) {
 		this.taxonomyNameListItems = taxonomyNameListItems;
 	}
-	
+
 	public String getAcceptedPath() {
 		return acceptedPath;
 	}
-	
+
 	public void setAcceptedPath(String acceptedPath) {
 		this.acceptedPath = acceptedPath;
 	}
-	
+
 	public Long getSynonymId() {
 		return synonymId;
 	}
-	
+
 	public void setSynonymId(Long synonymId) {
 		this.synonymId = synonymId;
 	}
