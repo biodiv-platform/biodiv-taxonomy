@@ -1261,6 +1261,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					e.printStackTrace();
 				}
 				break;
+			case SYNONYM:
+				List<Long> taxonIds = new ArrayList<>();
+				taxonIds.add(taxonId);
+				taxonomyESUpdate.pushToElastic(taxonIds);
+				break;
 			default:
 				break;
 			}
