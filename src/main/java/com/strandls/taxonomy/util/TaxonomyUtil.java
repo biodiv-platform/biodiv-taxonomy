@@ -13,6 +13,7 @@ import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.utility.pojo.ParsedName;
+import com.strandls.utility.pojo.Word;
 
 import jakarta.servlet.http.HttpServletRequest;
 import net.minidev.json.JSONArray;
@@ -116,38 +117,23 @@ public class TaxonomyUtil {
 
 		StringBuilder italicisedFormBuilder = new StringBuilder();
 		int index = 0;
-		for (Object wordObj : sciName.getWords()) {
-			// In the new structure, words is a List<Word> but we need to handle it
-			// generically
-			// Extract word information from the Word object
-			Map<String, Object> wordMap = null;
-			if (wordObj instanceof Map) {
-				wordMap = (Map<String, Object>) wordObj;
-			} else {
-				// Skip if we can't process this word
-				continue;
-			}
+		for (Word word : sciName.getWords()) {
+		    int start = word.getStart();
+		    int end = word.getEnd();
+		    String wordType = word.getWordType();
 
-			Object startObj = wordMap.get("start");
-			Object endObj = wordMap.get("end");
-			Object wordTypeObj = wordMap.get("wordType");
+		    if (start == 0 && end == 0) continue;
 
-			if (startObj == null || endObj == null || wordTypeObj == null)
-				continue;
+		    if (start > index)
+		        italicisedFormBuilder.append(name.substring(index, start));
 
-			int start = (Integer) startObj;
-			int end = (Integer) endObj;
-			String wordType = (String) wordTypeObj;
+		    if ("GENUS".equals(wordType) || "SPECIES".equals(wordType)
+		            || "INFRASPECIES".equals(wordType) || "UNINOMIAL".equals(wordType))
+		        italicisedFormBuilder.append("<i>").append(name, start, end).append("</i>");
+		    else
+		        italicisedFormBuilder.append(name, start, end);
 
-			if (start > index)
-				italicisedFormBuilder.append(name.substring(index, start));
-
-			if ("GENUS".equals(wordType) || "SPECIES".equals(wordType) || "INFRASPECIES".equals(wordType)
-					|| "UNINOMIAL".equals(wordType))
-				italicisedFormBuilder.append("<i>" + name.substring(start, end) + "</i>");
-			else
-				italicisedFormBuilder.append(name.substring(start, end));
-			index = end;
+		    index = end;
 		}
 		if (index < name.length())
 			italicisedFormBuilder.append(name.substring(index));
