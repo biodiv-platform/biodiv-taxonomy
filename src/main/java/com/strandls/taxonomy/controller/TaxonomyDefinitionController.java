@@ -1,6 +1,7 @@
 package com.strandls.taxonomy.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +13,13 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
+import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.taxonomy.ApiConstants;
+import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.CommonNameDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
+import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
@@ -23,10 +28,13 @@ import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
+import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
+import com.strandls.taxonomy.util.TaxonomyBulkMappingThread;
+import com.strandls.taxonomy.util.TaxonomyEventProducer;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,8 +60,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.core.Response.Status;
 
 @Tag(name = "Taxonomy Services", description = "APIs for taxonomy microservice")
@@ -69,6 +80,21 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyESOperation taxonomyESOperation;
+
+	@Inject
+	private AcceptedSynonymDao acceptedSynonymDao;
+
+	@Inject
+	private CommonNameDao commonNameDao;
+
+	@Inject
+	private TaxonomyRegistryDao taxonomyRegistryDao;
+
+	@Inject
+	private EsServicesApi esServicesApi;
+
+	@Inject
+	private TaxonomyEventProducer taxonomyEventProducer;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -326,7 +352,6 @@ public class TaxonomyDefinitionController {
 
 	@DELETE
 	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM + "/{taxonId}/{synonymId}")
-	@Consumes(MediaType.TEXT_PLAIN)
 	@ValidateUser
 	@Operation(summary = "Delete synonym for a taxonomy", responses = @ApiResponse(responseCode = "200", description = "List of available synonyms", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TaxonomyDefinition.class)))))
 	public Response removeSynonyms(@Context HttpServletRequest request,
@@ -395,6 +420,123 @@ public class TaxonomyDefinitionController {
 	public Response addComment(@Context HttpServletRequest request, CommentLoggingData loggingData) {
 		try {
 			Activity result = taxonomyService.logComment(request, loggingData);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.SYNONYM + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+	@Operation(summary = "Transfer synonyms to new taxonId", responses = {
+			@ApiResponse(responseCode = "200", description = "Returns source taxon details", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to transfer synonyms", content = @Content(schema = @Schema(implementation = String.class))) })
+
+	public Response transferSynonyms(@PathParam("taxonId") String taxon,
+			@QueryParam("synonymIds") String synonymIdsString, @QueryParam("prevTaxonId") String prevTaxon,
+			@QueryParam("selectAll") Boolean selectAll, @Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> synonymIds = new ArrayList<>();
+			if (synonymIdsString != null && !synonymIdsString.trim().isEmpty()) {
+				synonymIds = Arrays.stream(synonymIdsString.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+						.map(Long::parseLong).collect(Collectors.toList());
+			}
+			TaxonomyDefinition result = taxonomyService.transferSynonyms(request, taxonId, prevTaxonId, synonymIds,
+					selectAll);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.TRANSFER + ApiConstants.COMMONNAME + "/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@Operation(summary = "Transfer common names", responses = {
+			@ApiResponse(responseCode = "200", description = "Returns source taxon details", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to transfer common names", content = @Content(schema = @Schema(implementation = String.class))) })
+
+	public Response transferCommonNames(@PathParam("taxonId") String taxon,
+			@QueryParam("commonNameIds") String commonNameIdsString, @QueryParam("prevTaxonId") String prevTaxon,
+			@QueryParam("selectAll") Boolean selectAll, @Context HttpServletRequest request) {
+		try {
+			Long taxonId = Long.parseLong(taxon);
+			Long prevTaxonId = Long.parseLong(prevTaxon);
+			List<Long> commonNameIds = new ArrayList<>();
+			if (commonNameIdsString != null && !commonNameIdsString.trim().isEmpty()) {
+				commonNameIds = Arrays.stream(commonNameIdsString.split(",")).map(String::trim)
+						.filter(s -> !s.isEmpty()).map(Long::parseLong).collect(Collectors.toList());
+			}
+			TaxonomyDefinition result = taxonomyService.transferCommonNames(request, taxonId, prevTaxonId,
+					commonNameIds, selectAll);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@GET
+	@Path("bulk")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+	@Operation(summary = "Executes bulk actions", description = "Return species list data", responses = {
+			@ApiResponse(responseCode = "200", description = "Species list search results", content = @Content(schema = @Schema(implementation = TaxonomyDefinition.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to search", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response listSearch(@QueryParam("bulkAction") String bulkAction, @QueryParam("selectAll") Boolean selectAll,
+			@QueryParam("bulkTaxonIds") String bulkTaxonIds, @QueryParam("bulkPosition") String bulkPosition,
+			@Context HttpServletRequest request, @Context UriInfo uriInfo) {
+		try {
+
+			if ((Boolean.FALSE.equals(selectAll) && bulkTaxonIds != null && !bulkAction.isEmpty()
+					&& !bulkTaxonIds.isEmpty()) || (Boolean.TRUE.equals(selectAll) && !bulkAction.isEmpty())) {
+
+				if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
+					return Response.status(Status.BAD_REQUEST).build();
+				}
+
+				TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(selectAll, bulkAction,
+						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao,
+						taxonomyESOperation, taxonomyRegistryDao, esServicesApi, taxonomyEventProducer);
+
+				Thread thread = new Thread(bulkMappingThread);
+				thread.start();
+				return Response.status(Status.OK).build();
+			}
+
+			return Response.status(Status.OK).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@GET
+	@Path("esList")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+	@Operation(summary = "Get taxonomy name list", responses = {
+			@ApiResponse(responseCode = "200", description = "Taxonomy Name List", content = @Content(schema = @Schema(implementation = TaxonomyElasticNameListResponse.class))),
+			@ApiResponse(responseCode = "404", description = "Taxonomy list not found", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response getEsList(@Context HttpServletRequest request,
+			@Parameter(description = "Taxon ID") @QueryParam("taxonId") Long taxonId,
+			@Parameter(description = "Comma separated rank list") @QueryParam("rankList") String rankList,
+			@Parameter(description = "Status list") @QueryParam("statusList") String statusList,
+			@Parameter(description = "Position list") @QueryParam("positionList") String positionList,
+			@Parameter(description = "Limit", example = "-1") @DefaultValue("-1") @QueryParam("limit") Integer limit,
+			@Parameter(description = "Offset id", example = "-1") @DefaultValue("-1") @QueryParam("offsetId") Long offsetId,
+			@Parameter(description = "Offset path") @QueryParam("offsetPath") String offsetPath) {
+		try {
+			TaxonomyElasticNameListResponse result = taxonomyService.getEsTaxonList(request, taxonId, rankList,
+					statusList, positionList, limit, offsetId, offsetPath);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

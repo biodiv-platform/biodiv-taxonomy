@@ -18,9 +18,11 @@ import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
+import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
+import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.utility.ApiException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -71,4 +73,13 @@ public interface TaxonomyDefinitionSerivce {
 	public Activity logComment(HttpServletRequest request, CommentLoggingData loggingData);
 
 	public Map<String, TaxonomyDefinition> updateItalicisedForm();
+
+	public TaxonomyDefinition transferSynonyms(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> synonymIds, Boolean selectAll);
+
+	public TaxonomyDefinition transferCommonNames(HttpServletRequest request, Long taxonId, Long prevTaxonId,
+			List<Long> commonNameIds, Boolean selectAll);
+
+	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request, Long taxonId, String rankList,
+			String statusList, String positionList, Integer limit, Long offsetId, String offsetPath);
 }

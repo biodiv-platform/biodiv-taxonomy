@@ -4,12 +4,14 @@ package com.strandls.taxonomy.dao;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.Logger;
@@ -61,6 +63,24 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			logger.error(e.getMessage());
 		}
 		return entity;
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyDefinition> fetchByListOfIds(List<Long> taxonIds) {
+		String qry = "from TaxonomyDefinition where id IN (:taxonIds)";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyDefinition> result = null;
+		try {
+			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			query.setParameterList("taxonIds", taxonIds);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
 	}
 
 	public List<Long> getAllIds(int limit, int offset) {
@@ -155,6 +175,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 					StandardBasicTypes.LONG);
 			if (taxonId != null)
 				query.setParameter(TAXON_ID, taxonId);
+			query.setParameter("classificationId", TaxonomyRegistryDao.getDefaultClassificationId());
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -188,17 +209,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 				// Remove old taxonomy from the hierarchy.
 				session.delete(oldtaxonomyRegistry);
-
-				// Attach all the children to new accepted name (Hierarchy update)
-				String newPath = newTaxonomyRegistry.getPath();
-				String oldPath = oldtaxonomyRegistry.getPath();
-				String qry = "update taxonomy_registry "
-						+ " set path = text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath)))"
-						+ " where path <@ text2ltree(:oldPath) and path != text2ltree(:oldPath)";
-				query = session.createNativeQuery(qry);
-				query.setParameter("newPath", newPath);
-				query.setParameter("oldPath", oldPath);
-				rowsUpdated += query.executeUpdate();
 
 				tx.commit();
 				return rowsUpdated;
@@ -315,6 +325,219 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			response.setTaxonomyNameListItems(taxonomyNamelistItems);
 
 			return response;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyDefinition> findBySynonymIds(List<Long> synonymIds) {
+		String qry = "from TaxonomyDefinition where id IN (:synonymIds)";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyDefinition> result = null;
+		try {
+			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			query.setParameterList("synonymIds", synonymIds);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public int updatePath(String newPath, String oldPath) {
+
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+
+			// Attach all the children to new path (Hierarchy update)
+			String qry = "update taxonomy_registry " + "set path = case "
+					+ "    when nlevel(path) = nlevel(text2ltree(:oldPath)) " + "    then text2ltree(:newPath) "
+					+ "    else text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath))) " + "end "
+					+ "where path <@ text2ltree(:oldPath) " + "and classification_id = (:classificationId)";
+			Query query = session.createNativeQuery(qry);
+			query.setParameter("newPath", newPath);
+			query.setParameter("oldPath", oldPath);
+			query.setParameter("classificationId", TaxonomyRegistryDao.getDefaultClassificationId());
+			int rowsUpdated = query.executeUpdate();
+
+			tx.commit();
+			return rowsUpdated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public int deleteByIds(List<Long> ids) {
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+
+			String qry = "update taxonomy_definition set is_deleted = true where id in (:ids)";
+			Query query = session.createNativeQuery(qry);
+			query.setParameter("ids", ids);
+			int rowsUpdated = query.executeUpdate();
+
+			tx.commit();
+			return rowsUpdated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
+
+	public void updateRecoNameByTaxonId(Long taxonId, Boolean isScientific, String name, String canonicalName) {
+		String qry = "UPDATE recommendation SET name = :name, lowercase_name = :lowercaseName, "
+				+ "canonical_name = :canonicalName WHERE taxon_concept_id = :taxonId "
+				+ "AND is_scientific_name = :isScientific";
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("name", name);
+			query.setParameter("lowercaseName", name.toLowerCase());
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("isScientific", isScientific);
+			query.setParameter("canonicalName", canonicalName);
+			query.executeUpdate();
+			tx.commit();
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+	}
+
+	public List<Object[]> deleteRecoNameByTaxonId(Long taxonId, Boolean isScientific) {
+		String qry = "UPDATE recommendation SET taxon_concept_id = null, accepted_name_id = null "
+				+ "WHERE taxon_concept_id = :taxonId " + "AND is_scientific_name = :isScientific "
+				+ "RETURNING id, name, taxon_concept_id, accepted_name_id";
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("isScientific", isScientific);
+			List<Object[]> updated = query.getResultList();
+			tx.commit();
+			return updated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+			return Collections.emptyList();
+		} finally {
+			session.close();
+		}
+	}
+
+	public List<Object[]> updateRecoNameByTaxonIds(List<Long> taxonIds, Long newAcceptedId, Boolean isScientific) {
+		String qry = "UPDATE recommendation SET accepted_name_id = :newAcceptedId "
+				+ "WHERE taxon_concept_id IN (:taxonIds) " + "AND is_scientific_name = :isScientific "
+				+ "RETURNING id, name, taxon_concept_id, accepted_name_id";
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("newAcceptedId", newAcceptedId);
+			query.setParameterList("taxonIds", taxonIds);
+			query.setParameter("isScientific", isScientific);
+			List<Object[]> updated = query.getResultList();
+			tx.commit();
+			return updated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error("Error updating reco names for taxonIds={}, newAcceptedId={}", taxonIds, newAcceptedId, e);
+			return Collections.emptyList();
+		} finally {
+			session.close();
+		}
+	}
+
+	public void updateSpeciesNameByTaxonId(Long taxonId, String name) {
+		String qry = "UPDATE species SET title = :name WHERE taxon_concept_id = :taxonId";
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("name", name);
+			query.setParameter("taxonId", taxonId);
+			query.executeUpdate();
+			tx.commit();
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Object[]> getRecoDetailsById(Long taxonId, Boolean isScientific) {
+		String qry = "SELECT id, name, taxon_concept_id, accepted_name_id FROM recommendation "
+				+ "WHERE taxon_concept_id = :taxonId AND is_scientific_name = :isScientific";
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("isScientific", isScientific);
+			List<Object[]> results = query.list();
+			tx.commit();
+			return results;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+			return Collections.emptyList();
+		} finally {
+			session.close();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Object[]> getSpeciesDetailsById(Long taxonId) {
+		String qry = "SELECT id, title, taxon_concept_id FROM species WHERE taxon_concept_id = :taxonId";
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("taxonId", taxonId);
+			List<Object[]> results = query.list();
+			tx.commit();
+			return results;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+			return Collections.emptyList();
+		} finally {
+			session.close();
 		}
 	}
 }

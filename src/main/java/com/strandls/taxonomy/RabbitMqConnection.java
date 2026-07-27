@@ -24,12 +24,21 @@ public class RabbitMqConnection {
 	public static final String EXCHANGE_BIODIV;
 	public static final String MAIL_QUEUE;
 	public static final String MAIL_ROUTING_KEY;
+	public static final String TAXONOMY_EVENT_QUEUE;
+	public static final String TAXONOMY_EVENT_ROUTING_KEY;
+	public static final String SPECIES_EVENT_QUEUE = "speciesQueue";
+	public static final String SPECIES_EVENT_ROUTING_KEY = "species.updated";
+	public static final String DOCSCI_QUEUE = "docSciQueue";
+	public static final String DOCSCI_ROUTING_KEY = "docSci.updated";
 
 	static {
 		Properties properties = PropertyFileUtil.fetchProperty("config.properties");
 		EXCHANGE_BIODIV = properties.getProperty("rabbitmq_exchange");
 		MAIL_QUEUE = properties.getProperty("rabbitmq_queue");
 		MAIL_ROUTING_KEY = properties.getProperty("rabbitmq_routingKey");
+		TAXONOMY_EVENT_QUEUE = "taxonomyQueue";
+		TAXONOMY_EVENT_ROUTING_KEY = "taxonomy.updated";
+
 	}
 
 	public Channel setRabbitMQConnetion() throws IOException, TimeoutException {
@@ -59,6 +68,12 @@ public class RabbitMqConnection {
 		channel.exchangeDeclare(EXCHANGE_BIODIV, "direct");
 		channel.queueDeclare(MAIL_QUEUE, false, false, false, null);
 		channel.queueBind(MAIL_QUEUE, EXCHANGE_BIODIV, MAIL_ROUTING_KEY);
+		channel.queueDeclare(TAXONOMY_EVENT_QUEUE, false, false, false, null);
+		channel.queueBind(TAXONOMY_EVENT_QUEUE, EXCHANGE_BIODIV, TAXONOMY_EVENT_ROUTING_KEY);
+		channel.queueDeclare(SPECIES_EVENT_QUEUE, false, false, false, null);
+		channel.queueBind(SPECIES_EVENT_QUEUE, EXCHANGE_BIODIV, SPECIES_EVENT_ROUTING_KEY);
+		channel.queueDeclare(DOCSCI_QUEUE, false, false, false, null);
+		channel.queueBind(DOCSCI_QUEUE, EXCHANGE_BIODIV, DOCSCI_ROUTING_KEY);
 
 		return channel;
 	}

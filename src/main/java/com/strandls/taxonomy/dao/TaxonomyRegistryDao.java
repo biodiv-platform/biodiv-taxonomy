@@ -83,6 +83,26 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyRegistry> fetchByListOfTaxonomyIds(List<Long> taxonIds) {
+		String qry = "from TaxonomyRegistry tr where tr.taxonomyDefinationId IN (:taxonIds)"
+				+ "and tr.classificationId = :classificationId";
+		Session session = sessionFactory.openSession();
+		List<TaxonomyRegistry> result = null;
+		try {
+			Query<TaxonomyRegistry> query = session.createQuery(qry);
+			query.setParameterList("taxonIds", taxonIds);
+			query.setParameter(CLASSIFICATION_ID_STRING, CLASSIFICATION_ID);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
 	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId,
 			Long uploaderId, Timestamp uploadTime) {
 		uploadTime = uploadTime == null ? new Timestamp(new Date().getTime()) : uploadTime;
@@ -159,7 +179,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 						+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
 						+ " from taxonomy_definition as t, taxonomy_registry as tR"
 						+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
-						+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 " + " order by nlevel(tR.path), t.name";
+						+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 "
+						+ " order by nlevel(tR.path), t.name";
 				query = session.createNativeQuery(queryString, "TaxonRelationMapping");
 				query.setParameter(PARENT_CHECK, parentCheck);
 			}
@@ -210,7 +231,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	@SuppressWarnings("rawtypes")
 	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId, Long classificationId) {
 		try (Session session = sessionFactory.openSession()) {
-			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry where path @> "
+			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form, td.position from (select * from taxonomy_registry where path @> "
 					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId and classification_id=:classificationId) and "
 					+ "classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
 					+ "on td.id = tr.taxon_definition_id order by tr.path";

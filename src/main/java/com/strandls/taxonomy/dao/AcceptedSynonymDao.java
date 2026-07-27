@@ -1,6 +1,7 @@
 /** */
 package com.strandls.taxonomy.dao;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -114,6 +115,29 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
+	public List<Long> findSynonymIdsByAcceptedIds(List<Long> acceptedIds) {
+		if (acceptedIds == null || acceptedIds.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		String qry = "select a.synonymId from AcceptedSynonym a where a.acceptedId in :acceptedIds";
+		Session session = sessionFactory.openSession();
+		List<Long> result = Collections.emptyList();
+
+		try {
+			Query<Long> query = session.createQuery(qry, Long.class);
+			query.setParameter("acceptedIds", acceptedIds);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
 	/**
 	 * Transfer all the synonym from one accepted name to another
 	 *
@@ -133,6 +157,60 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 			tx.commit();
 			return rowsUpdated;
 		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
+
+	@SuppressWarnings("unchecked")
+	public int allSynonymTransfer(Long prevTaxonId, Long newTaxonId) {
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+
+			Query query = session.createNamedQuery("synonymTransfer");
+			query.setParameter("acceptedId", prevTaxonId);
+			query.setParameter("newAcceptedId", newTaxonId);
+			int rowsUpdated = query.executeUpdate();
+			logger.debug(rowsUpdated + " Synonyms updated their accepted id");
+
+			tx.commit();
+
+			return rowsUpdated;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
+
+	@SuppressWarnings("unchecked")
+	public int bulkSynonymTransfer(List<Long> synonymIds, Long newTaxonId) {
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+
+		try {
+			tx = session.beginTransaction();
+
+			String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where synonymId IN (:synonymIds)";
+			Query<AcceptedSynonym> query = session.createQuery(qry);
+			query.setParameterList("synonymIds", synonymIds);
+			query.setParameter("newAcceptedId", newTaxonId);
+
+			int rowsUpdated = query.executeUpdate();
+
+			tx.commit();
+
+			return rowsUpdated;
+
+		} catch (Exception e) {
+			e.printStackTrace();
 			logger.error(e.getMessage());
 		} finally {
 			session.close();
