@@ -75,6 +75,7 @@ import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
+import com.strandls.taxonomy.pojo.response.NameMatching;
 import com.strandls.taxonomy.service.CommonNameSerivce;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
@@ -702,12 +703,24 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index) throws IOException {
+	public NameMatching nameMatching(FormDataBodyPart filePart, Integer index, Integer synonym, Integer cname,
+			String rank) throws IOException {
 		InputStream inputStream = filePart.getValueAs(InputStream.class);
 		Workbook workbook = new XSSFWorkbook(inputStream);
-		Map<String, Object> result = new LinkedHashMap<>();
-		List<Map<Object, Object>> values = new ArrayList<>();
+		NameMatching result = new NameMatching();
+		List<Map<String, Object>> values = new ArrayList<>();
+		Map<String, Object> synonymMap = new LinkedHashMap<>();
+		Map<String, Object> commonNameMap = new LinkedHashMap<>();
+		Map<String, Object> hierMap = new LinkedHashMap<>();
 		Sheet sheet = workbook.getSheetAt(0);
+
+		Map<Integer, String> rankMap = new HashMap<>();
+		for (String ranki : rank.split("\\|")) {
+			String[] rankDet = ranki.split("\\s*:\\s*");
+			rankMap.put(Integer.valueOf(rankDet[1]), rankDet[0]);
+		}
+
+		Map<String, Object> matchMap = new HashMap<>();
 
 		Row headersRow = sheet.getRow(0);
 		List<String> headers = new ArrayList<>();
@@ -715,7 +728,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			headers.add(header.getStringCellValue());
 		}
 
-		result.put("headers", headers);
+		result.setHeaders(headers);
 
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0) {
@@ -723,7 +736,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			// Read the first column (index 0)
-			Map<Object, Object> rowMap = new HashMap<>();
+			Map<String, Object> rowMap = new HashMap<>();
 			Cell cell = row.getCell(index);
 			String rowValues = "";
 			for (int i = 0; i < headers.size(); i++) {
@@ -735,6 +748,38 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 			if (cell != null) {
 				try {
+					if (synonym != -1) {
+						Cell synonymcell = row.getCell(synonym);
+						if (synonymcell != null) {
+							String[] syns = synonymcell.toString().split("\\s*;\\s*");
+							for (String syn : syns) {
+								ParsedName parsedName = utilityServiceApi.getNameParsed(syn);
+
+								if (parsedName.getCanonical() != null) {
+
+									String canonicalName = parsedName.getCanonical().getSimple();
+									List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
+											"canonical_form", canonicalName);
+									List<Object> optMatches = new ArrayList<>();
+									for (Object match : matches) {
+										Long id = ((Integer) ((Map) match).get("id")).longValue();
+										Map<String, Object> optMatch = new LinkedHashMap<>();
+										optMatch.put("name", ((Map) match).get("name"));
+										optMatch.put("rank", ((Map) match).get("rank"));
+										optMatch.put("status", ((Map) match).get("status"));
+										optMatch.put("position", ((Map) match).get("position"));
+										optMatch.put("group_name", ((Map) match).get("group_name"));
+										optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
+										optMatch.put("id", id);
+										optMatch.put("source", cell.toString());
+										optMatches.add(optMatch);
+									}
+									synonymMap.put(syn + "|" + cell.toString(), optMatches);
+								}
+
+							}
+						}
+					}
 					ParsedName parsedName = utilityServiceApi.getNameParsed(cell.toString());
 
 					if (parsedName.getCanonical() != null) {
@@ -753,11 +798,73 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							optMatch.put("group_name", ((Map) match).get("group_name"));
 							optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
 							optMatch.put("id", id);
+							if (cname != -1) {
+								Cell cnamecell = row.getCell(cname);
+								if (cnamecell != null) {
+									List<Object> cnames = (List<Object>) ((Map) match).get("common_names");
+									Map<String, Long> cnameMap = new HashMap<>();
+									if (cnames != null) {
+										for (Object name : cnames) {
+											Long cnameid = ((Integer) ((Map) name).get("id")).longValue();
+											String commonName = ((Map) name).get("name").toString();
+											String lang = ((Map) name).get("language_name").toString();
+											cnameMap.put(commonName + "|" + lang, cnameid);
+										}
+									}
+									String[] commonNames = cnamecell.toString().split("\\s*;\\s*");
+									for (String commonName : commonNames) {
+										String[] cnamedet = commonName.split("\\s*:\\s*");
+										String lang = cnamedet[0];
+										String name = cnamedet[1];
+										Map<String, Object> cnameMatch = new HashMap<>();
+										if (cnameMap.containsKey(name + "|" + lang)) {
+											cnameMatch.put("name", name);
+											cnameMatch.put("lang", lang);
+											cnameMatch.put("source", cell.toString());
+											cnameMatch.put("id", cnameMap.get(name + "|" + lang));
+										}
+										commonNameMap.put(name + "|" + cell.toString() + "|" + lang, cnameMatch);
+									}
+								}
+							}
 							optMatches.add(optMatch);
 						}
 						rowMap.put(rowValues, optMatches);
 						values.add(rowMap);
 					} else {
+						for (Integer hierIndex : rankMap.keySet()) {
+							Cell hiercell = row.getCell(hierIndex);
+							if (hiercell != null) {
+								ParsedName parsedHierName = utilityServiceApi.getNameParsed(hiercell.toString());
+								if (parsedHierName.getCanonical() != null) {
+									String canonicalName = parsedHierName.getCanonical().getSimple();
+									if (!matchMap.containsKey(canonicalName)) {
+									List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
+											"canonical_form", canonicalName);
+									List<Object> optMatches = new ArrayList<>();
+									for (Object match : matches) {
+										Long id = ((Integer) ((Map) match).get("id")).longValue();
+										Map<String, Object> optMatch = new LinkedHashMap<>();
+										optMatch.put("name", ((Map) match).get("name"));
+										optMatch.put("rank", ((Map) match).get("rank"));
+										optMatch.put("status", ((Map) match).get("status"));
+										optMatch.put("position", ((Map) match).get("position"));
+										optMatch.put("group_name", ((Map) match).get("group_name"));
+										optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
+										optMatch.put("id", id);
+										optMatch.put("source", cell.toString());
+										optMatches.add(optMatch);
+									}
+									hierMap.put(hiercell.toString() + "|" + cell.toString() + "|" + rankMap.get(hierIndex),
+											optMatches);
+									matchMap.put(canonicalName, optMatches);
+									} else {
+										hierMap.put(hiercell.toString() + "|" + cell.toString() + "|" + rankMap.get(hierIndex),
+												matchMap.get(canonicalName));
+									}
+								}
+							}
+						}
 						rowMap.put(rowValues, new ArrayList<>());
 						values.add(rowMap);
 					}
@@ -766,7 +873,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 			}
 		}
-		result.put("data", values);
+		result.setData(values);
+		result.setSynonym(synonymMap);
+		result.setCname(commonNameMap);
+		result.setHierarchy(hierMap);
 		workbook.close();
 		inputStream.close();
 		return result;

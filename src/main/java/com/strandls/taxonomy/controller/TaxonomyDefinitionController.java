@@ -27,6 +27,7 @@ import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.NameMatching;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
 import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
@@ -176,17 +177,32 @@ public class TaxonomyDefinitionController {
 	@Path(ApiConstants.UPLOAD + ApiConstants.SEARCH)
 	@Consumes({ MediaType.MULTIPART_FORM_DATA })
 	@Operation(summary = "Upload the file for taxon definition search", requestBody = @RequestBody(required = true, description = "Multi-part file for name matching"), responses = {
-			@ApiResponse(responseCode = "200", description = "Success/failure as a map", content = @Content(schema = @Schema(implementation = Map.class))),
+			@ApiResponse(responseCode = "200", description = "Success/failure as a map", content = @Content(schema = @Schema(implementation = NameMatching.class))),
 			@ApiResponse(responseCode = "400", description = "file not present", content = @Content(schema = @Schema(implementation = String.class))),
 			@ApiResponse(responseCode = "500", description = "ERROR", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response uploadSearch(final FormDataMultiPart multiPart) {
 		FormDataBodyPart filePart = multiPart.getField("file");
-		Integer index = Integer.valueOf(multiPart.getField("column").getValue());
+		FormDataBodyPart columnField = multiPart.getField("column");
+		Integer index = (columnField != null) 
+		    ? Integer.valueOf(columnField.getValue()) 
+		    : -1;
+		FormDataBodyPart synonymField = multiPart.getField("synonym");
+		Integer synonym = (synonymField != null) 
+		    ? Integer.valueOf(synonymField.getValue()) 
+		    : -1;
+		FormDataBodyPart cnameField = multiPart.getField("cname");
+		Integer cname = (cnameField != null) 
+		    ? Integer.valueOf(cnameField.getValue()) 
+		    : -1;
+		FormDataBodyPart rankField = multiPart.getField("hierarchy");
+		String rank = (rankField != null) 
+		    ? String.valueOf(rankField.getValue()) 
+		    : null;
 		if (filePart == null) {
 			return Response.status(Response.Status.BAD_REQUEST).entity("File not present").build();
 		}
 		try {
-			Map<String, Object> result = taxonomyService.nameMatching(filePart, index);
+			NameMatching result = taxonomyService.nameMatching(filePart, index, synonym, cname, rank);
 			return Response.ok().entity(result).build();
 		} catch (IOException e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

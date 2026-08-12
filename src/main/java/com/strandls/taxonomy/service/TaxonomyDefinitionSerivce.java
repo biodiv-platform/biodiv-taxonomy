@@ -17,6 +17,7 @@ import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.NameMatching;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
 import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
@@ -46,7 +47,7 @@ public interface TaxonomyDefinitionSerivce {
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
 			throws IOException, ApiException, ExecutionException;
 
-	public Map<String, Object> nameMatching(FormDataBodyPart filePart, Integer index) throws IOException;
+	public NameMatching nameMatching(FormDataBodyPart filePart, Integer index, Integer synonym, Integer cname, String rank) throws IOException;
 
 	public TaxonomicNames findSynonymCommonName(Long taxonId);
 
