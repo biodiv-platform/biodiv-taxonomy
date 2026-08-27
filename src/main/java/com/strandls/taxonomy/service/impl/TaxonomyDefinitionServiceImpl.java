@@ -831,7 +831,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 											Long cnameid = ((Integer) idObj).longValue();
 											String commonName = nameObj.toString();
 											String lang = langObj.toString();
-											cnameMap.put(commonName + "#" + lang + "#" + row.getRowNum(), cnameid);
+											cnameMap.put(commonName + "#" + lang, cnameid);
 										}
 									}
 									String[] commonNames = cnamecell.toString().split("\\s*\\|\\s*");
