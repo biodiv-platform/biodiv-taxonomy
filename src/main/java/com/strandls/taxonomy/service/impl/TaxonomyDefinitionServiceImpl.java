@@ -753,7 +753,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (synonym != -1) {
 						Cell synonymcell = row.getCell(synonym);
 						if (synonymcell != null) {
-							String[] syns = synonymcell.toString().split("\\s*|\\s*");
+							String[] syns = synonymcell.toString().split("\\s*\\|\\s*");
 							for (String syn : syns) {
 								ParsedName parsedName = utilityServiceApi.getNameParsed(syn);
 
@@ -834,7 +834,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 											cnameMap.put(commonName + "#" + lang, cnameid);
 										}
 									}
-									String[] commonNames = cnamecell.toString().split("\\s*|\\s*");
+									String[] commonNames = cnamecell.toString().split("\\s*\\|\\s*");
 									for (String commonName : commonNames) {
 										if (commonName.trim().isEmpty()) {
 											continue; // skip empty segments (e.g. trailing ';')
@@ -877,7 +877,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							if (cname != -1) {
 								Cell cnamecell = row.getCell(cname);
 								if (cnamecell != null) {
-									String[] commonNames = cnamecell.toString().split("\\s*|\\s*");
+									String[] commonNames = cnamecell.toString().split("\\s*\\|\\s*");
 									for (String commonName : commonNames) {
 										if (commonName.trim().isEmpty()) {
 											continue; // skip empty segments (e.g. trailing ';')
@@ -945,7 +945,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						if (cname != -1) {
 							Cell cnamecell = row.getCell(cname);
 							if (cnamecell != null) {
-								String[] commonNames = cnamecell.toString().split("\\s*|\\s*");
+								String[] commonNames = cnamecell.toString().split("\\s*\\|\\s*");
 								for (String commonName : commonNames) {
 									if (commonName.trim().isEmpty()) {
 										continue; // skip empty segments (e.g. trailing ';')
