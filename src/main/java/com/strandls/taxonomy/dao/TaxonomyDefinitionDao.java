@@ -6,7 +6,9 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -28,6 +30,7 @@ import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.util.AbstractDAO;
 import com.strandls.taxonomy.util.TaxonomyUtil;
+import com.strandls.utility.pojo.Language;
 import com.strandls.utility.pojo.ParsedName;
 
 import jakarta.inject.Inject;
@@ -539,5 +542,26 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		} finally {
 			session.close();
 		}
+	}
+	
+	public Map<String, Long> fetchByListOfNames(List<String> languageNames) {
+	    String qry = "from Language where name IN (:languageNames)";
+	    Session session = sessionFactory.openSession();
+	    Map<String, Long> result = new HashMap<>();
+	    try {
+	        Query<Language> query = session.createQuery(qry);
+	        query.setParameterList("languageNames", languageNames);
+	        List<Language> languages = query.getResultList();
+
+	        for (Language lang : languages) {
+	            result.put(lang.getName(), lang.getId());
+	        }
+
+	    } catch (Exception e) {
+	        logger.error(e.getMessage());
+	    } finally {
+	        session.close();
+	    }
+	    return result;
 	}
 }

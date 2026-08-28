@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -91,6 +92,7 @@ import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
+import com.strandls.utility.pojo.Language;
 import com.strandls.utility.pojo.ParsedName;
 
 import jakarta.inject.Inject;
@@ -2134,8 +2136,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							TaxonomyDefinition taxonomyDefinition;
 							taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rank, status,
 									position, null, null, (long) 1);
-							
-							givencreated = givencreated+1;
+
+							givencreated = givencreated + 1;
 
 							Long taxonId = taxonomyDefinition.getId();
 
@@ -2151,7 +2153,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						} catch (TaxonCreationException | UnRecongnizedRankException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-							givenerror = givenerror+1;
+							givenerror = givenerror + 1;
 						}
 
 					} else {
@@ -2169,45 +2171,74 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 
 				rankName = rankAndRest[0];
-				
+
 			}
 
 			List<String> synonymString = req.getSynonyms();
 			for (String syn : synonymString) {
 
-					ParsedName synonymParsedName;
-					String synonymRank;
+				ParsedName synonymParsedName;
+				String synonymRank;
 
-					// If any of these exception occurs then we are skipping the synonym.
-					try {
-						synonymParsedName = taxonomyCache.getName(rankName, syn.split("\\|")[0]);
-						synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
-					} catch (UnRecongnizedRankException e) {
-						continue;
-					}
+				// If any of these exception occurs then we are skipping the synonym.
+				try {
+					synonymParsedName = taxonomyCache.getName(rankName, syn.split("\\|")[0]);
+					synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
+				} catch (UnRecongnizedRankException e) {
+					continue;
+				}
 
-					try {
-						TaxonomyDefinition taxonomyDefinition;
-						taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(synonymParsedName, rankName, TaxonomyStatus.SYNONYM,
-								TaxonomyPosition.RAW, null, null, (long) 1);
-						acceptedSynonymDao.createAcceptedSynonym(acceptedId, taxonomyDefinition.getId());
-						taxonIds.add(taxonomyDefinition.getId());
-						syncreated = syncreated+1;
-					} catch (TaxonCreationException e) {
-						synerror = synerror+1;
-						continue;
-					}
+				try {
+					TaxonomyDefinition taxonomyDefinition;
+					taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(synonymParsedName, rankName,
+							TaxonomyStatus.SYNONYM, TaxonomyPosition.RAW, null, null, (long) 1);
+					acceptedSynonymDao.createAcceptedSynonym(acceptedId, taxonomyDefinition.getId());
+					taxonIds.add(taxonomyDefinition.getId());
+					syncreated = syncreated + 1;
+				} catch (TaxonCreationException e) {
+					synerror = synerror + 1;
+					continue;
+				}
 			}
 
-			/*if (taxonomyData.getCommonNames() != null) {
-				Long taxonId = taxonomyDefinition.getId();
-				Map<Long, String[]> languageIdToCommonNames = taxonomyData.getCommonNames();
-				if (languageIdToCommonNames != null && !languageIdToCommonNames.isEmpty()) {
-					commonNameSerivce.addCommonNames(taxonId, languageIdToCommonNames, source);
+			List<String> cnString = req.getCommonNames();
+			List<String> language = new ArrayList<>();
+			for (String cn : cnString) {
+				if (!language.contains(cn.split("\\|")[2])) {
+					language.add(cn.split("\\|")[2]);
 				}
-			}*/
+			}
+			Map<String, Long> languageMapping = taxonomyDao.fetchByListOfNames(language);
+			Map<Long, String[]> languageIdToCommonNames = new HashMap<>();
+			for (String cn : cnString) {
+				String[] parts = cn.split("\\|");
+				String name = parts[0];
+				String languageName = parts.length > 2 ? parts[2] : null;
+
+				if (languageName == null || languageName.isBlank()) {
+					continue; // or handle missing language however you prefer
+				}
+
+				Long languageId = languageMapping.get(languageName);
+				if (languageId == null) {
+					System.out.println("No matching language found for: " + languageName);
+					continue;
+				}
+
+				if (languageIdToCommonNames.containsKey(languageId)) {
+			        String[] existing = languageIdToCommonNames.get(languageId);
+			        String[] updated = Arrays.copyOf(existing, existing.length + 1);
+			        updated[existing.length] = name;
+			        languageIdToCommonNames.put(languageId, updated);
+			    } else {
+			        languageIdToCommonNames.put(languageId, new String[] { name });
+			    }
+			}
+			commonNameSerivce.addCommonNames(acceptedId, languageIdToCommonNames, null);
 			
-			results = givencreated+"|"+givenerror+"|"+syncreated+"|"+synerror;
+			taxonIds.add(acceptedId);
+
+			results = givencreated + "|" + givenerror + "|" + syncreated + "|" + synerror;
 
 		}
 		taxonomyESUpdate.pushToElastic(taxonIds);
