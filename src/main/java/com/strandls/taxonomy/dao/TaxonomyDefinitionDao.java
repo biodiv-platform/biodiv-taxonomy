@@ -545,16 +545,18 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	}
 	
 	public Map<String, Long> fetchByListOfNames(List<String> languageNames) {
-	    String qry = "from Language where name IN (:languageNames)";
+	    String qry = "SELECT id, name FROM public.language WHERE name IN (:languageNames)";
 	    Session session = sessionFactory.openSession();
 	    Map<String, Long> result = new HashMap<>();
 	    try {
-	        Query<Language> query = session.createQuery(qry);
+	        NativeQuery<Object[]> query = session.createNativeQuery(qry, Object[].class);
 	        query.setParameterList("languageNames", languageNames);
-	        List<Language> languages = query.getResultList();
+	        List<Object[]> rows = query.getResultList();
 
-	        for (Language lang : languages) {
-	            result.put(lang.getName(), lang.getId());
+	        for (Object[] row : rows) {
+	            Long id = ((Number) row[0]).longValue();
+	            String name = (String) row[1];
+	            result.put(name, id);
 	        }
 
 	    } catch (Exception e) {
