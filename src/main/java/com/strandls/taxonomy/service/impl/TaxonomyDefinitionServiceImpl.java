@@ -68,6 +68,7 @@ import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.BatchUpload;
 import com.strandls.taxonomy.pojo.response.BreadCrumb;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
@@ -1900,6 +1901,318 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logger.error(e.getMessage());
 		}
 		return findById(prevTaxonId);
+	}
+
+	@Override
+	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart,
+			Integer scientificNameColumn, Integer taxonConceptIdColumn, Integer speciesIdColumn,
+			Integer contributorColumn, Integer matchedStatusColumn, Integer matchedPositionColumn,
+			Integer hierarchyColumn, Integer statusColumn, Integer positionColumn, Integer rankColumn)
+			throws IOException {
+		InputStream inputStream = filePart.getValueAs(InputStream.class);
+		Workbook workbook = new XSSFWorkbook(inputStream);
+		List<BatchUpload> result = new ArrayList<>();
+		Map<Integer, List<String>> synonymMap = new HashMap<>();
+		Map<Integer, List<String>> cnameMap = new HashMap<>();
+		Map<Integer, Map<String, String>> hierMap = new HashMap<>();
+		Sheet sheet = workbook.getSheetAt(0);
+		Sheet synonyms = workbook.getSheetAt(1);
+		List<Rank> ranks = rankService.getAllRank(request);
+		for (Row syn : synonyms) {
+			if (syn.getRowNum() == 0)
+				continue;
+			Cell nameCell = syn.getCell(0);
+			Cell indexCell = syn.getCell(2);
+
+			if (nameCell != null && indexCell != null) {
+				String name = nameCell.getStringCellValue();
+				int index = Integer.valueOf(indexCell.toString());
+
+				synonymMap.computeIfAbsent(index, k -> new ArrayList<>())
+						.add(name + "|" + String.valueOf(syn.getCell(3)) + "|" + String.valueOf(syn.getCell(6)) + "|"
+								+ String.valueOf(syn.getCell(7)));
+			}
+		}
+
+		Sheet cnames = workbook.getSheetAt(2);
+		for (Row cn : cnames) {
+			if (cn.getRowNum() == 0)
+				continue;
+			Cell nameCell = cn.getCell(0);
+			Cell indexCell = cn.getCell(2);
+
+			if (nameCell != null && indexCell != null) {
+				String name = nameCell.getStringCellValue();
+				int index = Integer.valueOf(indexCell.toString());
+
+				cnameMap.computeIfAbsent(index, k -> new ArrayList<>())
+						.add(name + "|" + String.valueOf(cn.getCell(3)) + "|" + String.valueOf(cn.getCell(4)));
+			}
+		}
+
+		Sheet hier = workbook.getSheetAt(3);
+
+		for (Row h : hier) {
+			if (h.getRowNum() == 0)
+				continue;
+
+			Cell parentCell = h.getCell(2);
+			Cell indexCell = h.getCell(1);
+
+			if (indexCell != null && parentCell != null) {
+				int index = Integer.valueOf(indexCell.toString());
+
+				String value = String.valueOf(h.getCell(9));
+
+				hierMap.computeIfAbsent(index, k -> new HashMap<>()).put(String.valueOf(h.getCell(2)).toLowerCase(),
+						value);
+			}
+		}
+
+		for (Row row : sheet) {
+			if (row.getRowNum() == 0) {
+				continue;
+			}
+			Cell cell = row.getCell(scientificNameColumn);
+			if (cell != null) {
+				Cell taxonCell = row.getCell(taxonConceptIdColumn);
+				if (taxonCell != null) {
+					BatchUpload assign = new BatchUpload();
+					assign.setScientificName(String.valueOf(cell));
+					assign.setTaxonId(String.valueOf(taxonCell));
+					Boolean update = false;
+					if (statusColumn != null) {
+						Cell statusCell = row.getCell(statusColumn);
+						Cell matchedStatusCell = row.getCell(matchedStatusColumn);
+						if (statusCell != null && statusCell != matchedStatusCell) {
+							assign.setStatus("#" + String.valueOf(statusCell));
+							update = true;
+						} else {
+							assign.setStatus(String.valueOf(matchedStatusCell));
+						}
+					} else {
+						Cell matchedStatusCell = row.getCell(matchedStatusColumn);
+						assign.setStatus(String.valueOf(matchedStatusCell));
+					}
+					if (positionColumn != null) {
+						Cell positionCell = row.getCell(positionColumn);
+						Cell matchedPositionCell = row.getCell(matchedPositionColumn);
+						if (positionCell != null && positionCell != matchedPositionCell) {
+							assign.setPosition("#" + String.valueOf(positionCell));
+							update = true;
+						} else {
+							assign.setPosition(String.valueOf(matchedPositionCell));
+						}
+					} else {
+						Cell matchedPositionCell = row.getCell(matchedPositionColumn);
+						assign.setPosition(String.valueOf(matchedPositionCell));
+					}
+					assign.setHierarchy(String.valueOf(row.getCell(hierarchyColumn)).replace("|", ";"));
+					if (update) {
+						assign.setAction("UPDATE");
+					} else {
+						assign.setAction("NOOP");
+					}
+					assign.setSpeciesId(String.valueOf(row.getCell(speciesIdColumn)));
+					assign.setSynonyms(synonymMap.get(row.getRowNum()));
+					assign.setCommonNames(cnameMap.get(row.getRowNum()));
+					result.add(assign);
+				} else {
+					BatchUpload assign = new BatchUpload();
+					assign.setScientificName(String.valueOf(cell));
+					assign.setTaxonId(String.valueOf(taxonCell));
+					assign.setStatus("ACCEPTED");
+					assign.setPosition("RAW");
+					assign.setHierarchy(String.valueOf(row.getCell(hierarchyColumn)).replace("|", ";"));
+					if (rankColumn != null) {
+						Cell rankCell = row.getCell(rankColumn);
+						if (rankCell != null) {
+							Boolean validate = false;
+							List<String> create = new ArrayList<>();
+							String hierarchy = "";
+							for (Rank rank : ranks) {
+								System.out.println(rank.getName());
+								if (rankCell.toString().toLowerCase().equals(rank.getName())) {
+									System.out.println("matched");
+									validate = true;
+								} else if (validate == true && rank.getIsRequired() == true) {
+									if (hierMap.containsKey(row.getRowNum())) {
+										if (hierMap.get(row.getRowNum()).containsKey(rank.getName())) {
+											if (hierMap.get(row.getRowNum()).get(rank.getName()) != "null") {
+												System.out.println("Last matched");
+												hierarchy = hierarchy + hierMap.get(row.getRowNum()).get(rank.getName())
+														.replace("|", ";");
+												break;
+											} else {
+												System.out.println("Create");
+												create.add(rank.getName());
+											}
+										} else {
+											System.out.println("Not present hierarchy");
+											validate = false;
+											break;
+										}
+									} else {
+										validate = false;
+										break;
+									}
+								}
+							}
+							String hierarchylast = ";" + rankCell.toString().toLowerCase() + ":" + String.valueOf(cell)
+									+ "#";
+							assign.setHierarchy(hierarchy + hierarchylast);
+							assign.setAction(validate ? "CREATE" : "ERROR");
+						} else {
+							assign.setAction("ERROR");
+						}
+					} else {
+						assign.setAction("ERROR");
+					}
+					assign.setSynonyms(synonymMap.get(row.getRowNum()));
+					assign.setCommonNames(cnameMap.get(row.getRowNum()));
+					result.add(assign);
+				}
+			}
+		}
+
+		workbook.close();
+		inputStream.close();
+		return result;
+	}
+
+	@Override
+	public String batchUpload(HttpServletRequest request, List<BatchUpload> confirmRequests) {
+
+		String results = "";
+		Long givencreated = (long) 0;
+		Long givenerror = (long) 0;
+		Long syncreated = (long) 0;
+		Long synerror = (long) 0;
+		// CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		// Long userId = Long.parseLong(profile.getId());
+		List<Long> taxonIds = new ArrayList<>();
+
+		for (BatchUpload req : confirmRequests) {
+			StringBuilder path = new StringBuilder();
+			Long acceptedId = null;
+			String rankName = "";
+
+			String[] entries = req.getHierarchy().split(";");
+			if (req.getTaxonId() == null || "null".equals(req.getTaxonId())) {
+				for (String entry : entries) {
+					if (entry.isBlank()) {
+						continue;
+					}
+
+					String[] rankAndRest = entry.split(":", 2);
+					if (rankAndRest.length < 2) {
+						continue; // malformed entry, skip
+					}
+
+					String rank = rankAndRest[0];
+					String rest = rankAndRest[1];
+
+					String[] nameAndId = rest.split("#", 2);
+					String name = nameAndId[0];
+					String id = nameAndId.length > 1 ? nameAndId[1] : null;
+
+					if (id == null || id.isBlank()) {
+						System.out.println(name);
+
+						// Check for the valid hierarchy if the status is accepted.
+						TaxonomyStatus status = TaxonomyStatus.fromValue(req.getStatus());
+						TaxonomyPosition position = TaxonomyPosition.fromValue(req.getPosition());
+
+						String scientificName = name;
+
+						System.out.println(path.toString());
+
+						ParsedName parsedName;
+						try {
+							parsedName = taxonomyCache.getName(rank, scientificName);
+
+							TaxonomyDefinition taxonomyDefinition;
+							taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rank, status,
+									position, null, null, (long) 1);
+							
+							givencreated = givencreated+1;
+
+							Long taxonId = taxonomyDefinition.getId();
+
+							acceptedId = taxonId;
+							rankName = rank;
+
+							taxonIds.add(taxonId);
+							path.append(".");
+							path.append(taxonId);
+							taxonomyRegistryDao.createRegistry(null, path.toString().substring(1), rank, taxonId,
+									(long) 1, null);
+
+						} catch (TaxonCreationException | UnRecongnizedRankException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							givenerror = givenerror+1;
+						}
+
+					} else {
+						path.append(".");
+						path.append(id);
+					}
+
+				}
+			} else {
+				acceptedId = (long) Double.parseDouble(req.getTaxonId());
+				String last = entries[entries.length - 1];
+				String[] rankAndRest = last.split(":", 2);
+				if (rankAndRest.length < 2) {
+					continue; // malformed entry, skip
+				}
+
+				rankName = rankAndRest[0];
+				
+			}
+
+			List<String> synonymString = req.getSynonyms();
+			for (String syn : synonymString) {
+
+					ParsedName synonymParsedName;
+					String synonymRank;
+
+					// If any of these exception occurs then we are skipping the synonym.
+					try {
+						synonymParsedName = taxonomyCache.getName(rankName, syn.split("\\|")[0]);
+						synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
+					} catch (UnRecongnizedRankException e) {
+						continue;
+					}
+
+					try {
+						TaxonomyDefinition taxonomyDefinition;
+						taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(synonymParsedName, rankName, TaxonomyStatus.SYNONYM,
+								TaxonomyPosition.RAW, null, null, (long) 1);
+						acceptedSynonymDao.createAcceptedSynonym(acceptedId, taxonomyDefinition.getId());
+						taxonIds.add(taxonomyDefinition.getId());
+						syncreated = syncreated+1;
+					} catch (TaxonCreationException e) {
+						synerror = synerror+1;
+						continue;
+					}
+			}
+
+			/*if (taxonomyData.getCommonNames() != null) {
+				Long taxonId = taxonomyDefinition.getId();
+				Map<Long, String[]> languageIdToCommonNames = taxonomyData.getCommonNames();
+				if (languageIdToCommonNames != null && !languageIdToCommonNames.isEmpty()) {
+					commonNameSerivce.addCommonNames(taxonId, languageIdToCommonNames, source);
+				}
+			}*/
+			
+			results = givencreated+"|"+givenerror+"|"+syncreated+"|"+synerror;
+
+		}
+		taxonomyESUpdate.pushToElastic(taxonIds);
+
+		return results;
 	}
 
 	@Override

@@ -40,4 +40,5 @@ public class ApiConstants {
 	public static final String UPLOAD = "/upload";
 	public static final String SEARCH = "/search";
 	public static final String TRANSFER = "/transfer";
+	public static final String BATCHUPLOAD = "/batchUpload";
 }

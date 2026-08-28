@@ -17,6 +17,7 @@ import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.TaxonomyPositionUpdate;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.BatchUpload;
 import com.strandls.taxonomy.pojo.response.NameMatching;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionShow;
 import com.strandls.taxonomy.pojo.response.TaxonomyElasticNameListResponse;
@@ -83,4 +84,11 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request, Long taxonId, String rankList,
 			String statusList, String positionList, Integer limit, Long offsetId, String offsetPath);
+
+	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart, Integer scientificNameColumn,
+			Integer taxonConceptIdColumn, Integer speciesIdColumn, Integer contributorColumn,
+			Integer matchedStatusColumn, Integer matchedPositionColumn, Integer hierarchyColumn, Integer statusColumn,
+			Integer positionColumn, Integer rankColumn) throws IOException;
+
+	public String batchUpload(HttpServletRequest request, List<BatchUpload> confirmRequests);
 }
