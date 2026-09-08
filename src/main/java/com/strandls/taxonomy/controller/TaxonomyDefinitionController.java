@@ -615,13 +615,19 @@ public class TaxonomyDefinitionController {
 		if (rankPart != null) {
 			rankColumn = Integer.valueOf(rankPart.getValue());
 		}
+		
+		Integer acceptedColumn = null;
+		FormDataBodyPart acceptedPart = multiPart.getField("AcceptedId");
+		if (acceptedPart != null) {
+			acceptedColumn = Integer.valueOf(acceptedPart.getValue());
+		}
 		if (filePart == null) {
 			return Response.status(Response.Status.BAD_REQUEST).entity("File not present").build();
 		}
 		try {
 			List<BatchUpload> result = taxonomyService.assignUpload(request, filePart, scientificNameColumn, taxonConceptIdColumn,
 					speciesIdColumn, contributorColumn, matchedStatusColumn, matchedPositionColumn, hierarchyColumn,
-					statusColumn, positionColumn, rankColumn);
+					statusColumn, positionColumn, rankColumn, acceptedColumn);
 			return Response.ok().entity(result).build();
 		} catch (IOException e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

@@ -1909,8 +1909,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart,
 			Integer scientificNameColumn, Integer taxonConceptIdColumn, Integer speciesIdColumn,
 			Integer contributorColumn, Integer matchedStatusColumn, Integer matchedPositionColumn,
-			Integer hierarchyColumn, Integer statusColumn, Integer positionColumn, Integer rankColumn)
-			throws IOException {
+			Integer hierarchyColumn, Integer statusColumn, Integer positionColumn, Integer rankColumn,
+			Integer acceptedColumn) throws IOException {
 		InputStream inputStream = filePart.getValueAs(InputStream.class);
 		Workbook workbook = new XSSFWorkbook(inputStream);
 		List<BatchUpload> result = new ArrayList<>();
@@ -1983,11 +1983,24 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					assign.setScientificName(String.valueOf(cell));
 					assign.setTaxonId(String.valueOf(taxonCell));
 					Boolean update = false;
+					Boolean validate = true;
 					if (statusColumn != null) {
 						Cell statusCell = row.getCell(statusColumn);
 						Cell matchedStatusCell = row.getCell(matchedStatusColumn);
 						if (statusCell != null && statusCell != matchedStatusCell) {
-							assign.setStatus("#" + String.valueOf(statusCell));
+							Cell acceptedCell = acceptedColumn != null ? row.getCell(acceptedColumn) : null;
+							if (String.valueOf(statusCell).equals("SYNONYM")) {
+								if (acceptedCell != null) {
+									assign.setStatus(String.valueOf(matchedStatusCell) + "#"
+											+ String.valueOf(statusCell) + "#" + String.valueOf(acceptedCell));
+								} else {
+									assign.setStatus(
+											String.valueOf(matchedStatusCell) + "#" + String.valueOf(statusCell));
+									validate = false;
+								}
+							} else {
+								assign.setStatus(String.valueOf(matchedStatusCell) + "#" + String.valueOf(statusCell));
+							}
 							update = true;
 						} else {
 							assign.setStatus(String.valueOf(matchedStatusCell));
@@ -2000,8 +2013,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						Cell positionCell = row.getCell(positionColumn);
 						Cell matchedPositionCell = row.getCell(matchedPositionColumn);
 						if (positionCell != null && positionCell != matchedPositionCell) {
-							assign.setPosition("#" + String.valueOf(positionCell));
-							update = true;
+							assign.setPosition(
+									String.valueOf(matchedPositionCell) + "#" + String.valueOf(positionCell));
 						} else {
 							assign.setPosition(String.valueOf(matchedPositionCell));
 						}
@@ -2010,10 +2023,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						assign.setPosition(String.valueOf(matchedPositionCell));
 					}
 					assign.setHierarchy(String.valueOf(row.getCell(hierarchyColumn)).replace("|", ";"));
-					if (update) {
-						assign.setAction("UPDATE");
+					if (!validate) {
+						assign.setAction("ERROR");
 					} else {
-						assign.setAction("NOOP");
+						if (update) {
+							assign.setAction("UPDATE");
+						} else {
+							assign.setAction("NOOP");
+						}
 					}
 					assign.setSpeciesId(String.valueOf(row.getCell(speciesIdColumn)));
 					assign.setSynonyms(synonymMap.get(row.getRowNum()));
@@ -2172,6 +2189,49 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				rankName = rankAndRest[0];
 
+				TaxonomyDefinition taxonomyDefinition = findById(acceptedId);
+
+				if (req.getStatus().contains("#")) {
+					switch (req.getStatus().split("#")[1]) {
+					// status is changing from accepted to synonym
+					case "SYNONYM":
+
+						// Taking the first candidate for moving all the children
+						Long newTaxonId = Long.parseLong(req.getStatus().split("#")[2]);
+						TaxonomyDefinition acceptedTaxonomy = taxonomyDao.findById(newTaxonId);
+
+						if (acceptedTaxonomy == null)
+							throw new IllegalArgumentException(
+									"Could not find the accepted taxonomy with the Id you provided");
+
+						taxonomyDefinition.setStatus(TaxonomyStatus.SYNONYM.name());
+
+						// Taxonomy Id to be updated for elastic search
+						taxonIds = taxonomyDao.getAllChildren(acceptedId);
+						if (taxonIds.size() > 1)
+							throw new IllegalArgumentException(
+									"This name cannot be converted to a synonym because it has child taxa");
+						taxonIds.add(newTaxonId);
+
+						// Make relevant update to the database.
+						TaxonomyRegistry oldTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedId, null);
+						TaxonomyRegistry newTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(newTaxonId, null);
+						taxonomyDao.updateStatusToSynonymInDB(newTaxonomyRegistry, oldTaxonomyRegistry);
+
+						// Update the status for given taxon node.
+						taxonomyDefinition = update(taxonomyDefinition);
+					}
+				}
+
+				if (req.getPosition().contains("#")) {
+					taxonomyDefinition.setPosition(req.getPosition().split("#")[1]);
+					taxonomyDefinition = update(taxonomyDefinition);
+
+					System.out.println("Position changed");
+
+					taxonIds.add(acceptedId);
+				}
+
 			}
 
 			List<String> synonymString = req.getSynonyms();
@@ -2226,16 +2286,16 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 
 				if (languageIdToCommonNames.containsKey(languageId)) {
-			        String[] existing = languageIdToCommonNames.get(languageId);
-			        String[] updated = Arrays.copyOf(existing, existing.length + 1);
-			        updated[existing.length] = name;
-			        languageIdToCommonNames.put(languageId, updated);
-			    } else {
-			        languageIdToCommonNames.put(languageId, new String[] { name });
-			    }
+					String[] existing = languageIdToCommonNames.get(languageId);
+					String[] updated = Arrays.copyOf(existing, existing.length + 1);
+					updated[existing.length] = name;
+					languageIdToCommonNames.put(languageId, updated);
+				} else {
+					languageIdToCommonNames.put(languageId, new String[] { name });
+				}
 			}
 			commonNameSerivce.addCommonNames(acceptedId, languageIdToCommonNames, null);
-			
+
 			taxonIds.add(acceptedId);
 
 			results = givencreated + "|" + givenerror + "|" + syncreated + "|" + synerror;

@@ -88,7 +88,7 @@ public interface TaxonomyDefinitionSerivce {
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart, Integer scientificNameColumn,
 			Integer taxonConceptIdColumn, Integer speciesIdColumn, Integer contributorColumn,
 			Integer matchedStatusColumn, Integer matchedPositionColumn, Integer hierarchyColumn, Integer statusColumn,
-			Integer positionColumn, Integer rankColumn) throws IOException;
+			Integer positionColumn, Integer rankColumn, Integer acceptedColumn) throws IOException;
 
 	public String batchUpload(HttpServletRequest request, List<BatchUpload> confirmRequests);
 }
