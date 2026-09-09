@@ -777,6 +777,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 										optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
 										optMatch.put("id", id);
 										optMatch.put("source", cell.toString());
+										optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 										optMatches.add(optMatch);
 										if (speciesMap.contains(id)) {
 											speciesMap.add(id);
@@ -811,6 +812,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							optMatch.put("position", ((Map) match).get("position"));
 							optMatch.put("group_name", ((Map) match).get("group_name"));
 							optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
+							optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 							optMatch.put("id", id);
 							if (cname != -1) {
 								Cell cnamecell = row.getCell(cname);
@@ -925,6 +927,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 												optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
 												optMatch.put("id", id);
 												optMatch.put("source", cell.toString());
+												optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 												optMatches.add(optMatch);
 												if (speciesMap.contains(id)) {
 													speciesMap.add(id);
@@ -998,6 +1001,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 											optMatch.put("hierarchy", ((Map) match).get("hierarchy"));
 											optMatch.put("id", id);
 											optMatch.put("source", cell.toString());
+											optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 											optMatches.add(optMatch);
 											if (speciesMap.contains(id)) {
 												speciesMap.add(id);
