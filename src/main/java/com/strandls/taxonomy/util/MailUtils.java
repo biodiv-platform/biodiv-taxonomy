@@ -10,6 +10,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.rabbitmq.client.Channel;
 import com.strandls.mail_utility.model.EnumModel.FIELDS;
 import com.strandls.mail_utility.model.EnumModel.INFO_FIELDS;
 import com.strandls.mail_utility.model.EnumModel.MAIL_TYPE;
@@ -17,6 +18,7 @@ import com.strandls.mail_utility.model.EnumModel.PERMISSION_GRANT;
 import com.strandls.mail_utility.model.EnumModel.PERMISSION_REQUEST;
 import com.strandls.mail_utility.producer.RabbitMQProducer;
 import com.strandls.mail_utility.util.JsonUtil;
+import com.strandls.taxonomy.RabbitChannelProvider;
 import com.strandls.taxonomy.RabbitMqConnection;
 import com.strandls.user.pojo.User;
 
@@ -30,7 +32,7 @@ public class MailUtils {
 	private final Logger logger = LoggerFactory.getLogger(MailUtils.class);
 
 	@Inject
-	private RabbitMQProducer mailProducer;
+	private RabbitChannelProvider channelProvider;
 
 	public void sendPermissionRequest(List<User> requestors, String taxonName, Long taxonId, String role,
 			User requestee, String encryptedKey, String requestorMessage) {
@@ -59,7 +61,9 @@ public class MailUtils {
 			mData.put(INFO_FIELDS.TYPE.getAction(), MAIL_TYPE.PERMISSION_REQUEST.getAction());
 			mData.put(INFO_FIELDS.RECIPIENTS.getAction(), Arrays.asList(data));
 
-			mailProducer.produceMail(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.MAIL_ROUTING_KEY, null,
+			Channel channel = channelProvider.get();
+			RabbitMQProducer producer = new RabbitMQProducer(channel);
+			producer.produceMail(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.MAIL_ROUTING_KEY, null,
 					JsonUtil.mapToJSON(mData));
 
 		} catch (Exception e) {
@@ -87,7 +91,9 @@ public class MailUtils {
 				mData.put(INFO_FIELDS.TYPE.getAction(), MAIL_TYPE.PERMISSION_GRANTED.getAction());
 				mData.put(INFO_FIELDS.RECIPIENTS.getAction(), Arrays.asList(data));
 
-				mailProducer.produceMail(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.MAIL_ROUTING_KEY, null,
+				Channel channel = channelProvider.get();
+				RabbitMQProducer producer = new RabbitMQProducer(channel);
+				producer.produceMail(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.MAIL_ROUTING_KEY, null,
 						JsonUtil.mapToJSON(mData));
 			} catch (Exception e) {
 				logger.error(e.getMessage());
