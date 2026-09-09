@@ -1918,56 +1918,64 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Map<Integer, List<String>> cnameMap = new HashMap<>();
 		Map<Integer, Map<String, String>> hierMap = new HashMap<>();
 		Sheet sheet = workbook.getSheetAt(0);
-		Sheet synonyms = workbook.getSheetAt(1);
 		List<Rank> ranks = rankService.getAllRank(request);
-		for (Row syn : synonyms) {
-			if (syn.getRowNum() == 0)
-				continue;
-			Cell nameCell = syn.getCell(0);
-			Cell indexCell = syn.getCell(2);
+		if (1 < workbook.getNumberOfSheets()) {
+			Sheet synonyms = workbook.getSheetAt(1);
+			for (Row syn : synonyms) {
+				if (syn.getRowNum() == 0)
+					continue;
+				Cell nameCell = syn.getCell(0);
+				Cell indexCell = syn.getCell(2);
 
-			if (nameCell != null && indexCell != null) {
-				String name = nameCell.getStringCellValue();
-				int index = Integer.valueOf(indexCell.toString());
+				if (nameCell != null && indexCell != null) {
+					String name = nameCell.getStringCellValue();
+					int index = Integer.valueOf(indexCell.toString());
 
-				synonymMap.computeIfAbsent(index, k -> new ArrayList<>())
-						.add(name + "|" + String.valueOf(syn.getCell(3)) + "|" + String.valueOf(syn.getCell(6)) + "|"
-								+ String.valueOf(syn.getCell(7)));
+					synonymMap.computeIfAbsent(index, k -> new ArrayList<>())
+							.add(name + "|" + String.valueOf(syn.getCell(3)) + "|"
+									+ (String.valueOf(syn.getCell(6)).equals("SYNONYM") ? "" : "#")
+									+ String.valueOf(syn.getCell(6)) + "|" + String.valueOf(syn.getCell(7)) + "|"
+									+ String.valueOf(syn.getCell(9)));
+				}
 			}
 		}
 
-		Sheet cnames = workbook.getSheetAt(2);
-		for (Row cn : cnames) {
-			if (cn.getRowNum() == 0)
-				continue;
-			Cell nameCell = cn.getCell(0);
-			Cell indexCell = cn.getCell(2);
+		if (2 < workbook.getNumberOfSheets()) {
+			Sheet cnames = workbook.getSheetAt(2);
+			for (Row cn : cnames) {
+				if (cn.getRowNum() == 0)
+					continue;
+				Cell nameCell = cn.getCell(0);
+				Cell indexCell = cn.getCell(2);
 
-			if (nameCell != null && indexCell != null) {
-				String name = nameCell.getStringCellValue();
-				int index = Integer.valueOf(indexCell.toString());
+				if (nameCell != null && indexCell != null) {
+					String name = nameCell.getStringCellValue();
+					int index = Integer.valueOf(indexCell.toString());
 
-				cnameMap.computeIfAbsent(index, k -> new ArrayList<>())
-						.add(name + "|" + String.valueOf(cn.getCell(3)) + "|" + String.valueOf(cn.getCell(4)));
+					cnameMap.computeIfAbsent(index, k -> new ArrayList<>())
+							.add(name + "|" + String.valueOf(cn.getCell(3)) + "|" + String.valueOf(cn.getCell(4)));
+				}
 			}
 		}
 
-		Sheet hier = workbook.getSheetAt(3);
+		if (3 < workbook.getNumberOfSheets()) {
+			Sheet hier = workbook.getSheetAt(3);
 
-		for (Row h : hier) {
-			if (h.getRowNum() == 0)
-				continue;
+			for (Row h : hier) {
+				if (h.getRowNum() == 0)
+					continue;
 
-			Cell parentCell = h.getCell(2);
-			Cell indexCell = h.getCell(1);
+				Cell parentCell = h.getCell(2);
+				Cell indexCell = h.getCell(1);
 
-			if (indexCell != null && parentCell != null) {
-				int index = Integer.valueOf(indexCell.toString());
+				if (indexCell != null && parentCell != null) {
+					int index = Integer.valueOf(indexCell.toString());
 
-				String value = String.valueOf(h.getCell(9));
+					String value = String.valueOf(h.getCell(9));
 
-				hierMap.computeIfAbsent(index, k -> new HashMap<>()).put(String.valueOf(h.getCell(2)).toLowerCase(),
-						value);
+					hierMap.computeIfAbsent(index, k -> new HashMap<>()).put(String.valueOf(h.getCell(2)).toLowerCase(),
+							value);
+				}
 			}
 		}
 
@@ -2000,6 +2008,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								}
 							} else {
 								assign.setStatus(String.valueOf(matchedStatusCell) + "#" + String.valueOf(statusCell));
+								validate = false;
 							}
 							update = true;
 						} else {
@@ -2227,8 +2236,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					taxonomyDefinition.setPosition(req.getPosition().split("#")[1]);
 					taxonomyDefinition = update(taxonomyDefinition);
 
-					System.out.println("Position changed");
-
 					taxonIds.add(acceptedId);
 				}
 
@@ -2242,15 +2249,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				// If any of these exception occurs then we are skipping the synonym.
 				try {
-					synonymParsedName = taxonomyCache.getName(rankName, syn.split("\\|")[0]);
-					synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
+					synonymParsedName = taxonomyCache.getName(syn.split("\\|")[4], syn.split("\\|")[0]);
+					synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, syn.split("\\|")[4]);
 				} catch (UnRecongnizedRankException e) {
 					continue;
 				}
 
 				try {
 					TaxonomyDefinition taxonomyDefinition;
-					taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(synonymParsedName, rankName,
+					taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(synonymParsedName, syn.split("\\|")[4],
 							TaxonomyStatus.SYNONYM, TaxonomyPosition.RAW, null, null, (long) 1);
 					acceptedSynonymDao.createAcceptedSynonym(acceptedId, taxonomyDefinition.getId());
 					taxonIds.add(taxonomyDefinition.getId());
