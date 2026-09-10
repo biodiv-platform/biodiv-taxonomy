@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.MessageProperties;
+import com.strandls.taxonomy.RabbitChannelProvider;
 import com.strandls.taxonomy.RabbitMqConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,18 +13,19 @@ public class TaxonomyEventProducer {
 
 	private static final Logger logger = LoggerFactory.getLogger(TaxonomyEventProducer.class);
 
-	private final Channel channel;
+	private final RabbitChannelProvider channelProvider;
 	private final ObjectMapper objectMapper;
 
 	@Inject
-	public TaxonomyEventProducer(Channel channel, ObjectMapper objectMapper) {
-		this.channel = channel;
+	public TaxonomyEventProducer(RabbitChannelProvider channelProvider, ObjectMapper objectMapper) {
+		this.channelProvider = channelProvider;
 		this.objectMapper = objectMapper;
 	}
 
 	public void sendTaxonomyUpdate(Object taxonomyObject, Boolean both, Boolean doc) {
 		try {
 			String message = objectMapper.writeValueAsString(taxonomyObject);
+			Channel channel = channelProvider.get();
 
 			// Always publish to taxonomy/observation
 			channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY,
