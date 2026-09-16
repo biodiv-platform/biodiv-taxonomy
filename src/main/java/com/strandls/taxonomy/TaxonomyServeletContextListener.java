@@ -81,7 +81,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				try {
 					rabbitConnection = rabbitMqConnection.connect();
 				} catch (Exception e) {
-					logger.error("Failed to establish RabbitMQ connection", e);
+					logger.error("[biodiv-taxonomy] Failed to establish RabbitMQ connection", e);
 				}
 
 				bind(Connection.class).toInstance(rabbitConnection);
