@@ -562,97 +562,36 @@ public class TaxonomyDefinitionController {
 	public Response uploadAssign(@Context HttpServletRequest request, final FormDataMultiPart multiPart) {
 		// Required fields
 		FormDataBodyPart filePart = multiPart.getField("file");
-
-		FormDataBodyPart scientificNamePart = multiPart.getField("scientificName");
-		Integer scientificNameColumn = Integer.valueOf(scientificNamePart.getValue());
-
-		FormDataBodyPart taxonConceptIdPart = multiPart.getField("TaxonConceptId");
-		Integer taxonConceptIdColumn = Integer.valueOf(taxonConceptIdPart.getValue());
-
-		FormDataBodyPart speciesIdPart = multiPart.getField("SpeciesId");
-		Integer speciesIdColumn = Integer.valueOf(speciesIdPart.getValue());
-
-		Integer contributorColumn = null;
-		FormDataBodyPart contributorPart = multiPart.getField("Contributor");
-		if (contributorPart != null) {
-			contributorColumn = Integer.valueOf(contributorPart.getValue());
-		}
-
-		// Optional fields — guard against null since frontend only appends these
-		// conditionally
-		Integer matchedStatusColumn = null;
-		FormDataBodyPart matchedStatusPart = multiPart.getField("MatchedStatus");
-		if (matchedStatusPart != null) {
-			matchedStatusColumn = Integer.valueOf(matchedStatusPart.getValue());
-		}
-
-		Integer matchedPositionColumn = null;
-		FormDataBodyPart matchedPositionPart = multiPart.getField("MatchedPosition");
-		if (matchedPositionPart != null) {
-			matchedPositionColumn = Integer.valueOf(matchedPositionPart.getValue());
-		}
-
-		Integer hierarchyColumn = null;
-		FormDataBodyPart hierarchyPart = multiPart.getField("Hierarchy");
-		if (hierarchyPart != null) {
-			hierarchyColumn = Integer.valueOf(hierarchyPart.getValue());
-		}
-
-		Integer statusColumn = null;
-		FormDataBodyPart statusPart = multiPart.getField("Status");
-		if (statusPart != null) {
-			statusColumn = Integer.valueOf(statusPart.getValue());
-		}
-
-		Integer positionColumn = null;
-		FormDataBodyPart positionPart = multiPart.getField("Position");
-		if (positionPart != null) {
-			positionColumn = Integer.valueOf(positionPart.getValue());
-		}
-		
-		Integer rankColumn = null;
-		FormDataBodyPart rankPart = multiPart.getField("Rank");
-		if (rankPart != null) {
-			rankColumn = Integer.valueOf(rankPart.getValue());
-		}
-		
-		Integer acceptedColumn = null;
-		FormDataBodyPart acceptedPart = multiPart.getField("AcceptedId");
-		if (acceptedPart != null) {
-			acceptedColumn = Integer.valueOf(acceptedPart.getValue());
-		}
 		if (filePart == null) {
 			return Response.status(Response.Status.BAD_REQUEST).entity("File not present").build();
 		}
 		try {
-			List<BatchUpload> result = taxonomyService.assignUpload(request, filePart, scientificNameColumn, taxonConceptIdColumn,
-					speciesIdColumn, contributorColumn, matchedStatusColumn, matchedPositionColumn, hierarchyColumn,
-					statusColumn, positionColumn, rankColumn, acceptedColumn);
+			List<BatchUpload> result = taxonomyService.assignUpload(request, filePart);
 			return Response.ok().entity(result).build();
 		} catch (IOException e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	@POST
 	@Path(ApiConstants.BATCHUPLOAD)
 	@Consumes({ MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_JSON })
 	@Operation(summary = "Confirm and create accepted taxa from batch upload", requestBody = @RequestBody(required = true, description = "List of accepted taxa to create"), responses = {
-	        @ApiResponse(responseCode = "200", description = "Success/failure as a map", content = @Content(schema = @Schema(implementation = BatchUpload.class))),
-	        @ApiResponse(responseCode = "400", description = "invalid request", content = @Content(schema = @Schema(implementation = String.class))),
-	        @ApiResponse(responseCode = "500", description = "ERROR", content = @Content(schema = @Schema(implementation = String.class))) })
+			@ApiResponse(responseCode = "200", description = "Success/failure as a map", content = @Content(schema = @Schema(implementation = BatchUpload.class))),
+			@ApiResponse(responseCode = "400", description = "invalid request", content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "500", description = "ERROR", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response confirmAssign(@Context HttpServletRequest request, final List<BatchUpload> confirmRequests) {
-	    if (confirmRequests == null || confirmRequests.isEmpty()) {
-	        return Response.status(Response.Status.BAD_REQUEST).entity("No accepted taxa provided").build();
-	    }
+		if (confirmRequests == null || confirmRequests.isEmpty()) {
+			return Response.status(Response.Status.BAD_REQUEST).entity("No accepted taxa provided").build();
+		}
 
-	    try {
-	        String result = taxonomyService.batchUpload(request, confirmRequests);
-	        return Response.ok().entity(result).build();
-	    } catch (Exception e) {
-	        return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
-	    }
+		try {
+			String result = taxonomyService.batchUpload(request, confirmRequests);
+			return Response.ok().entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
+		}
 	}
 
 	/**

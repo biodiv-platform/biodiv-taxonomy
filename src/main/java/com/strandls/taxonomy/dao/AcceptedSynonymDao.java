@@ -1,6 +1,7 @@
 /** */
 package com.strandls.taxonomy.dao;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -19,12 +20,26 @@ import jakarta.inject.Inject;
 /**
  * @author Abhishek Rudra
  */
+
 public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(AcceptedSynonymDao.class);
 
 	private static final String ACCEPTED_ID = "acceptedId";
 	private static final String SYNONYM_ID = "synonymId";
+
+	public final class DbUtils {
+		// Well under PostgreSQL's 65,535 limit, leaving room for other parameters
+		public static final int IN_CLAUSE_CHUNK_SIZE = 10_000;
+
+		public static <T> List<List<T>> chunk(List<T> list, int size) {
+			List<List<T>> chunks = new ArrayList<>();
+			for (int i = 0; i < list.size(); i += size) {
+				chunks.add(list.subList(i, Math.min(i + size, list.size())));
+			}
+			return chunks;
+		}
+	}
 
 	/**
 	 * @param sessionFactory
@@ -115,25 +130,24 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		return result;
 	}
 
-	@SuppressWarnings("unchecked")
 	public List<Long> findSynonymIdsByAcceptedIds(List<Long> acceptedIds) {
 		if (acceptedIds == null || acceptedIds.isEmpty()) {
 			return Collections.emptyList();
 		}
 
+		List<Long> distinctIds = acceptedIds.stream().distinct().toList();
 		String qry = "select a.synonymId from AcceptedSynonym a where a.acceptedId in :acceptedIds";
-		Session session = sessionFactory.openSession();
-		List<Long> result = Collections.emptyList();
+		List<Long> result = new ArrayList<>();
 
-		try {
+		try (Session session = sessionFactory.openSession()) {
 			Query<Long> query = session.createQuery(qry, Long.class);
-			query.setParameter("acceptedIds", acceptedIds);
-			result = query.getResultList();
-
+			for (List<Long> chunk : DbUtils.chunk(distinctIds, DbUtils.IN_CLAUSE_CHUNK_SIZE)) {
+				query.setParameter("acceptedIds", chunk);
+				result.addAll(query.getResultList());
+			}
 		} catch (Exception e) {
-			logger.error(e.getMessage());
-		} finally {
-			session.close();
+			logger.error("Failed to load synonym IDs for {} accepted IDs", acceptedIds.size(), e);
+			throw e;
 		}
 		return result;
 	}

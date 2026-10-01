@@ -85,10 +85,7 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyElasticNameListResponse getEsTaxonList(HttpServletRequest request, Long taxonId, String rankList,
 			String statusList, String positionList, Integer limit, Long offsetId, String offsetPath);
 
-	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart, Integer scientificNameColumn,
-			Integer taxonConceptIdColumn, Integer speciesIdColumn, Integer contributorColumn,
-			Integer matchedStatusColumn, Integer matchedPositionColumn, Integer hierarchyColumn, Integer statusColumn,
-			Integer positionColumn, Integer rankColumn, Integer acceptedColumn) throws IOException;
+	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart) throws IOException;
 
 	public String batchUpload(HttpServletRequest request, List<BatchUpload> confirmRequests);
 }

@@ -12,6 +12,7 @@ public class BatchUpload {
 	private String position;
 	private String hierarchy;
 	private String action;
+	private String error;
 
 	private List<String> synonyms;
 	private List<String> commonNames;
@@ -74,6 +75,14 @@ public class BatchUpload {
 
 	public void setAction(String action) {
 		this.action = action;
+	}
+
+	public String getError() {
+		return error;
+	}
+
+	public void setError(String error) {
+		this.error = error;
 	}
 
 	public List<String> getSynonyms() {

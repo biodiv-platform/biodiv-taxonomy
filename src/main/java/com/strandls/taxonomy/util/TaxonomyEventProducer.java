@@ -21,13 +21,15 @@ public class TaxonomyEventProducer {
 		this.objectMapper = objectMapper;
 	}
 
-	public void sendTaxonomyUpdate(Object taxonomyObject, Boolean both, Boolean doc) {
+	public void sendTaxonomyUpdate(Object taxonomyObject, Boolean observation, Boolean both, Boolean doc) {
 		try {
 			String message = objectMapper.writeValueAsString(taxonomyObject);
 
 			// Always publish to taxonomy/observation
-			channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY,
-					MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+			if (Boolean.TRUE.equals(observation)) {
+				channel.basicPublish(RabbitMqConnection.EXCHANGE_BIODIV, RabbitMqConnection.TAXONOMY_EVENT_ROUTING_KEY,
+						MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes("UTF-8"));
+			}
 
 			// Only publish to species when both=true
 			if (Boolean.TRUE.equals(both)) {

@@ -200,6 +200,6 @@ public class TaxonomyBulkMappingThread implements Runnable {
 		taxonomyData.setNewId(taxonId);
 		taxonomyData.setTimestamp(timestamp);
 		taxonomyData.setBreadCrumbs(breadCrumbs);
-		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData, true, true);
+		taxonomyEventProducer.sendTaxonomyUpdate(taxonomyData,true, true, true);
 	}
 }
