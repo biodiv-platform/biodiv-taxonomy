@@ -13,6 +13,8 @@ public class BatchUpload {
 	private String hierarchy;
 	private String action;
 	private String error;
+	private String acceptedId;
+	private String rank;
 
 	private List<String> synonyms;
 	private List<String> commonNames;
@@ -29,12 +31,28 @@ public class BatchUpload {
 		this.scientificName = scientificName;
 	}
 
+	public String getRank() {
+		return rank;
+	}
+
+	public void setRank(String rank) {
+		this.rank = rank;
+	}
+
 	public String getTaxonId() {
 		return taxonId;
 	}
 
 	public void setTaxonId(String taxonId) {
 		this.taxonId = taxonId;
+	}
+
+	public String getAcceptedId() {
+		return acceptedId;
+	}
+
+	public void setAcceptedId(String acceptedId) {
+		this.acceptedId = acceptedId;
 	}
 
 	public String getSpeciesId() {
