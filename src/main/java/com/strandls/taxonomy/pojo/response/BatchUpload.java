@@ -15,9 +15,11 @@ public class BatchUpload {
 	private String error;
 	private String acceptedId;
 	private String rank;
+	private Map<String, String> updateHier;
 
 	private List<String> synonyms;
 	private List<String> commonNames;
+	private List<String> positionHier;
 
 	public BatchUpload() {
 		super();
@@ -117,5 +119,21 @@ public class BatchUpload {
 
 	public void setCommonNames(List<String> commonNames) {
 		this.commonNames = commonNames;
+	}
+	
+	public List<String> getPositionHier() {
+		return positionHier;
+	}
+
+	public void setPositionHier(List<String> positionHier) {
+		this.positionHier = positionHier;
+	}
+	
+	public Map<String, String> getUpdateHier() {
+		return updateHier;
+	}
+
+	public void setUpdateHier(Map<String, String> updateHier) {
+		this.updateHier = updateHier;
 	}
 }
