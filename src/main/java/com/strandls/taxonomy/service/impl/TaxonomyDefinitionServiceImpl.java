@@ -2650,6 +2650,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				List<TaxonomyRegistryResponse> hierar = taxonomyRegistryDao.getPathToRoot(taxonId, null);
 				StringBuilder path = new StringBuilder();
 
+				String lastRank = null;
+
 				for (String entry : req.getHierarchy().split(";")) {
 					if (entry.isBlank()) {
 						continue;
@@ -2661,6 +2663,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					}
 
 					String rank = rankAndRest[0];
+					lastRank = rank;
 					String[] nameAndId = rankAndRest[1].split("#", 2);
 					String name = nameAndId[0];
 					String id = nameAndId.length > 1 ? nameAndId[1] : null;
@@ -2694,6 +2697,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());
 				taxonomyDefinition = update(taxonomyDefinition);
+
+				taxonomyRegistryDao.createRegistry(null, path.toString().substring(1), lastRank, acceptedId, userId,
+						null);
 
 				hierar = taxonomyRegistryDao.getPathToRoot(acceptedId, null);
 				List<Breadcrumb> breadCrumbs = new ArrayList<>();
@@ -2731,11 +2737,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 				taxonIds.add(newTaxonId);
 
-				// Make relevant update to the database.
 				TaxonomyRegistry oldTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedId, null);
-				TaxonomyRegistry newTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(newTaxonId, null);
-				taxonomyDao.updateStatusToSynonymInDB(newTaxonomyRegistry, oldTaxonomyRegistry);
 
+				AcceptedSynonym acceptedSynonym = new AcceptedSynonym();
+				acceptedSynonym.setAcceptedId(newTaxonId);
+				acceptedSynonym.setSynonymId(acceptedId);
+				acceptedSynonym.setVersion(0L);
+				acceptedSynonymDao.save(acceptedSynonym);
+
+				if (oldTaxonomyRegistry != null) {
+
+					taxonomyRegistryDao.delete(oldTaxonomyRegistry);
+				}
 				// Update the status for given taxon node.
 				taxonomyDefinition = update(taxonomyDefinition);
 
