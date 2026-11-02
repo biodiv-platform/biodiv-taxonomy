@@ -3,8 +3,11 @@ package com.strandls.taxonomy.controller;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -37,6 +40,7 @@ import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
 import com.strandls.taxonomy.util.TaxonomyBulkMappingThread;
 import com.strandls.taxonomy.util.TaxonomyEventProducer;
+import com.strandls.taxonomy.util.TaxonomyListMinimalData;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -503,29 +507,92 @@ public class TaxonomyDefinitionController {
 			@ApiResponse(responseCode = "400", description = "Unable to search", content = @Content(schema = @Schema(implementation = String.class))) })
 	public Response listSearch(@QueryParam("bulkAction") String bulkAction, @QueryParam("selectAll") Boolean selectAll,
 			@QueryParam("bulkTaxonIds") String bulkTaxonIds, @QueryParam("bulkPosition") String bulkPosition,
+			@QueryParam("excludeIds") String excludeIds,
+			// same filter as esList, used when selectAll=true
+			@QueryParam("taxonId") Long taxonId, @QueryParam("rankList") String rankList,
+			@QueryParam("statusList") String statusList, @QueryParam("positionList") String positionList,
 			@Context HttpServletRequest request, @Context UriInfo uriInfo) {
 		try {
+			boolean hasAction = bulkAction != null && !bulkAction.isEmpty();
+			boolean hasIds = bulkTaxonIds != null && !bulkTaxonIds.isEmpty();
 
-			if ((Boolean.FALSE.equals(selectAll) && bulkTaxonIds != null && !bulkAction.isEmpty()
-					&& !bulkTaxonIds.isEmpty()) || (Boolean.TRUE.equals(selectAll) && !bulkAction.isEmpty())) {
-
-				if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
-					return Response.status(Status.BAD_REQUEST).build();
-				}
-
-				TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(selectAll, bulkAction,
-						bulkTaxonIds, bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao,
-						taxonomyESOperation, taxonomyRegistryDao, esServicesApi, taxonomyEventProducer);
-
-				Thread thread = new Thread(bulkMappingThread);
-				thread.start();
+			if (!hasAction || !(Boolean.TRUE.equals(selectAll) || hasIds)) {
 				return Response.status(Status.OK).build();
 			}
 
+			if (request.getHeader(HttpHeaders.AUTHORIZATION) == null) {
+				return Response.status(Status.BAD_REQUEST).build();
+			}
+
+			String taxonIds = bulkTaxonIds;
+			if (Boolean.TRUE.equals(selectAll)) {
+				taxonIds = resolveSelectAllIds(request, taxonId, rankList, statusList, positionList, excludeIds);
+				if (taxonIds.isEmpty()) {
+					return Response.status(Status.OK).build();
+				}
+			}
+
+			// IDs are resolved, so hand off as a normal explicit-ID job
+			TaxonomyBulkMappingThread bulkMappingThread = new TaxonomyBulkMappingThread(false, bulkAction, taxonIds,
+					bulkPosition, taxonomyDefinitionDao, acceptedSynonymDao, commonNameDao, taxonomyESOperation,
+					taxonomyRegistryDao, esServicesApi, taxonomyEventProducer);
+
+			Thread thread = new Thread(bulkMappingThread);
+			thread.start();
 			return Response.status(Status.OK).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
+	}
+
+	private static final int SELECT_ALL_PAGE_SIZE = 1000;
+
+	/**
+	 * All taxon IDs matching the esList filter, minus excludeIds, as a
+	 * comma-separated string
+	 */
+	private String resolveSelectAllIds(HttpServletRequest request, Long taxonId, String rankList, String statusList,
+			String positionList, String excludeIds) throws Exception {
+
+		Set<Long> excluded = new HashSet<>();
+		if (excludeIds != null && !excludeIds.isBlank()) {
+			for (String id : excludeIds.split(",")) {
+				if (!id.isBlank())
+					excluded.add(Long.parseLong(id.trim()));
+			}
+		}
+
+		Set<Long> ids = new LinkedHashSet<>();
+		Long offsetId = -1L;
+		String offsetPath = "";
+
+		while (true) {
+			TaxonomyElasticNameListResponse page = taxonomyService.getEsTaxonList(request, taxonId, rankList,
+					statusList, positionList, SELECT_ALL_PAGE_SIZE, offsetId, offsetPath);
+
+			List<?> items = page == null ? null : page.getTaxonomyNameListItems();
+			if (items == null || items.isEmpty())
+				break;
+
+			int before = ids.size();
+			Long lastId = null;
+			for (Object o : items) {
+				Long id = ((TaxonomyListMinimalData) o).getId(); // adjust to your item class
+				ids.add(id);
+				lastId = id;
+			}
+
+			// stop on the last page, or if a page brought nothing new (guards against
+			// looping forever)
+			if (items.size() < SELECT_ALL_PAGE_SIZE || ids.size() == before)
+				break;
+
+			offsetId = lastId;
+			offsetPath = page.getAcceptedPath();
+		}
+
+		ids.removeAll(excluded);
+		return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
 	}
 
 	@GET

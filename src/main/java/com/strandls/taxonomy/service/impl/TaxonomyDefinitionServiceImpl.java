@@ -2670,6 +2670,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					if (id != null && !id.isBlank()) {
 						path.append(".").append(id);
+						String taxonPath = taxonomyRegistryDao
+								.findbyTaxonomyId(Long.parseLong(id), null).getPath();
+						if (req.getUpdateHier().containsKey(id)) {
+							List<Long> acceptedIds = taxonomyDao
+									.getAllChildren(Long.parseLong(id));
+							taxonIds.addAll(acceptedIds);
+							taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
+							taxonomyDao.updatePath(path.toString().substring(1), taxonPath);
+						}
 						continue;
 					}
 
