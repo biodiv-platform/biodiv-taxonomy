@@ -18,7 +18,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -41,6 +45,7 @@ import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.esmodule.controllers.EsServicesApi;
+import com.strandls.esmodule.pojo.AggregationResponse;
 import com.strandls.esmodule.pojo.Breadcrumb;
 import com.strandls.esmodule.pojo.MapAndBoolQuery;
 import com.strandls.esmodule.pojo.MapAndMatchPhraseQuery;
@@ -64,6 +69,7 @@ import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.CommonName;
+import com.strandls.taxonomy.pojo.MapAggregationResponse;
 import com.strandls.taxonomy.pojo.Rank;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
@@ -170,6 +176,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	static final Long UPLOADER_ID = 1L;
 
 	private final String simpleFormatForDate = "yyyy-MM-dd'T'HH:mm:ss";
+	
+	private final ExecutorService executor = Executors.newFixedThreadPool(3);
 
 	@Inject
 	public TaxonomyDefinitionServiceImpl(TaxonomyDefinitionDao dao) {
@@ -2152,14 +2160,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 									} else if (validate == true && rank.getIsRequired()) {
 										hierarchy = "";
 										System.out.println("Missing hierarchy " + rank.getName());
-										assign.setError("Provide complete hierarchy for clean list");
+										assign.setError("Missing hierarchy for " + rank.getName());
 										validate = false;
 										break;
 									}
 								}
 							}
 							if (!validate) {
-								assign.setError("Provide complete hierarchy for clean list");
+								//assign.setError("Provide complete hierarchy for clean list");
 							} else if (!uh.isEmpty()) {
 								assign.setUpdateHier(uh);
 							}
@@ -3024,6 +3032,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		List<Rank> ranks = rankService.getAllRank(request);
 		String offset_tree = null;
 		String offsetName = null;
+		Long totalCount = (long) 0;
 		Map<String, Double> rankValueMapping = new HashMap<>();
 		for (Rank rank : ranks) {
 			rankValueMapping.put(rank.getName(), rank.getRankValue());
@@ -3155,7 +3164,71 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			documents = new ArrayList<>();
 			result = esServicesApi.search("extended_taxon_definition", "_doc", null, null, false, null, null,
 					mapSearchQuery);
+			totalCount = result.getTotalDocuments();
+			MapAggregationResponse aggregationResponse = new MapAggregationResponse();
 			documents = result.getDocuments();
+			if (offsetId==-1) {
+				String omiter = null;
+
+				Map<String, AggregationResponse> mapAggResponse = new HashMap<String, AggregationResponse>();
+				
+				int totalLatch = 3;
+				// latch count down
+				CountDownLatch latch = new CountDownLatch(totalLatch);
+
+				executor.submit(() -> {
+				    try {
+				        AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc", "status.keyword",
+				                null, null, mapSearchQuery);
+				        mapAggResponse.put("status.keyword", response);
+				    } catch (Exception e) {
+				        logger.error("Aggregation failed for '{}': {}", "status.keyword", e.getMessage(), e);
+				    } finally {
+				        latch.countDown();
+				    }
+				});
+				
+				executor.submit(() -> {
+				    try {
+				        AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc", "rank.keyword",
+				                null, null, mapSearchQuery);
+				        mapAggResponse.put("rank.keyword", response);
+				    } catch (Exception e) {
+				        logger.error("Aggregation failed for '{}': {}", "rank.keyword", e.getMessage(), e);
+				    } finally {
+				        latch.countDown();
+				    }
+				});
+				
+				executor.submit(() -> {
+				    try {
+				        AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc", "position.keyword",
+				                null, null, mapSearchQuery);
+				        mapAggResponse.put("position.keyword", response);
+				    } catch (Exception e) {
+				        logger.error("Aggregation failed for '{}': {}", "position.keyword", e.getMessage(), e);
+				    } finally {
+				        latch.countDown();
+				    }
+				});
+				
+				try {
+					if (!latch.await(30, TimeUnit.SECONDS)) { // Timeout after 30s
+						logger.warn("Timed out waiting for aggregations");
+						// Handle partial results or fail fast
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new RuntimeException("Aggregation interrupted", e);
+				}
+				
+				aggregationResponse
+				.setGroupStatus(mapAggResponse.get("status.keyword").getGroupAggregation());
+				
+				aggregationResponse.setGroupRank(mapAggResponse.get("rank.keyword").getGroupAggregation());
+				
+				aggregationResponse.setGroupPosition(mapAggResponse.get("position.keyword").getGroupAggregation());
+			}
 			for (MapDocument document : documents) {
 				try {
 					SimpleDateFormat df = new SimpleDateFormat(simpleFormatForDate);
@@ -3168,17 +3241,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					logger.error(e.getMessage());
 				}
 			}
+			
+			TaxonomyElasticNameListResponse response = new TaxonomyElasticNameListResponse();
+			response.setCount(totalCount);
+			response.setTaxonomyNameListItems(taxonomyListMinimal);
+			response.setAcceptedPath(null);
+			response.setSynonymId(null);
+			response.setAggregationData(aggregationResponse);
+			return response;
 
 		} catch (com.strandls.esmodule.ApiException e) {
 			logger.error(e.getMessage());
 		}
-
-		TaxonomyElasticNameListResponse result = new TaxonomyElasticNameListResponse();
-		result.setCount(0);
-		result.setTaxonomyNameListItems(taxonomyListMinimal);
-		result.setAcceptedPath(null);
-		result.setSynonymId(null);
-		return result;
+		return new TaxonomyElasticNameListResponse();
 	}
 
 	private MapAndBoolQuery assignBoolAndQuery(String key, List<Object> values, String path) {
