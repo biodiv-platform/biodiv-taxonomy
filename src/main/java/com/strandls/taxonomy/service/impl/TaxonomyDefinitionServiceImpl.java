@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -58,6 +59,7 @@ import com.strandls.esmodule.pojo.MapOrRangeQuery;
 import com.strandls.esmodule.pojo.MapResponse;
 import com.strandls.esmodule.pojo.MapSearchParams;
 import com.strandls.esmodule.pojo.MapSearchQuery;
+import com.strandls.esmodule.pojo.TaxonMatchQuery;
 import com.strandls.esmodule.pojo.TaxonomyUpdateData;
 import com.strandls.esmodule.pojo.TaxonomyBulkUpdateData;
 import com.strandls.esmodule.pojo.TaxonomyBulkUpdateRequest;
@@ -176,7 +178,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	static final Long UPLOADER_ID = 1L;
 
 	private final String simpleFormatForDate = "yyyy-MM-dd'T'HH:mm:ss";
-	
+
 	private final ExecutorService executor = Executors.newFixedThreadPool(3);
 
 	@Inject
@@ -719,6 +721,146 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return result;
 	}
 
+	/** Max names sent to the bulk name-parser endpoint per request. */
+	private static final int NAME_PARSE_BATCH_SIZE = 1000;
+
+	/**
+	 * Parses all given names via the bulk endpoint, in batches. Names that could
+	 * not be parsed (or whose batch failed) are simply absent from the map.
+	 */
+	private Map<String, ParsedName> bulkParseNames(Collection<String> names) {
+		Map<String, ParsedName> parsedNames = new HashMap<>();
+		List<String> nameList = new ArrayList<>(names);
+
+		for (int start = 0; start < nameList.size(); start += NAME_PARSE_BATCH_SIZE) {
+			List<String> chunk = new ArrayList<>(
+					nameList.subList(start, Math.min(start + NAME_PARSE_BATCH_SIZE, nameList.size())));
+			try {
+				List<ParsedName> parsed = utilityServiceApi.getBulkNameParsed(chunk);
+				if (parsed == null) {
+					logger.warn("Bulk name parser returned null for batch starting at {}", start);
+					continue;
+				}
+				if (parsed.size() != chunk.size()) {
+					logger.warn("Bulk name parser returned {} results for {} names", parsed.size(), chunk.size());
+				}
+				for (int i = 0; i < Math.min(parsed.size(), chunk.size()); i++) {
+					if (parsed.get(i) != null) {
+						parsedNames.put(chunk.get(i), parsed.get(i));
+					}
+				}
+			} catch (Exception e) {
+				logger.error("Bulk name parsing failed for batch starting at {}: {}", start, e.getMessage());
+			}
+		}
+		return parsedNames;
+	}
+
+	/** Max match queries sent to the bulk match endpoint per request. */
+	private static final int NAME_MATCH_BATCH_SIZE = 1000;
+
+	/** Key for a (scientificText, canonicalText) pair in the match-result map. */
+	private static String matchKey(String scientificText, String canonicalText) {
+		return scientificText + "\u0000" + canonicalText;
+	}
+
+	/** Simple canonical form from the bulk-parse map, or null if unparsed. */
+	private static String canonicalOf(Map<String, ParsedName> parsedNames, String name) {
+		ParsedName p = parsedNames.get(name);
+		if (p == null || p.getCanonical() == null) {
+			return null;
+		}
+		String simple = p.getCanonical().getSimple();
+		return (simple == null || simple.isBlank()) ? null : simple;
+	}
+
+	/**
+	 * Adds a (scientificText, canonicalText) pair to the bulk match request, once.
+	 */
+	private static void addMatchQuery(Map<String, TaxonMatchQuery> queries, String scientificText,
+			String canonicalText) {
+		if (canonicalText == null) {
+			return;
+		}
+		queries.computeIfAbsent(matchKey(scientificText, canonicalText), k -> {
+			TaxonMatchQuery q = new TaxonMatchQuery();
+			q.setScientificText(scientificText);
+			q.setCanonicalText(canonicalText);
+			return q;
+		});
+	}
+
+	/**
+	 * Runs all match queries via the bulk match endpoint, in batches. Returns
+	 * matchKey -> list of matches (same shape as esServicesApi.match). Queries with
+	 * no matches, or whose batch failed, are absent from the map.
+	 */
+	private Map<String, List<Object>> bulkMatchNames(Map<String, TaxonMatchQuery> queries) {
+		Map<String, List<Object>> matchResults = new HashMap<>();
+		List<TaxonMatchQuery> queryList = new ArrayList<>(queries.values());
+
+		for (int start = 0; start < queryList.size(); start += NAME_MATCH_BATCH_SIZE) {
+			List<TaxonMatchQuery> chunk = new ArrayList<>(
+					queryList.subList(start, Math.min(start + NAME_MATCH_BATCH_SIZE, queryList.size())));
+			try {
+				// Endpoint is declared as Object in Swagger; actual body is a list of lists
+				Object raw = esServicesApi.bulkMatch(chunk);
+				if (!(raw instanceof List)) {
+					logger.warn("Bulk match returned unexpected type for batch starting at {}", start);
+					continue;
+				}
+				List<List<Object>> matched = (List<List<Object>>) raw;
+				if (matched.size() != chunk.size()) {
+					logger.warn("Bulk match returned {} results for {} queries", matched.size(), chunk.size());
+				}
+				for (int i = 0; i < Math.min(matched.size(), chunk.size()); i++) {
+					List<Object> m = matched.get(i);
+					if (m != null && !m.isEmpty()) {
+						TaxonMatchQuery q = chunk.get(i);
+						matchResults.put(matchKey(q.getScientificText(), q.getCanonicalText()), m);
+					}
+				}
+			} catch (Exception e) {
+				logger.error("Bulk match failed for batch starting at {}: {}", start, e.getMessage());
+			}
+		}
+		return matchResults;
+	}
+
+	/** Matches for a pair from the bulk results; empty list if none. */
+	private static List<Object> lookupMatches(Map<String, List<Object>> matchResults, String scientificText,
+			String canonicalText) {
+		List<Object> m = matchResults.get(matchKey(scientificText, canonicalText));
+		return m != null ? m : new ArrayList<>();
+	}
+
+	/**
+	 * taxonConceptId -> speciesId for the given taxon ids, via the bulk species-id
+	 * endpoint. Taxa with no species (or a failed call) are absent from the map.
+	 */
+	private Map<Long, Long> fetchSpeciesIds(List<Long> taxonConceptIds) {
+		Map<Long, Long> speciesIds = new HashMap<>();
+		if (taxonConceptIds.isEmpty()) {
+			return speciesIds;
+		}
+		try {
+			// Endpoint is declared as Object in Swagger; JSON keys arrive as strings
+			Object raw = esServicesApi.getBulkSpeciesIds(taxonConceptIds);
+			if (raw instanceof Map) {
+				for (Map.Entry<?, ?> e : ((Map<?, ?>) raw).entrySet()) {
+					if (e.getKey() != null && e.getValue() instanceof Number) {
+						speciesIds.put(Long.valueOf(e.getKey().toString()), ((Number) e.getValue()).longValue());
+					}
+				}
+			} else {
+				logger.warn("Bulk species id lookup returned unexpected type");
+			}
+		} catch (Exception e) {
+			logger.error("Bulk species id lookup failed for {} taxa: {}", taxonConceptIds.size(), e.getMessage());
+		}
+		return speciesIds;
+	}
+
 	@Override
 	public NameMatching nameMatching(FormDataBodyPart filePart, Integer index, Integer synonym, Integer cname,
 			String rank) throws IOException {
@@ -730,8 +872,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Map<String, Object> commonNameMap = new LinkedHashMap<>();
 		Map<String, Object> hierMap = new LinkedHashMap<>();
 		Sheet sheet = workbook.getSheetAt(0);
-		Map<Long, Long> species = new LinkedHashMap<>();
-		List<Long> speciesMap = new ArrayList<>();
 
 		Map<Integer, String> rankMap = new HashMap<>();
 		if (rank != null && !rank.isBlank()) {
@@ -751,6 +891,95 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		result.setHeaders(headers);
 
+		// ---- Pass 1: collect every name that needs parsing, then parse in bulk ----
+		Set<String> namesToParse = new LinkedHashSet<>();
+		for (Row row : sheet) {
+			if (row.getRowNum() == 0) {
+				continue;
+			}
+			Cell cell = row.getCell(index);
+			if (cell == null) {
+				continue;
+			}
+			namesToParse.add(cell.toString());
+
+			if (synonym != -1) {
+				Cell synonymcell = row.getCell(synonym);
+				if (synonymcell != null) {
+					for (String syn : synonymcell.toString().split("\\s*\\|\\s*")) {
+						namesToParse.add(syn);
+					}
+				}
+			}
+
+			for (Integer hierIndex : rankMap.keySet()) {
+				Cell hiercell = row.getCell(hierIndex);
+				if (hiercell != null) {
+					namesToParse.add(hiercell.toString());
+				}
+			}
+		}
+		namesToParse.removeIf(n -> n == null || n.isBlank());
+		Map<String, ParsedName> parsedNames = bulkParseNames(namesToParse);
+
+		// ---- Pass 2: collect every (cell, canonical) pair that needs matching, then
+		// match in bulk ----
+		// Mirrors the four esServicesApi.match(...) call sites in pass 3.
+		Map<String, TaxonMatchQuery> matchQueries = new LinkedHashMap<>();
+		// Rank columns: pass 3 caches by canonical name only (matchMap), using the
+		// cell of the first row where that canonical appears. Track that cell.
+		Map<String, String> hierFirstCell = new HashMap<>();
+		for (Row row : sheet) {
+			if (row.getRowNum() == 0) {
+				continue;
+			}
+			Cell cell = row.getCell(index);
+			if (cell == null) {
+				continue;
+			}
+			String cellText = cell.toString();
+
+			// Synonyms
+			if (synonym != -1) {
+				Cell synonymcell = row.getCell(synonym);
+				if (synonymcell != null) {
+					for (String syn : synonymcell.toString().split("\\s*\\|\\s*")) {
+						addMatchQuery(matchQueries, cellText, canonicalOf(parsedNames, syn));
+					}
+				}
+			}
+
+			// Main name
+			addMatchQuery(matchQueries, cellText, canonicalOf(parsedNames, cellText));
+
+			// Rank columns (first occurrence of each canonical only)
+			for (Integer hierIndex : rankMap.keySet()) {
+				Cell hiercell = row.getCell(hierIndex);
+				if (hiercell != null) {
+					String hierCanonical = canonicalOf(parsedNames, hiercell.toString());
+					if (hierCanonical != null && !hierFirstCell.containsKey(hierCanonical)) {
+						hierFirstCell.put(hierCanonical, cellText);
+						addMatchQuery(matchQueries, cellText, hierCanonical);
+					}
+				}
+			}
+		}
+		Map<String, List<Object>> matchResults = bulkMatchNames(matchQueries);
+
+		// ---- Species ids for every matched taxon (one bulk call) ----
+		Set<Long> matchedTaxonIds = new LinkedHashSet<>();
+		for (List<Object> matchList : matchResults.values()) {
+			for (Object match : matchList) {
+				Object idObj = ((Map<?, ?>) match).get("id");
+				if (idObj instanceof Number) {
+					matchedTaxonIds.add(((Number) idObj).longValue());
+				}
+			}
+		}
+		Map<Long, Long> speciesIds = fetchSpeciesIds(new ArrayList<>(matchedTaxonIds));
+
+		// ---- Pass 3: build the response (unchanged, except parse + match results come
+		// from the bulk maps) ----
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0) {
 				continue;
@@ -774,13 +1003,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						if (synonymcell != null) {
 							String[] syns = synonymcell.toString().split("\\s*\\|\\s*");
 							for (String syn : syns) {
-								ParsedName parsedName = utilityServiceApi.getNameParsed(syn);
+								ParsedName parsedName = parsedNames.get(syn);
 
-								if (parsedName.getCanonical() != null) {
+								if (parsedName != null && parsedName.getCanonical() != null) {
 
 									String canonicalName = parsedName.getCanonical().getSimple();
-									List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
-											"canonical_form", canonicalName);
+									List<Object> matches = lookupMatches(matchResults, cell.toString(), canonicalName);
 									List<Object> optMatches = new ArrayList<>();
 									for (Object match : matches) {
 										Long id = ((Integer) ((Map) match).get("id")).longValue();
@@ -795,15 +1023,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 										optMatch.put("source", cell.toString());
 										optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 										optMatches.add(optMatch);
-										if (speciesMap.contains(id)) {
-											speciesMap.add(id);
-											if (speciesMap.size() <= 100) {
-												for (Long sp : speciesMap) {
-													species.put(sp, null);
-												}
-												speciesMap.clear();
-											}
-										}
+										optMatch.put("speciesId", speciesIds.get(id));
 									}
 									synonymMap.put(syn + "#" + cell.toString() + "#" + row.getRowNum(), optMatches);
 								}
@@ -811,13 +1031,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 							}
 						}
 					}
-					ParsedName parsedName = utilityServiceApi.getNameParsed(cell.toString());
+					ParsedName parsedName = parsedNames.get(cell.toString());
 
-					if (parsedName.getCanonical() != null) {
+					if (parsedName != null && parsedName.getCanonical() != null) {
 
 						String canonicalName = parsedName.getCanonical().getSimple();
-						List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
-								"canonical_form", canonicalName);
+						List<Object> matches = lookupMatches(matchResults, cell.toString(), canonicalName);
 						List<Object> optMatches = new ArrayList<>();
 						for (Object match : matches) {
 							Long id = ((Integer) ((Map) match).get("id")).longValue();
@@ -896,27 +1115,20 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								}
 							}
 							optMatches.add(optMatch);
-							if (speciesMap.contains(id)) {
-								speciesMap.add(id);
-								if (speciesMap.size() <= 100) {
-									for (Long sp : speciesMap) {
-										species.put(sp, null);
-									}
-									speciesMap.clear();
-								}
-							}
+							optMatch.put("speciesId", speciesIds.get(id));
 						}
 						rowMap.put(rowValues, optMatches);
 						values.add(rowMap);
 						for (Integer hierIndex : rankMap.keySet()) {
 							Cell hiercell = row.getCell(hierIndex);
 							if (hiercell != null) {
-								ParsedName parsedHierName = utilityServiceApi.getNameParsed(hiercell.toString());
-								if (parsedHierName.getCanonical() != null) {
+								ParsedName parsedHierName = parsedNames.get(hiercell.toString());
+								if (parsedHierName != null && parsedHierName.getCanonical() != null) {
 									canonicalName = parsedHierName.getCanonical().getSimple();
 									if (!matchMap.containsKey(canonicalName)) {
-										matches = esServicesApi.match("etd", "er", "name", cell.toString(),
-												"canonical_form", canonicalName);
+										matches = lookupMatches(matchResults,
+												hierFirstCell.getOrDefault(canonicalName, cell.toString()),
+												canonicalName);
 										optMatches = new ArrayList<>();
 										for (Object match : matches) {
 											Long id = ((Integer) ((Map) match).get("id")).longValue();
@@ -931,15 +1143,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 											optMatch.put("source", cell.toString());
 											optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 											optMatches.add(optMatch);
-											if (speciesMap.contains(id)) {
-												speciesMap.add(id);
-												if (speciesMap.size() <= 100) {
-													for (Long sp : speciesMap) {
-														species.put(sp, null);
-													}
-													speciesMap.clear();
-												}
-											}
+											optMatch.put("speciesId", speciesIds.get(id));
 										}
 										hierMap.put(hiercell.toString() + "#" + cell.toString() + "#"
 												+ rankMap.get(hierIndex) + "#" + row.getRowNum(), optMatches);
@@ -1019,12 +1223,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						for (Integer hierIndex : rankMap.keySet()) {
 							Cell hiercell = row.getCell(hierIndex);
 							if (hiercell != null) {
-								ParsedName parsedHierName = utilityServiceApi.getNameParsed(hiercell.toString());
-								if (parsedHierName.getCanonical() != null) {
+								ParsedName parsedHierName = parsedNames.get(hiercell.toString());
+								if (parsedHierName != null && parsedHierName.getCanonical() != null) {
 									String canonicalName = parsedHierName.getCanonical().getSimple();
 									if (!matchMap.containsKey(canonicalName)) {
-										List<Object> matches = esServicesApi.match("etd", "er", "name", cell.toString(),
-												"canonical_form", canonicalName);
+										List<Object> matches = lookupMatches(matchResults,
+												hierFirstCell.getOrDefault(canonicalName, cell.toString()),
+												canonicalName);
 										List<Object> optMatches = new ArrayList<>();
 										for (Object match : matches) {
 											Long id = ((Integer) ((Map) match).get("id")).longValue();
@@ -1039,15 +1244,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 											optMatch.put("source", cell.toString());
 											optMatch.put("acceptedId", ((Map) match).get("accepted_ids"));
 											optMatches.add(optMatch);
-											if (speciesMap.contains(id)) {
-												speciesMap.add(id);
-												if (speciesMap.size() <= 100) {
-													for (Long sp : speciesMap) {
-														species.put(sp, null);
-													}
-													speciesMap.clear();
-												}
-											}
+											optMatch.put("speciesId", speciesIds.get(id));
 										}
 										hierMap.put(hiercell.toString() + "#" + cell.toString() + "#"
 												+ rankMap.get(hierIndex) + "#" + row.getRowNum(), optMatches);
@@ -1069,12 +1266,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 			}
 		}
-		if (speciesMap.size() > 0) {
-			for (Long sp : speciesMap) {
-				species.put(sp, null);
-			}
-			speciesMap.clear();
-		}
 		result.setData(values);
 		result.setSynonym(synonymMap);
 		result.setCname(commonNameMap);
@@ -1083,7 +1274,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		inputStream.close();
 		return result;
 	}
-
+	
 	@Override
 	public TaxonomicNames findSynonymCommonName(Long taxonId) {
 
@@ -2167,7 +2358,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 								}
 							}
 							if (!validate) {
-								//assign.setError("Provide complete hierarchy for clean list");
+								// assign.setError("Provide complete hierarchy for clean list");
 							} else if (!uh.isEmpty()) {
 								assign.setUpdateHier(uh);
 							}
@@ -2678,11 +2869,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 					if (id != null && !id.isBlank()) {
 						path.append(".").append(id);
-						String taxonPath = taxonomyRegistryDao
-								.findbyTaxonomyId(Long.parseLong(id), null).getPath();
+						String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(Long.parseLong(id), null).getPath();
 						if (req.getUpdateHier().containsKey(id)) {
-							List<Long> acceptedIds = taxonomyDao
-									.getAllChildren(Long.parseLong(id));
+							List<Long> acceptedIds = taxonomyDao.getAllChildren(Long.parseLong(id));
 							taxonIds.addAll(acceptedIds);
 							taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
 							taxonomyDao.updatePath(path.toString().substring(1), taxonPath);
@@ -3167,51 +3356,51 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			totalCount = result.getTotalDocuments();
 			MapAggregationResponse aggregationResponse = new MapAggregationResponse();
 			documents = result.getDocuments();
-			if (offsetId==-1) {
+			if (offsetId == -1) {
 				String omiter = null;
 
 				Map<String, AggregationResponse> mapAggResponse = new HashMap<String, AggregationResponse>();
-				
+
 				int totalLatch = 3;
 				// latch count down
 				CountDownLatch latch = new CountDownLatch(totalLatch);
 
 				executor.submit(() -> {
-				    try {
-				        AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc", "status.keyword",
-				                null, null, mapSearchQuery);
-				        mapAggResponse.put("status.keyword", response);
-				    } catch (Exception e) {
-				        logger.error("Aggregation failed for '{}': {}", "status.keyword", e.getMessage(), e);
-				    } finally {
-				        latch.countDown();
-				    }
+					try {
+						AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc",
+								"status.keyword", null, null, mapSearchQuery);
+						mapAggResponse.put("status.keyword", response);
+					} catch (Exception e) {
+						logger.error("Aggregation failed for '{}': {}", "status.keyword", e.getMessage(), e);
+					} finally {
+						latch.countDown();
+					}
 				});
-				
+
 				executor.submit(() -> {
-				    try {
-				        AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc", "rank.keyword",
-				                null, null, mapSearchQuery);
-				        mapAggResponse.put("rank.keyword", response);
-				    } catch (Exception e) {
-				        logger.error("Aggregation failed for '{}': {}", "rank.keyword", e.getMessage(), e);
-				    } finally {
-				        latch.countDown();
-				    }
+					try {
+						AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc",
+								"rank.keyword", null, null, mapSearchQuery);
+						mapAggResponse.put("rank.keyword", response);
+					} catch (Exception e) {
+						logger.error("Aggregation failed for '{}': {}", "rank.keyword", e.getMessage(), e);
+					} finally {
+						latch.countDown();
+					}
 				});
-				
+
 				executor.submit(() -> {
-				    try {
-				        AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc", "position.keyword",
-				                null, null, mapSearchQuery);
-				        mapAggResponse.put("position.keyword", response);
-				    } catch (Exception e) {
-				        logger.error("Aggregation failed for '{}': {}", "position.keyword", e.getMessage(), e);
-				    } finally {
-				        latch.countDown();
-				    }
+					try {
+						AggregationResponse response = esServicesApi.getAggregation("extended_taxon_definition", "_doc",
+								"position.keyword", null, null, mapSearchQuery);
+						mapAggResponse.put("position.keyword", response);
+					} catch (Exception e) {
+						logger.error("Aggregation failed for '{}': {}", "position.keyword", e.getMessage(), e);
+					} finally {
+						latch.countDown();
+					}
 				});
-				
+
 				try {
 					if (!latch.await(30, TimeUnit.SECONDS)) { // Timeout after 30s
 						logger.warn("Timed out waiting for aggregations");
@@ -3221,12 +3410,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					Thread.currentThread().interrupt();
 					throw new RuntimeException("Aggregation interrupted", e);
 				}
-				
-				aggregationResponse
-				.setGroupStatus(mapAggResponse.get("status.keyword").getGroupAggregation());
-				
+
+				aggregationResponse.setGroupStatus(mapAggResponse.get("status.keyword").getGroupAggregation());
+
 				aggregationResponse.setGroupRank(mapAggResponse.get("rank.keyword").getGroupAggregation());
-				
+
 				aggregationResponse.setGroupPosition(mapAggResponse.get("position.keyword").getGroupAggregation());
 			}
 			for (MapDocument document : documents) {
@@ -3241,7 +3429,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					logger.error(e.getMessage());
 				}
 			}
-			
+
 			TaxonomyElasticNameListResponse response = new TaxonomyElasticNameListResponse();
 			response.setCount(totalCount);
 			response.setTaxonomyNameListItems(taxonomyListMinimal);
