@@ -27,6 +27,16 @@ public class NameMatching {
 		this.cname = cname;
 		this.hierarchy = hierarchy;
 	}
+	
+	private Integer column;
+
+	public Integer getColumn() {
+		return column;
+	}
+
+	public void setColumn(Integer column) {
+		this.column = column;
+	}
 
 	public List<String> getHeaders() {
 		return headers;

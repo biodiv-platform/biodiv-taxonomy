@@ -1,6 +1,9 @@
 package com.strandls.taxonomy.controller;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -12,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
@@ -38,10 +42,13 @@ import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
+import com.strandls.taxonomy.util.NameMatchingResultReader;
 import com.strandls.taxonomy.util.TaxonomyBulkMappingThread;
 import com.strandls.taxonomy.util.TaxonomyEventProducer;
 import com.strandls.taxonomy.util.TaxonomyListMinimalData;
+import com.strandls.taxonomy.util.TaxonomyNameMatchingThread;
 import com.strandls.taxonomy.util.TaxonomyUtil;
+import com.strandls.utility.controller.UtilityServiceApi;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -101,6 +108,9 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyEventProducer taxonomyEventProducer;
+	
+	@Inject
+	private UtilityServiceApi utilityServiceApi;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -198,12 +208,13 @@ public class TaxonomyDefinitionController {
 		if (filePart == null) {
 			return Response.status(Response.Status.BAD_REQUEST).entity("File not present").build();
 		}
-		try {
-			NameMatching result = taxonomyService.nameMatching(filePart, index, synonym, cname, rank);
-			return Response.ok().entity(result).build();
-		} catch (IOException e) {
-			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
-		}
+		//NameMatching result = taxonomyService.nameMatching(filePart, index, synonym, cname, rank);
+		TaxonomyNameMatchingThread nameMatchingThread = new TaxonomyNameMatchingThread(filePart, index, synonym,
+				cname, rank, esServicesApi, utilityServiceApi,"/app/data/biodiv" ,"/taxonomy/namematching");
+
+		Thread thread = new Thread(nameMatchingThread);
+		thread.start();
+		return Response.status(Status.OK).build();
 	}
 
 	@POST
@@ -686,4 +697,46 @@ public class TaxonomyDefinitionController {
 					Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build());
 		}
 	}
+	
+	@POST
+	@Path("/namematching/results")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getNameMatchingResultsFromFile(@FormDataParam("file") FormDataBodyPart filePart) {
+ 
+		if (filePart == null) {
+			return Response.status(Status.BAD_REQUEST).entity("Missing form field 'file'").build();
+		}
+ 
+		byte[] bytes;
+		try (InputStream in = filePart.getValueAs(InputStream.class)) {
+			bytes = in.readAllBytes();
+		} catch (Exception e) {
+			//logger.error("Could not read uploaded file: {}", e.getMessage(), e);
+			return Response.status(Status.BAD_REQUEST).entity("Could not read the uploaded file").build();
+		}
+ 
+		// An .xlsx is a zip archive, so it must start with "PK". If it doesn't, the
+		// client sent something other than the file (e.g. a file name, "[object
+		// Object]", or JSON), so say exactly what arrived.
+		if (bytes.length < 4 || bytes[0] != 'P' || bytes[1] != 'K') {
+			String preview = new String(bytes, 0, Math.min(bytes.length, 60), StandardCharsets.UTF_8)
+					.replaceAll("[^\\x20-\\x7E]", "?");
+			String message = "The uploaded 'file' is not an .xlsx file: received " + bytes.length
+					+ " bytes, content type '" + filePart.getMediaType() + "', starting with '" + preview + "'";
+			//logger.warn(message);
+			return Response.status(Status.BAD_REQUEST).entity(message).build();
+		}
+ 
+		try {
+			NameMatching result = NameMatchingResultReader.read(new ByteArrayInputStream(bytes));
+			return Response.ok(result).build();
+		} catch (IllegalArgumentException e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		} catch (Exception e) {
+			//logger.error("Failed to read processed name-matching file: {}", e.getMessage(), e);
+			return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Could not read the file").build();
+		}
+	}
+ 
 }
