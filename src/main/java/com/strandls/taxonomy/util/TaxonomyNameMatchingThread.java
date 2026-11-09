@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -60,7 +61,13 @@ import com.strandls.utility.pojo.ParsedName;
  */
 public class TaxonomyNameMatchingThread implements Runnable {
 
-	private FormDataBodyPart filePart;
+	/**
+	 * The uploaded file, read into memory while the request is still open. Jersey
+	 * deletes the multipart data once the request ends, so the background thread
+	 * must never read from the FormDataBodyPart itself.
+	 */
+	private byte[] fileBytes;
+	private String uploadedFileName;
 	private Integer index;
 	private Integer synonym;
 	private Integer cname;
@@ -129,6 +136,15 @@ public class TaxonomyNameMatchingThread implements Runnable {
 	private Map<Integer, String> rankMap = new HashMap<>();
 
 	/**
+	 * Writes the result copy to the system temp directory. Prefer the constructor
+	 * that takes basePath / modulePath.
+	 */
+	public TaxonomyNameMatchingThread(FormDataBodyPart filePart, Integer index, Integer synonym, Integer cname,
+			String rank, EsServicesApi esServicesApi, UtilityServiceApi utilityServiceApi) {
+		this(filePart, index, synonym, cname, rank, esServicesApi, utilityServiceApi, null, null);
+	}
+
+	/**
 	 * The result copy is written to
 	 * {@code basePath + modulePath + File.separator + fileName}, the same way the
 	 * species list download builds its path. Missing folders are created.
@@ -140,7 +156,19 @@ public class TaxonomyNameMatchingThread implements Runnable {
 			String rank, EsServicesApi esServicesApi, UtilityServiceApi utilityServiceApi, String basePath,
 			String modulePath) {
 		super();
-		this.filePart = filePart;
+		// Read now (request thread), not in run() (background thread)
+		try (InputStream in = filePart.getValueAs(InputStream.class)) {
+			this.fileBytes = in.readAllBytes();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Could not read uploaded file", e);
+		}
+		try {
+			if (filePart.getContentDisposition() != null) {
+				this.uploadedFileName = filePart.getContentDisposition().getFileName();
+			}
+		} catch (Exception e) {
+			logger.debug("Could not read uploaded file name: {}", e.getMessage());
+		}
 		this.index = index;
 		this.synonym = synonym;
 		this.cname = cname;
@@ -159,16 +187,8 @@ public class TaxonomyNameMatchingThread implements Runnable {
 	@Override
 	public void run() {
 
-		// ---- Make a copy of the incoming file: buffer the upload, work on the copy ----
-		byte[] originalBytes;
-		try (InputStream inputStream = filePart.getValueAs(InputStream.class)) {
-			originalBytes = inputStream.readAllBytes();
-		} catch (IOException e) {
-			logger.error("Could not read uploaded file: {}", e.getMessage(), e);
-			return;
-		}
-
-		try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(originalBytes))) {
+		// ---- Work on a copy of the incoming file (bytes read in the constructor) ----
+		try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(fileBytes))) {
 			Sheet sheet = workbook.getSheetAt(0);
 
 			if (rank != null && !rank.isBlank()) {
@@ -298,6 +318,8 @@ public class TaxonomyNameMatchingThread implements Runnable {
 
 		} catch (Exception e) {
 			logger.error("Name matching failed: {}", e.getMessage(), e);
+		} finally {
+			fileBytes = null; // release the in-memory copy of the upload
 		}
 	}
 
@@ -724,12 +746,8 @@ public class TaxonomyNameMatchingThread implements Runnable {
 	/** "<uploaded file name>_matched_<yyyyMMdd_HHmmss>.xlsx" */
 	private String buildFileName() {
 		String base = "name_matching";
-		try {
-			if (filePart.getContentDisposition() != null && filePart.getContentDisposition().getFileName() != null) {
-				base = filePart.getContentDisposition().getFileName().replaceFirst("\\.[^.]+$", "");
-			}
-		} catch (Exception e) {
-			logger.debug("Could not read uploaded file name: {}", e.getMessage());
+		if (uploadedFileName != null && !uploadedFileName.isBlank()) {
+			base = uploadedFileName.replaceFirst("\\.[^.]+$", "");
 		}
 		base = base.replaceAll("[^A-Za-z0-9._-]", "_");
 		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
