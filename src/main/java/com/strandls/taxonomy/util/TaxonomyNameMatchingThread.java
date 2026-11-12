@@ -76,6 +76,8 @@ public class TaxonomyNameMatchingThread implements Runnable {
 	private UtilityServiceApi utilityServiceApi;
 	private String basePath;
 	private String modulePath;
+	/** Id of the user who uploaded the file; used as the file name prefix so results can be filtered per user. */
+	private Long userId;
 
 	/** Where the result copy was written; null until run() finishes successfully. */
 	private volatile File outputFile;
@@ -155,7 +157,21 @@ public class TaxonomyNameMatchingThread implements Runnable {
 	public TaxonomyNameMatchingThread(FormDataBodyPart filePart, Integer index, Integer synonym, Integer cname,
 			String rank, EsServicesApi esServicesApi, UtilityServiceApi utilityServiceApi, String basePath,
 			String modulePath) {
+		this(filePart, index, synonym, cname, rank, esServicesApi, utilityServiceApi, basePath, modulePath, null);
+	}
+
+	/**
+	 * Same as above, and prefixes the result file name with the uploader's userId:
+	 * {@code <userId>_<uploaded file name>_matched_<timestamp>.xlsx}. List a user's
+	 * files by filtering on the {@code "<userId>_"} prefix.
+	 *
+	 * @param userId id of the logged-in user who uploaded the file
+	 */
+	public TaxonomyNameMatchingThread(FormDataBodyPart filePart, Integer index, Integer synonym, Integer cname,
+			String rank, EsServicesApi esServicesApi, UtilityServiceApi utilityServiceApi, String basePath,
+			String modulePath, Long userId) {
 		super();
+		this.userId = userId;
 		// Read now (request thread), not in run() (background thread)
 		try (InputStream in = filePart.getValueAs(InputStream.class)) {
 			this.fileBytes = in.readAllBytes();
@@ -743,7 +759,10 @@ public class TaxonomyNameMatchingThread implements Runnable {
 		return out;
 	}
 
-	/** "<uploaded file name>_matched_<yyyyMMdd_HHmmss>.xlsx" */
+	/**
+	 * "<userId>_<uploaded file name>_matched_<yyyyMMdd_HHmmss_SSS>.xlsx", or without
+	 * the "<userId>_" prefix when no user is known.
+	 */
 	private String buildFileName() {
 		String base = "name_matching";
 		if (uploadedFileName != null && !uploadedFileName.isBlank()) {
@@ -751,7 +770,8 @@ public class TaxonomyNameMatchingThread implements Runnable {
 		}
 		base = base.replaceAll("[^A-Za-z0-9._-]", "_");
 		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
-		return base + "_matched_" + timestamp + ".xlsx";
+		String userPrefix = userId != null ? userId + "_" : "";
+		return userPrefix + base + "_matched_" + timestamp + ".xlsx";
 	}
 
 	// ------------------------------------------------------------------------
