@@ -1,11 +1,14 @@
 package com.strandls.taxonomy.controller;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,10 +19,12 @@ import java.util.stream.Collectors;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.pac4j.core.profile.CommonProfile;
 
 import com.strandls.activity.pojo.Activity;
 import com.strandls.activity.pojo.CommentLoggingData;
 import com.strandls.authentication_utility.filter.ValidateUser;
+import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.taxonomy.ApiConstants;
@@ -84,6 +89,10 @@ import jakarta.ws.rs.core.Response.Status;
 @Path(ApiConstants.V1 + ApiConstants.TAXONOMY)
 @Produces(MediaType.APPLICATION_JSON)
 public class TaxonomyDefinitionController {
+
+	/** Where name-matching result files are written: base path + module path + "/" + file name */
+	private static final String NAME_MATCHING_BASE_PATH = "/app/data/biodiv";
+	private static final String NAME_MATCHING_MODULE_PATH = "/taxonomy/namematching";
 
 	@Inject
 	private TaxonomyDefinitionSerivce taxonomyService;
@@ -195,7 +204,14 @@ public class TaxonomyDefinitionController {
 			@ApiResponse(responseCode = "200", description = "Success/failure as a map", content = @Content(schema = @Schema(implementation = NameMatching.class))),
 			@ApiResponse(responseCode = "400", description = "file not present", content = @Content(schema = @Schema(implementation = String.class))),
 			@ApiResponse(responseCode = "500", description = "ERROR", content = @Content(schema = @Schema(implementation = String.class))) })
-	public Response uploadSearch(final FormDataMultiPart multiPart) {
+	@ValidateUser
+	public Response uploadSearch(@Context HttpServletRequest request, final FormDataMultiPart multiPart) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		if (profile == null || profile.getId() == null) {
+			return Response.status(Response.Status.UNAUTHORIZED).entity("User not logged in").build();
+		}
+		Long userId = Long.parseLong(profile.getId());
+
 		FormDataBodyPart filePart = multiPart.getField("file");
 		FormDataBodyPart columnField = multiPart.getField("column");
 		Integer index = (columnField != null) ? Integer.valueOf(columnField.getValue()) : -1;
@@ -210,7 +226,7 @@ public class TaxonomyDefinitionController {
 		}
 		//NameMatching result = taxonomyService.nameMatching(filePart, index, synonym, cname, rank);
 		TaxonomyNameMatchingThread nameMatchingThread = new TaxonomyNameMatchingThread(filePart, index, synonym,
-				cname, rank, esServicesApi, utilityServiceApi,"/app/data/biodiv" ,"/taxonomy/namematching");
+				cname, rank, esServicesApi, utilityServiceApi, NAME_MATCHING_BASE_PATH, NAME_MATCHING_MODULE_PATH, userId);
 
 		Thread thread = new Thread(nameMatchingThread);
 		thread.start();
@@ -698,6 +714,42 @@ public class TaxonomyDefinitionController {
 		}
 	}
 	
+	@GET
+	@Path("/namematching/latest/{userId}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ValidateUser
+	@Operation(summary = "Get the latest name-matching result file for a user", responses = {
+			@ApiResponse(responseCode = "200", description = "fileName, filePath (relative to the storage base path) and lastModified", content = @Content(schema = @Schema(implementation = Map.class))),
+			@ApiResponse(responseCode = "403", description = "Not the same user and not an admin", content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "404", description = "No name-matching file for this user", content = @Content(schema = @Schema(implementation = String.class))) })
+	public Response getLatestNameMatchingFile(@Context HttpServletRequest request,
+			@PathParam("userId") Long userId) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		if (profile == null || profile.getId() == null) {
+			return Response.status(Status.UNAUTHORIZED).entity("User not logged in").build();
+		}
+		// A user can only see their own files; admins can see anyone's
+		if (!String.valueOf(userId).equals(profile.getId()) && !TaxonomyUtil.isAdmin(request)) {
+			return Response.status(Status.FORBIDDEN).entity("Not allowed to view another user's files").build();
+		}
+
+		File dir = new File(NAME_MATCHING_BASE_PATH + NAME_MATCHING_MODULE_PATH);
+		String prefix = userId + "_";
+		File[] files = dir.listFiles(
+				f -> f.isFile() && f.getName().startsWith(prefix) && f.getName().endsWith(".xlsx"));
+		if (files == null || files.length == 0) {
+			return Response.status(Status.NOT_FOUND).entity("No name-matching file found for user " + userId)
+					.build();
+		}
+
+		File latest = Arrays.stream(files).max(Comparator.comparingLong(File::lastModified)).get();
+		Map<String, Object> result = new HashMap<>();
+		result.put("fileName", latest.getName());
+		result.put("filePath", NAME_MATCHING_MODULE_PATH + "/" + latest.getName());
+		result.put("lastModified", latest.lastModified());
+		return Response.ok(result).build();
+	}
+
 	@POST
 	@Path("/namematching/results")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
