@@ -16,6 +16,14 @@ public class BatchUpload {
 	private String acceptedId;
 	private String rank;
 	private Map<String, String> updateHier;
+	/** From the Given Names sheet "TargetNameSourceId" column (→ taxonomy_definition.name_source_id) */
+	private String targetNameSourceId;
+	/** From the Given Names sheet "TargetViaDatasource" column (→ taxonomy_definition.via_datasource) */
+	private String targetViaDatasource;
+	/** From the Given Names sheet "TargetMatchId" column (→ taxonomy_definition.match_id) */
+	private String targetMatchId;
+	/** From the Given Names sheet "TargetMatchDatabaseName" column (→ taxonomy_definition.match_database_name) */
+	private String targetMatchDatabaseName;
 
 	private List<String> synonyms;
 	private List<String> commonNames;
@@ -135,5 +143,37 @@ public class BatchUpload {
 
 	public void setUpdateHier(Map<String, String> updateHier) {
 		this.updateHier = updateHier;
+	}
+
+	public String getTargetNameSourceId() {
+		return targetNameSourceId;
+	}
+
+	public void setTargetNameSourceId(String targetNameSourceId) {
+		this.targetNameSourceId = targetNameSourceId;
+	}
+
+	public String getTargetViaDatasource() {
+		return targetViaDatasource;
+	}
+
+	public void setTargetViaDatasource(String targetViaDatasource) {
+		this.targetViaDatasource = targetViaDatasource;
+	}
+
+	public String getTargetMatchId() {
+		return targetMatchId;
+	}
+
+	public void setTargetMatchId(String targetMatchId) {
+		this.targetMatchId = targetMatchId;
+	}
+
+	public String getTargetMatchDatabaseName() {
+		return targetMatchDatabaseName;
+	}
+
+	public void setTargetMatchDatabaseName(String targetMatchDatabaseName) {
+		this.targetMatchDatabaseName = targetMatchDatabaseName;
 	}
 }

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -2136,6 +2137,37 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return findById(prevTaxonId);
 	}
 
+	// Given Names sheet: the Target* source/match columns come after TargetAcceptedId (13)
+	// and before NameAction. Keep in step with the export in biodiv-ui name-matching/index.tsx.
+	private static final int GIVEN_TARGET_NAME_SOURCE_ID_COL = 14;
+	private static final int GIVEN_TARGET_VIA_DATASOURCE_COL = 15;
+	private static final int GIVEN_TARGET_MATCH_ID_COL = 16;
+	private static final int GIVEN_TARGET_MATCH_DATABASE_NAME_COL = 17;
+	private static final int GIVEN_NAME_ACTION_COL = 18;
+
+	/** Cell as trimmed text (numbers without ".0"), or null when missing/blank. */
+	private static String cellText(Cell cell) {
+		if (cell == null) {
+			return null;
+		}
+		String value = cell.getCellType() == CellType.NUMERIC
+				? NumberToTextConverter.toText(cell.getNumericCellValue())
+				: cell.toString();
+		value = value.trim();
+		return value.isEmpty() ? null : value;
+	}
+
+	/**
+	 * Copies TargetNameSourceId / TargetViaDatasource / TargetMatchId /
+	 * TargetMatchDatabaseName from a Given Names row.
+	 */
+	private static void setTargetSource(BatchUpload assign, Row row) {
+		assign.setTargetNameSourceId(cellText(row.getCell(GIVEN_TARGET_NAME_SOURCE_ID_COL)));
+		assign.setTargetViaDatasource(cellText(row.getCell(GIVEN_TARGET_VIA_DATASOURCE_COL)));
+		assign.setTargetMatchId(cellText(row.getCell(GIVEN_TARGET_MATCH_ID_COL)));
+		assign.setTargetMatchDatabaseName(cellText(row.getCell(GIVEN_TARGET_MATCH_DATABASE_NAME_COL)));
+	}
+
 	@Override
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart) throws IOException {
 		InputStream inputStream = filePart.getValueAs(InputStream.class);
@@ -2277,7 +2309,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Cell cell = row.getCell(0);
 			if (cell != null) {
 				Cell taxonCell = row.getCell(1);
-				Cell actionCell = row.getCell(14);
+				Cell actionCell = row.getCell(GIVEN_NAME_ACTION_COL);
 				if (taxonCell != null && !String.valueOf(actionCell).equals("create")) {
 					// Update given name
 					BatchUpload assign = new BatchUpload();
@@ -2443,6 +2475,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (positionMap.containsKey(row.getRowNum())) {
 						assign.setPositionHier(positionMap.get(row.getRowNum()));
 					}
+					setTargetSource(assign, row);
 					result.add(assign);
 				} else {
 					// Create
@@ -2510,6 +2543,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (positionMap.containsKey(row.getRowNum())) {
 						assign.setPositionHier(positionMap.get(row.getRowNum()));
 					}
+					setTargetSource(assign, row);
 					result.add(assign);
 				}
 			}
@@ -2688,6 +2722,36 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	// Per-request logic
 	// ------------------------------------------------------------------
 
+	/**
+	 * Copies the Target* source/match values from the Given Names sheet onto a
+	 * taxon. Only values that were filled in are applied, so blank cells never
+	 * clear what is already stored.
+	 *
+	 * @return true if anything changed (caller should then save the taxon)
+	 */
+	private boolean applyTargetSource(TaxonomyDefinition taxon, BatchUpload req) {
+		boolean changed = false;
+		if (req.getTargetViaDatasource() != null
+				&& !req.getTargetViaDatasource().equals(taxon.getViaDatasource())) {
+			taxon.setViaDatasource(req.getTargetViaDatasource());
+			changed = true;
+		}
+		if (req.getTargetNameSourceId() != null && !req.getTargetNameSourceId().equals(taxon.getNameSourceId())) {
+			taxon.setNameSourceId(req.getTargetNameSourceId());
+			changed = true;
+		}
+		if (req.getTargetMatchId() != null && !req.getTargetMatchId().equals(taxon.getMatchId())) {
+			taxon.setMatchId(req.getTargetMatchId());
+			changed = true;
+		}
+		if (req.getTargetMatchDatabaseName() != null
+				&& !req.getTargetMatchDatabaseName().equals(taxon.getMatchDatabaseName())) {
+			taxon.setMatchDatabaseName(req.getTargetMatchDatabaseName());
+			changed = true;
+		}
+		return changed;
+	}
+
 	private boolean isCreateRequest(BatchUpload req) {
 		return req.getTaxonId() == null || "null".equals(req.getTaxonId());
 	}
@@ -2712,10 +2776,23 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		if (status.equals(TaxonomyStatus.ACCEPTED)) {
 
-			for (String entry : req.getHierarchy().split(";")) {
+			// The last entry of the hierarchy is the given name itself; only it gets the
+			// Target* source/match values, not the parent taxa created along the way.
+			String[] hierarchyEntries = req.getHierarchy().split(";");
+			int givenNameIndex = -1;
+			for (int i = hierarchyEntries.length - 1; i >= 0; i--) {
+				if (!hierarchyEntries[i].isBlank()) {
+					givenNameIndex = i;
+					break;
+				}
+			}
+
+			for (int entryIndex = 0; entryIndex < hierarchyEntries.length; entryIndex++) {
+				String entry = hierarchyEntries[entryIndex];
 				if (entry.isBlank()) {
 					continue;
 				}
+				boolean isGivenName = entryIndex == givenNameIndex;
 
 				String[] rankAndRest = entry.split(":", 2);
 				if (rankAndRest.length < 2) {
@@ -2739,7 +2816,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						continue;
 					}
 					TaxonomyDefinition taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rank,
-							status, position, null, null, userId);
+							status, position, isGivenName ? req.getTargetViaDatasource() : null,
+							isGivenName ? req.getTargetNameSourceId() : null, userId);
+					if (isGivenName && applyTargetSource(taxonomyDefinition, req)) {
+						taxonomyDefinition = update(taxonomyDefinition);
+					}
 					counters.givenCreated++;
 
 					Long taxonId = taxonomyDefinition.getId();
@@ -2761,7 +2842,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			try {
 				parsedName = taxonomyCache.getName(req.getRank(), req.getScientificName());
 				TaxonomyDefinition taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, req.getRank(),
-						status, position, null, null, userId);
+						status, position, req.getTargetViaDatasource(), req.getTargetNameSourceId(), userId);
+				if (applyTargetSource(taxonomyDefinition, req)) {
+					taxonomyDefinition = update(taxonomyDefinition);
+				}
 				acceptedSynonymDao.createAcceptedSynonym((long) Double.parseDouble(req.getAcceptedId()),
 						taxonomyDefinition.getId());
 				acceptedId = taxonomyDefinition.getId();
@@ -3004,6 +3088,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			} catch (ApiException e) {
 				e.printStackTrace();
 			}
+		}
+
+		// Source / match values from the sheet (only the ones that were filled in)
+		if (applyTargetSource(taxonomyDefinition, req)) {
+			taxonomyDefinition = update(taxonomyDefinition);
 		}
 
 		updates.add(update);
