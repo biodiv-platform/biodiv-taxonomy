@@ -134,7 +134,11 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 
+		// The only caller keeps just the ids in traitTaxonIds (retainAll), so restricting the outer query to
+		// them returns the same result while letting Postgres use the taxon_definition_id index instead of
+		// scanning every row in the classification.
 		String queryString = "select taxon_definition_id from taxonomy_registry t where t.classification_id = :classificationId and "
+				+ "t.taxon_definition_id in (:traitTaxonIds) and "
 				+ "t.path @> any(select tr.path from taxonomy_registry tr where tr.taxon_definition_id in (:traitTaxonIds) "
 				+ "and tr.path ~ lquery(:speciesGroupTaxons) and classification_id = :classificationId)";
 
