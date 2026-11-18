@@ -119,7 +119,9 @@ public class TaxonomyBatchUploadThread implements Runnable {
 			} else {
 				updateRequests.add(req);
 			}
-			if (req.getSpeciesId() != null && req.getSpeciesId().equals("CREATE")) {
+			// New names have no taxon id yet; their species pages are queued in
+			// processCreateBatch once the id exists.
+			if ("CREATE".equals(req.getSpeciesId()) && !isCreateRequest(req)) {
 				speciesPagecreate.add(req.getScientificName() + "|" + (long) Double.parseDouble(req.getTaxonId()));
 			}
 			if (req.getPositionHier() != null) {
@@ -143,7 +145,7 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		// 2. Process each group in batches (creates first, so new taxa exist
 		// before any updates run)
 		for (List<BatchUpload> batch : partition(createRequests, BATCH_SIZE)) {
-			processCreateBatch(batch, userId, counters, createMapping);
+			processCreateBatch(batch, userId, counters, createMapping, speciesPagecreate);
 		}
 		for (List<BatchUpload> batch : partition(updateRequests, BATCH_SIZE)) {
 			processUpdateBatch(batch, userId, counters, createMapping);
@@ -179,7 +181,7 @@ public class TaxonomyBatchUploadThread implements Runnable {
 	// ------------------------------------------------------------------
 
 	private void processCreateBatch(List<BatchUpload> batch, Long userId, BatchCounters counters,
-			Map<ParsedName, Long> createMapping) {
+			Map<ParsedName, Long> createMapping, List<String> speciesPagecreate) {
 		List<Long> taxonIds = new ArrayList<>();
 		Map<String, Long> languageMapping = fetchLanguageMapping(batch);
 		List<TaxonomyBulkUpdateData> updates = new ArrayList<>();
@@ -187,6 +189,9 @@ public class TaxonomyBatchUploadThread implements Runnable {
 
 		for (BatchUpload req : batch) {
 			Long acceptedId = createHierarchy(req, userId, counters, taxonIds, createMapping);
+			if ("CREATE".equals(req.getSpeciesId()) && acceptedId != null) {
+				speciesPagecreate.add(req.getScientificName() + "|" + acceptedId);
+			}
 			addSynonyms(req, acceptedId, userId, counters, taxonIds, updates, updateIds);
 			addCommonNames(req, acceptedId, languageMapping);
 			taxonIds.add(acceptedId);
@@ -485,7 +490,7 @@ public class TaxonomyBatchUploadThread implements Runnable {
 					if (id != null && !id.isBlank()) {
 						path.append(".").append(id);
 						String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(Long.parseLong(id), null).getPath();
-						if (req.getUpdateHier().containsKey(id)) {
+						if (req.getUpdateHier() != null && req.getUpdateHier().containsKey(id)) {
 							List<Long> acceptedIds = taxonomyDao.getAllChildren(Long.parseLong(id));
 							taxonIds.addAll(acceptedIds);
 							taxonIds.addAll(acceptedSynonymDao.findSynonymIdsByAcceptedIds(acceptedIds));
