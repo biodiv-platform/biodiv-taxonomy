@@ -2159,6 +2159,29 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	/**
+	 * True when two cells hold the same value. Compares the text, not the Cell
+	 * objects ("!=" on two cells is always true). Numbers are compared as
+	 * numbers ("123" equals "123.0"); text is compared ignoring case.
+	 */
+	private static boolean sameCellValue(Cell a, Cell b) {
+		String x = normalizedCellText(a);
+		String y = normalizedCellText(b);
+		return x == null ? y == null : x.equals(y);
+	}
+
+	private static String normalizedCellText(Cell cell) {
+		String value = cellText(cell);
+		if (value == null || "null".equalsIgnoreCase(value)) {
+			return null;
+		}
+		try {
+			return NumberToTextConverter.toText(Double.parseDouble(value));
+		} catch (NumberFormatException e) {
+			return value.toUpperCase();
+		}
+	}
+
+	/**
 	 * Copies TargetNameSourceId / TargetViaDatasource / TargetMatchId /
 	 * TargetMatchDatabaseName from a Given Names row.
 	 */
@@ -2316,7 +2339,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					Cell rankCell = row.getCell(8);
 					String position = "";
 					if (positionCell != null && !String.valueOf(positionCell).equals("")
-							&& positionCell != matchedPositionCell) {
+							&& !sameCellValue(positionCell, matchedPositionCell)) {
 						assign.setPosition(String.valueOf(matchedPositionCell) + "#" + String.valueOf(positionCell));
 						position = String.valueOf(positionCell);
 						update = true;
@@ -2325,7 +2348,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						assign.setPosition(String.valueOf(matchedPositionCell));
 					}
 					if (statusCell != null && !String.valueOf(statusCell).equals("")
-							&& statusCell != matchedStatusCell) {
+							&& !sameCellValue(statusCell, matchedStatusCell)) {
 						if (String.valueOf(statusCell).equals("SYNONYM")) {
 							if (acceptedCell != null) {
 								assign.setStatus(String.valueOf(matchedStatusCell) + "#" + String.valueOf(statusCell)
@@ -2434,7 +2457,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					}
 					Cell matchedAcceptedId = row.getCell(9);
 					if (matchedAcceptedId != null && acceptedCell != null && !String.valueOf(acceptedCell).equals("")
-							&& acceptedCell != matchedAcceptedId) {
+							&& !sameCellValue(acceptedCell, matchedAcceptedId)) {
 						assign.setAcceptedId(String.valueOf(matchedAcceptedId) + "#"
 								+ NumberToTextConverter.toText(acceptedCell.getNumericCellValue()));
 						update = true;
@@ -2442,7 +2465,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						assign.setAcceptedId(String.valueOf(matchedAcceptedId));
 					}
 					Cell sourceCell = row.getCell(4);
-					if ((sourceCell != null && !String.valueOf(sourceCell).equals("")) && sourceCell != cell
+					if ((sourceCell != null && !String.valueOf(sourceCell).equals(""))
+							&& !String.valueOf(sourceCell).trim().equals(String.valueOf(cell).trim())
 							&& String.valueOf(actionCell).equals("update")) {
 						assign.setScientificName(String.valueOf(sourceCell)
 								+ (String.valueOf(cell).equals("") ? "" : "#" + String.valueOf(cell)));
