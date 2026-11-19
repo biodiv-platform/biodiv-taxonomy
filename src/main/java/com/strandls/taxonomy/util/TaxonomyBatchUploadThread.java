@@ -84,10 +84,23 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		long givenError = 0;
 		long synCreated = 0;
 		long synError = 0;
+		/** Rows skipped because processing them threw an exception. */
+		long rowsFailed = 0;
 
 		String summary() {
-			return givenCreated + "|" + givenError + "|" + synCreated + "|" + synError;
+			return givenCreated + "|" + givenError + "|" + synCreated + "|" + synError + "|" + rowsFailed;
 		}
+	}
+
+	/**
+	 * Logs a row that failed and counts it, so the rest of the upload can carry
+	 * on. Whatever the row saved before the failure stays saved (each DAO call
+	 * commits on its own).
+	 */
+	private void rowFailed(BatchCounters counters, String step, BatchUpload req, Exception e) {
+		counters.rowsFailed++;
+		logger.error("Taxonomy batch upload by user {}: {} failed for row '{}' (taxonId {}), skipping it: {}", userId,
+				step, req.getScientificName(), req.getTaxonId(), e.getMessage(), e);
 	}
 
 	@Override
@@ -97,7 +110,8 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		BatchCounters counters = new BatchCounters();
 		try {
 			process(counters);
-			logger.info("Taxonomy batch upload by user {} finished in {} ms; given created|error|syn created|error = {}",
+			logger.info(
+					"Taxonomy batch upload by user {} finished in {} ms; given created|error|syn created|error|rows failed = {}",
 					userId, System.currentTimeMillis() - started, counters.summary());
 		} catch (Exception e) {
 			logger.error("Taxonomy batch upload by user {} failed after {} ms (counts so far {}): {}", userId,
@@ -114,41 +128,66 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		List<BatchUpload> updateRequests = new ArrayList<>();
 		List<String> speciesPagecreate = new ArrayList<>();
 		for (BatchUpload req : confirmRequests) {
-			if (isCreateRequest(req)) {
-				createRequests.add(req);
-			} else {
-				updateRequests.add(req);
-			}
-			// New names have no taxon id yet; their species pages are queued in
-			// processCreateBatch once the id exists.
-			if ("CREATE".equals(req.getSpeciesId()) && !isCreateRequest(req)) {
-				speciesPagecreate.add(req.getScientificName() + "|" + (long) Double.parseDouble(req.getTaxonId()));
-			}
-			if (req.getPositionHier() != null) {
-				for (String h : req.getPositionHier()) {
-					String[] parts = h.split("\\|");
-					if (parts.length < 3) {
-						continue; // or log / throw
-					}
-
-					String[] posParts = parts[2].split("#", 2);
-					if (posParts.length < 2) {
-						continue; // or log / throw
-					}
-
-					Long taxonId = Long.parseLong(parts[1].trim());
-					positionHier.put(taxonId, posParts[1]);
+			try {
+				// Parse everything first, then add: a row that fails here is skipped
+				// as a whole rather than half-queued.
+				String speciesPage = null;
+				// New names have no taxon id yet; their species pages are queued in
+				// processCreateBatch once the id exists.
+				if ("CREATE".equals(req.getSpeciesId()) && !isCreateRequest(req)) {
+					speciesPage = req.getScientificName() + "|" + (long) Double.parseDouble(req.getTaxonId());
 				}
+				Map<Long, String> rowPositions = new HashMap<>();
+				if (req.getPositionHier() != null) {
+					for (String h : req.getPositionHier()) {
+						String[] parts = h.split("\\|");
+						if (parts.length < 3) {
+							continue; // or log / throw
+						}
+
+						String[] posParts = parts[2].split("#", 2);
+						if (posParts.length < 2) {
+							continue; // or log / throw
+						}
+
+						Long taxonId = Long.parseLong(parts[1].trim());
+						rowPositions.put(taxonId, posParts[1]);
+					}
+				}
+
+				if (isCreateRequest(req)) {
+					createRequests.add(req);
+				} else {
+					updateRequests.add(req);
+				}
+				if (speciesPage != null) {
+					speciesPagecreate.add(speciesPage);
+				}
+				positionHier.putAll(rowPositions);
+			} catch (Exception e) {
+				rowFailed(counters, "reading", req, e);
 			}
 		}
 
 		// 2. Process each group in batches (creates first, so new taxa exist
-		// before any updates run)
+		// before any updates run). Rows fail one by one inside each batch; the
+		// catch here is for a whole batch failing (e.g. Elasticsearch or the queue
+		// being down), so later batches still run.
 		for (List<BatchUpload> batch : partition(createRequests, BATCH_SIZE)) {
-			processCreateBatch(batch, userId, counters, createMapping, speciesPagecreate);
+			try {
+				processCreateBatch(batch, userId, counters, createMapping, speciesPagecreate);
+			} catch (Exception e) {
+				logger.error("Taxonomy batch upload by user {}: a create batch of {} rows failed: {}", userId,
+						batch.size(), e.getMessage(), e);
+			}
 		}
 		for (List<BatchUpload> batch : partition(updateRequests, BATCH_SIZE)) {
-			processUpdateBatch(batch, userId, counters, createMapping);
+			try {
+				processUpdateBatch(batch, userId, counters, createMapping);
+			} catch (Exception e) {
+				logger.error("Taxonomy batch upload by user {}: an update batch of {} rows failed: {}", userId,
+						batch.size(), e.getMessage(), e);
+			}
 		}
 		List<List<String>> batches = new ArrayList<>();
 		for (int i = 0; i < speciesPagecreate.size(); i += BATCH_SIZE) {
@@ -156,7 +195,12 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		}
 
 		for (List<String> batch : batches) {
-			processSpeciesPageBatch(batch, userId, counters);
+			try {
+				processSpeciesPageBatch(batch, userId, counters);
+			} catch (Exception e) {
+				logger.error("Taxonomy batch upload by user {}: a species-page batch of {} entries failed: {}", userId,
+						batch.size(), e.getMessage(), e);
+			}
 		}
 
 		List<Map.Entry<Long, String>> entries = new ArrayList<>(positionHier.entrySet());
@@ -171,7 +215,12 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		}
 
 		for (Map<Long, String> positionbatch : positionbatches) {
-			processPositionHierBatch(positionbatch, userId);
+			try {
+				processPositionHierBatch(positionbatch, userId);
+			} catch (Exception e) {
+				logger.error("Taxonomy batch upload by user {}: a position batch of {} taxa failed: {}", userId,
+						positionbatch.size(), e.getMessage(), e);
+			}
 		}
 
 	}
@@ -188,13 +237,17 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		List<Long> updateIds = new ArrayList<>();
 
 		for (BatchUpload req : batch) {
-			Long acceptedId = createHierarchy(req, userId, counters, taxonIds, createMapping);
-			if ("CREATE".equals(req.getSpeciesId()) && acceptedId != null) {
-				speciesPagecreate.add(req.getScientificName() + "|" + acceptedId);
+			try {
+				Long acceptedId = createHierarchy(req, userId, counters, taxonIds, createMapping);
+				if ("CREATE".equals(req.getSpeciesId()) && acceptedId != null) {
+					speciesPagecreate.add(req.getScientificName() + "|" + acceptedId);
+				}
+				addSynonyms(req, acceptedId, userId, counters, taxonIds, updates, updateIds);
+				addCommonNames(req, acceptedId, languageMapping);
+				taxonIds.add(acceptedId);
+			} catch (Exception e) {
+				rowFailed(counters, "create", req, e);
 			}
-			addSynonyms(req, acceptedId, userId, counters, taxonIds, updates, updateIds);
-			addCommonNames(req, acceptedId, languageMapping);
-			taxonIds.add(acceptedId);
 		}
 
 		pushToElastic(taxonIds);
@@ -208,13 +261,18 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		List<TaxonomyDefinition> taxa = taxonomyDao.fetchByListOfIds(new ArrayList<>(positionbatch.keySet()));
 
 		for (TaxonomyDefinition t : taxa) {
-			t.setPosition(positionbatch.get(t.getId()));
-			t = update(t);
-			TaxonomyBulkUpdateData update = new TaxonomyBulkUpdateData();
-			update.setPosition(t.getPosition());
-			update.setTargetId(t.getId());
-			updates.add(update);
-			taxonIds.add(t.getId());
+			try {
+				t.setPosition(positionbatch.get(t.getId()));
+				t = update(t);
+				TaxonomyBulkUpdateData update = new TaxonomyBulkUpdateData();
+				update.setPosition(t.getPosition());
+				update.setTargetId(t.getId());
+				updates.add(update);
+				taxonIds.add(t.getId());
+			} catch (Exception e) {
+				logger.error("Taxonomy batch upload by user {}: position change failed for taxon {}, skipping it: {}",
+						userId, t.getId(), e.getMessage(), e);
+			}
 		}
 
 		pushToElastic(taxonIds);
@@ -235,13 +293,17 @@ public class TaxonomyBatchUploadThread implements Runnable {
 		Map<String, Long> languageMapping = fetchLanguageMapping(batch);
 
 		for (BatchUpload req : batch) {
-			Long acceptedId = applyUpdate(req, updates, updateIds, taxonIds, createMapping, userId);
-			if (acceptedId == null) {
-				continue; // malformed entry, skipped (same as original)
+			try {
+				Long acceptedId = applyUpdate(req, updates, updateIds, taxonIds, createMapping, userId);
+				if (acceptedId == null) {
+					continue; // malformed entry, skipped (same as original)
+				}
+				addSynonyms(req, acceptedId, userId, counters, taxonIds, updates, updateIds);
+				addCommonNames(req, acceptedId, languageMapping);
+				taxonIds.add(acceptedId);
+			} catch (Exception e) {
+				rowFailed(counters, "update", req, e);
 			}
-			addSynonyms(req, acceptedId, userId, counters, taxonIds, updates, updateIds);
-			addCommonNames(req, acceptedId, languageMapping);
-			taxonIds.add(acceptedId);
 		}
 
 		pushToElastic(taxonIds);
@@ -640,6 +702,9 @@ public class TaxonomyBatchUploadThread implements Runnable {
 
 	private void addSynonyms(BatchUpload req, Long acceptedId, Long userId, BatchCounters counters, List<Long> taxonIds,
 			List<TaxonomyBulkUpdateData> updates, List<Long> updateIds) {
+		if (req.getSynonyms() == null) {
+			return;
+		}
 
 		for (String syn : req.getSynonyms()) {
 			String[] parts = syn.split("\\|");
@@ -774,6 +839,9 @@ public class TaxonomyBatchUploadThread implements Runnable {
 
 	private void addCommonNames(BatchUpload req, Long acceptedId, Map<String, Long> languageMapping) {
 		Map<Long, String[]> languageIdToCommonNames = new HashMap<>();
+		if (req.getCommonNames() == null) {
+			return;
+		}
 
 		for (String cn : req.getCommonNames()) {
 			String[] parts = cn.split("\\|");
@@ -808,6 +876,9 @@ public class TaxonomyBatchUploadThread implements Runnable {
 	private Map<String, Long> fetchLanguageMapping(List<BatchUpload> batch) {
 		Set<String> languages = new LinkedHashSet<>();
 		for (BatchUpload req : batch) {
+			if (req.getCommonNames() == null) {
+				continue;
+			}
 			for (String cn : req.getCommonNames()) {
 				String[] parts = cn.split("\\|");
 				if (parts.length > 2 && !parts[2].isBlank()) {
