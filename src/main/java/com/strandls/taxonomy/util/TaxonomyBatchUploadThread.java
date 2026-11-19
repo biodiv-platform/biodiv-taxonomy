@@ -550,7 +550,7 @@ public class TaxonomyBatchUploadThread implements Runnable {
 					System.out.println(name);
 					String id = nameAndId.length > 1 ? nameAndId[1] : null;
 					
-					if (Long.valueOf(Long.parseLong(id)).equals(acceptedId)) {
+					if (id != null && !id.isBlank() && Long.valueOf(Long.parseLong(id)).equals(acceptedId)) {
 						path.append(".").append(id);
 					    break;
 					}
