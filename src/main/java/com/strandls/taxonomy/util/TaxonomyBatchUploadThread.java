@@ -547,7 +547,13 @@ public class TaxonomyBatchUploadThread implements Runnable {
 					lastRank = rank;
 					String[] nameAndId = rankAndRest[1].split("#", 2);
 					String name = nameAndId[0];
+					System.out.println(name);
 					String id = nameAndId.length > 1 ? nameAndId[1] : null;
+					
+					if (Long.valueOf(Long.parseLong(id)).equals(acceptedId)) {
+						path.append(".").append(id);
+					    break;
+					}
 
 					if (id != null && !id.isBlank()) {
 						path.append(".").append(id);
@@ -573,7 +579,7 @@ public class TaxonomyBatchUploadThread implements Runnable {
 						taxonIds.add(htaxonomyDefinition.getId());
 
 						path.append(".").append(htaxonomyDefinition.getId());
-						taxonomyRegistryDao.createRegistry(null, path.toString().substring(1), rank, taxonId, userId,
+						taxonomyRegistryDao.createRegistry(null, path.toString().substring(1), rank, htaxonomyDefinition.getId(), userId,
 								null);
 
 						createMapping.put(parsedName, htaxonomyDefinition.getId());
