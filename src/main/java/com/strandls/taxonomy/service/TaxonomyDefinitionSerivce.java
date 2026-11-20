@@ -88,6 +88,12 @@ public interface TaxonomyDefinitionSerivce {
 
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart) throws IOException;
 
+	/**
+	 * Same as {@link #assignUpload(HttpServletRequest, FormDataBodyPart)}, reading
+	 * the name source ID / via datasource / match ID / match database name from the
+	 * given 0-based columns of the Given Names sheet. A null column was not mapped
+	 * and leaves that value empty.
+	 */
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart,
 			Integer nameSourceIdCol, Integer viaDatasourceCol, Integer matchIdCol, Integer matchDatabaseNameCol)
 			throws IOException;

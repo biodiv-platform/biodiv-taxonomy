@@ -2138,13 +2138,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return findById(prevTaxonId);
 	}
 
-	// Given Names sheet: the Target* source/match columns come after TargetAcceptedId (13)
-	// and before NameAction. Keep in step with the export in biodiv-ui name-matching/index.tsx.
-	private static final int GIVEN_TARGET_NAME_SOURCE_ID_COL = 14;
-	private static final int GIVEN_TARGET_VIA_DATASOURCE_COL = 15;
-	private static final int GIVEN_TARGET_MATCH_ID_COL = 16;
-	private static final int GIVEN_TARGET_MATCH_DATABASE_NAME_COL = 17;
-	private static final int GIVEN_NAME_ACTION_COL = 18;
+	// Given Names sheet: NameAction comes right after TargetAcceptedId (13).
+	// Keep in step with the export in biodiv-ui name-matching/index.tsx.
+	private static final int GIVEN_NAME_ACTION_COL = 14;
 
 	/** Cell as trimmed text (numbers without ".0"), or null when missing/blank. */
 	private static String cellText(Cell cell) {
@@ -2181,11 +2177,16 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 	}
 
-	private static void setTargetSource(BatchUpload assign, Row row, int[] cols) {
-		assign.setTargetNameSourceId(cellText(row.getCell(cols[0])));
-		assign.setTargetViaDatasource(cellText(row.getCell(cols[1])));
-		assign.setTargetMatchId(cellText(row.getCell(cols[2])));
-		assign.setTargetMatchDatabaseName(cellText(row.getCell(cols[3])));
+	/**
+	 * Copies the name source ID / via datasource / match ID / match database name
+	 * from a Given Names row. {@code cols} holds the 0-based column of each, in that
+	 * order; a null column was not mapped and leaves that value empty.
+	 */
+	private static void setTargetSource(BatchUpload assign, Row row, Integer[] cols) {
+		assign.setTargetNameSourceId(cols[0] != null ? cellText(row.getCell(cols[0])) : null);
+		assign.setTargetViaDatasource(cols[1] != null ? cellText(row.getCell(cols[1])) : null);
+		assign.setTargetMatchId(cols[2] != null ? cellText(row.getCell(cols[2])) : null);
+		assign.setTargetMatchDatabaseName(cols[3] != null ? cellText(row.getCell(cols[3])) : null);
 	}
 
 	@Override
@@ -2197,12 +2198,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart,
 			Integer nameSourceIdCol, Integer viaDatasourceCol, Integer matchIdCol, Integer matchDatabaseNameCol)
 			throws IOException {
-		// Columns chosen in the batch upload column mapping, else the fixed export positions
-		int[] targetSourceCols = {
-				nameSourceIdCol != null ? nameSourceIdCol : GIVEN_TARGET_NAME_SOURCE_ID_COL,
-				viaDatasourceCol != null ? viaDatasourceCol : GIVEN_TARGET_VIA_DATASOURCE_COL,
-				matchIdCol != null ? matchIdCol : GIVEN_TARGET_MATCH_ID_COL,
-				matchDatabaseNameCol != null ? matchDatabaseNameCol : GIVEN_TARGET_MATCH_DATABASE_NAME_COL };
+		// Columns chosen in the batch upload column mapping (optional; null = not mapped)
+		Integer[] targetSourceCols = { nameSourceIdCol, viaDatasourceCol, matchIdCol, matchDatabaseNameCol };
 		InputStream inputStream = filePart.getValueAs(InputStream.class);
 		Workbook workbook = new XSSFWorkbook(inputStream);
 		List<BatchUpload> result = new ArrayList<>();
