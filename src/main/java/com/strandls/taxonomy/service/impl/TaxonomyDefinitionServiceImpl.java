@@ -2181,19 +2181,28 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 	}
 
-	/**
-	 * Copies TargetNameSourceId / TargetViaDatasource / TargetMatchId /
-	 * TargetMatchDatabaseName from a Given Names row.
-	 */
-	private static void setTargetSource(BatchUpload assign, Row row) {
-		assign.setTargetNameSourceId(cellText(row.getCell(GIVEN_TARGET_NAME_SOURCE_ID_COL)));
-		assign.setTargetViaDatasource(cellText(row.getCell(GIVEN_TARGET_VIA_DATASOURCE_COL)));
-		assign.setTargetMatchId(cellText(row.getCell(GIVEN_TARGET_MATCH_ID_COL)));
-		assign.setTargetMatchDatabaseName(cellText(row.getCell(GIVEN_TARGET_MATCH_DATABASE_NAME_COL)));
+	private static void setTargetSource(BatchUpload assign, Row row, int[] cols) {
+		assign.setTargetNameSourceId(cellText(row.getCell(cols[0])));
+		assign.setTargetViaDatasource(cellText(row.getCell(cols[1])));
+		assign.setTargetMatchId(cellText(row.getCell(cols[2])));
+		assign.setTargetMatchDatabaseName(cellText(row.getCell(cols[3])));
 	}
 
 	@Override
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart) throws IOException {
+		return assignUpload(request, filePart, null, null, null, null);
+	}
+
+	@Override
+	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart,
+			Integer nameSourceIdCol, Integer viaDatasourceCol, Integer matchIdCol, Integer matchDatabaseNameCol)
+			throws IOException {
+		// Columns chosen in the batch upload column mapping, else the fixed export positions
+		int[] targetSourceCols = {
+				nameSourceIdCol != null ? nameSourceIdCol : GIVEN_TARGET_NAME_SOURCE_ID_COL,
+				viaDatasourceCol != null ? viaDatasourceCol : GIVEN_TARGET_VIA_DATASOURCE_COL,
+				matchIdCol != null ? matchIdCol : GIVEN_TARGET_MATCH_ID_COL,
+				matchDatabaseNameCol != null ? matchDatabaseNameCol : GIVEN_TARGET_MATCH_DATABASE_NAME_COL };
 		InputStream inputStream = filePart.getValueAs(InputStream.class);
 		Workbook workbook = new XSSFWorkbook(inputStream);
 		List<BatchUpload> result = new ArrayList<>();
@@ -2490,7 +2499,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (positionMap.containsKey(row.getRowNum())) {
 						assign.setPositionHier(positionMap.get(row.getRowNum()));
 					}
-					setTargetSource(assign, row);
+					setTargetSource(assign, row, targetSourceCols);
 					result.add(assign);
 				} else {
 					// Create
@@ -2558,7 +2567,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (positionMap.containsKey(row.getRowNum())) {
 						assign.setPositionHier(positionMap.get(row.getRowNum()));
 					}
-					setTargetSource(assign, row);
+					setTargetSource(assign, row, targetSourceCols);
 					result.add(assign);
 				}
 			}

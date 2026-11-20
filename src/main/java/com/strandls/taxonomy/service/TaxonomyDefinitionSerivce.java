@@ -88,5 +88,9 @@ public interface TaxonomyDefinitionSerivce {
 
 	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart) throws IOException;
 
+	public List<BatchUpload> assignUpload(HttpServletRequest request, FormDataBodyPart filePart,
+			Integer nameSourceIdCol, Integer viaDatasourceCol, Integer matchIdCol, Integer matchDatabaseNameCol)
+			throws IOException;
+
 	public String batchUpload(HttpServletRequest request, List<BatchUpload> confirmRequests);
 }

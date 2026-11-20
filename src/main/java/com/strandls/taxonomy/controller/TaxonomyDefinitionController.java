@@ -659,11 +659,41 @@ public class TaxonomyDefinitionController {
 		if (filePart == null) {
 			return Response.status(Response.Status.BAD_REQUEST).entity("File not present").build();
 		}
+		Integer nameSourceIdCol;
+		Integer viaDatasourceCol;
+		Integer matchIdCol;
+		Integer matchDatabaseNameCol;
 		try {
-			List<BatchUpload> result = taxonomyService.assignUpload(request, filePart);
+			nameSourceIdCol = optionalColumn(multiPart, "nameSourceIdColumn");
+			viaDatasourceCol = optionalColumn(multiPart, "viaDatasourceColumn");
+			matchIdCol = optionalColumn(multiPart, "matchIdColumn");
+			matchDatabaseNameCol = optionalColumn(multiPart, "matchDatabaseNameColumn");
+		} catch (IllegalArgumentException e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+		try {
+			List<BatchUpload> result = taxonomyService.assignUpload(request, filePart, nameSourceIdCol,
+					viaDatasourceCol, matchIdCol, matchDatabaseNameCol);
 			return Response.ok().entity(result).build();
 		} catch (IOException e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	/** A non-negative column index from a multipart field, or null when the field is absent or blank. */
+	private static Integer optionalColumn(FormDataMultiPart multiPart, String field) {
+		FormDataBodyPart part = multiPart.getField(field);
+		if (part == null || part.getValue() == null || part.getValue().isBlank()) {
+			return null;
+		}
+		try {
+			int col = Integer.parseInt(part.getValue().trim());
+			if (col < 0) {
+				throw new IllegalArgumentException(field + " must not be negative");
+			}
+			return col;
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException(field + " must be a column number");
 		}
 	}
 
